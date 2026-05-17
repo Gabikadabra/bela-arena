@@ -1,0 +1,33 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0b0b0f;
+  --card: #17171f;
+  --gold: #d4af37;
+  --red: #b91c1c;
+}
+
+body {
+  background: radial-gradient(circle at top, #231a0a 0, #0b0b0f 38%, #050507 100%);
+  color: white;
+}
+
+.card-glow {
+  box-shadow: 0 0 30px rgba(212, 175, 55, 0.09);
+}
+
+.input {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: #18181b;
+  padding: 1rem;
+  color: white;
+  outline: none;
+}
+
+.input:focus {
+  border-color: #facc15;
+}
