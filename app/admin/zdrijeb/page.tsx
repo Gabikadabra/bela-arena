@@ -93,27 +93,19 @@ export default function ZdrijebAdminPage() {
     if (matchIds && matchIds.length > 0) {
       const ids = matchIds.map((m) => m.id);
 
-      const { error: gamesError } = await supabase
-        .from("match_games")
-        .delete()
-        .in("match_id", ids);
-
-      if (gamesError) throw gamesError;
+      await supabase.from("match_games").delete().in("match_id", ids);
+      await supabase.from("match_sets").delete().in("match_id", ids);
     }
 
-    const { error: matchesError } = await supabase
+    await supabase
       .from("matches")
       .delete()
       .eq("tournament_id", selectedTournament);
 
-    if (matchesError) throw matchesError;
-
-    const { error: standingsError } = await supabase
+    await supabase
       .from("group_standings")
       .delete()
       .eq("tournament_id", selectedTournament);
-
-    if (standingsError) throw standingsError;
   }
 
   async function generateDraw() {
@@ -153,18 +145,16 @@ export default function ZdrijebAdminPage() {
           const winnerId = match.team_a_id || match.team_b_id;
           const winnerName = match.team_a_name || match.team_b_name;
 
-          const nextRound = 2;
-          const nextBracketPosition = Math.ceil(match.bracket_position / 2);
-          const nextSlot = match.bracket_position % 2 === 1 ? "A" : "B";
-
           const nextMatch = insertedMatches.find(
             (m) =>
               m.phase === "knockout" &&
-              m.round === nextRound &&
-              m.bracket_position === nextBracketPosition
+              m.round === 2 &&
+              m.bracket_position === Math.ceil(match.bracket_position / 2)
           );
 
           if (!nextMatch) continue;
+
+          const nextSlot = match.bracket_position % 2 === 1 ? "A" : "B";
 
           if (nextSlot === "A") {
             await supabase
@@ -200,7 +190,6 @@ export default function ZdrijebAdminPage() {
         const generated = generateRoundRobinMatches(selectedTournament, teams);
 
         const { error } = await supabase.from("matches").insert(generated);
-
         if (error) throw error;
 
         setMessage("Round robin raspored je generiran.");
@@ -233,6 +222,11 @@ export default function ZdrijebAdminPage() {
 
         setMessage("Grupe + knockout su generirani.");
       }
+
+      await supabase
+        .from("tournaments")
+        .update({ status: "live" })
+        .eq("id", selectedTournament);
 
       await loadTournamentData();
     } catch (error: any) {
@@ -294,9 +288,9 @@ export default function ZdrijebAdminPage() {
         {tournament && (
           <div className="mt-6 grid gap-4 md:grid-cols-4">
             <Info title="Format" value={tournament.tournament_format} />
+            <Info title="Status" value={tournament.status} />
             <Info title="Potvrđene ekipe" value={teams.length} />
             <Info title="Mečevi" value={matches.length} />
-            <Info title="Preporuka" value={recommended.format} />
           </div>
         )}
 
