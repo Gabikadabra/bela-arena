@@ -24,14 +24,16 @@ export default function PrijavaPage() {
 
   useEffect(() => {
     async function init() {
-      const { data: userData } = await supabase.auth.getUser();
-      const currentUser = userData.user;
+      const {
+        data: { user }
+      } = await supabase.auth.getUser();
 
-      setUser(currentUser);
+      setUser(user);
 
       const { data, error } = await supabase
         .from("tournaments")
         .select("*")
+        .eq("status", "open")
         .order("starts_at", { ascending: true });
 
       if (error) {
@@ -44,8 +46,8 @@ export default function PrijavaPage() {
 
       setForm((prev) => ({
         ...prev,
-        tournamentId: data && data.length > 0 ? data[0].id : "",
-        email: currentUser?.email || ""
+        tournamentId: data?.[0]?.id || "",
+        email: user?.email || ""
       }));
     }
 
@@ -58,7 +60,7 @@ export default function PrijavaPage() {
 
     if (!user) {
       setMessageType("error");
-      setMessage("Moraš se prvo prijaviti ili registrirati.");
+      setMessage("Moraš se prvo prijaviti.");
       return;
     }
 
@@ -69,26 +71,31 @@ export default function PrijavaPage() {
     }
 
     setLoading(true);
-    const { data: existingTeam } = await supabase
-  .from("teams")
-  .select("id, name")
-  .eq("tournament_id", form.tournamentId)
-  .eq("captain_user_id", user.id)
-  .maybeSingle();
 
-if (existingTeam) {
-  setMessageType("error");
-  setMessage("Već si prijavio ekipu za ovaj turnir.");
-  setLoading(false);
-  return;
-}
+    const { data: existingTeam } = await supabase
+      .from("teams")
+      .select("id")
+      .eq("tournament_id", form.tournamentId)
+      .eq("captain_user_id", user.id)
+      .maybeSingle();
+
+    if (existingTeam) {
+      setMessageType("error");
+      setMessage("Već si prijavio ekipu za ovaj turnir.");
+      setLoading(false);
+      return;
+    }
+
+    const selectedTournament = tournaments.find(
+      (t) => t.id === form.tournamentId
+    );
 
     const { error } = await supabase.from("teams").insert({
       tournament_id: form.tournamentId,
       name: form.teamName,
       city: form.city,
       captain_name: form.captain,
-      captain_user_id: user?.id || null,
+      captain_user_id: user.id,
       player_one: form.playerOne,
       player_two: form.playerTwo,
       partner_email: form.partnerEmail,
@@ -102,24 +109,40 @@ if (existingTeam) {
     if (error) {
       setMessageType("error");
       setMessage("Greška kod prijave: " + error.message);
-    } else {
-      setMessageType("success");
-      setMessage(
-        "Ekipa je prijavljena! Partner treba prihvatiti poziv, a admin potvrditi ekipu."
-      );
-
-      setForm({
-        tournamentId: tournaments[0]?.id || "",
-        teamName: "",
-        city: "",
-        captain: "",
-        playerOne: "",
-        playerTwo: "",
-        partnerEmail: "",
-        phone: "",
-        email: user.email || ""
-      });
+      setLoading(false);
+      return;
     }
+
+    // SEND EMAIL INVITE
+    await fetch("/api/send-invite", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        partnerEmail: form.partnerEmail,
+        captainName: form.captain,
+        teamName: form.teamName,
+        tournamentName: selectedTournament?.name || "Bela Arena"
+      })
+    });
+
+    setMessageType("success");
+    setMessage(
+      "Ekipa prijavljena. Partner je dobio email poziv, admin mora potvrditi ekipu."
+    );
+
+    setForm({
+      tournamentId: tournaments[0]?.id || "",
+      teamName: "",
+      city: "",
+      captain: "",
+      playerOne: "",
+      playerTwo: "",
+      partnerEmail: "",
+      phone: "",
+      email: user.email || ""
+    });
 
     setLoading(false);
   }
@@ -128,29 +151,25 @@ if (existingTeam) {
     return (
       <main className="mx-auto max-w-4xl px-6 py-16">
         <div className="rounded-3xl border border-yellow-500/20 bg-zinc-950/80 p-10 shadow-2xl">
-          <p className="mb-4 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
-            Prijava ekipe
-          </p>
-
           <h1 className="text-5xl font-black text-yellow-400">
             Prvo se prijavi
           </h1>
 
           <p className="mt-4 text-lg text-zinc-300">
-            Za prijavu ekipe moraš imati račun i potvrđen email.
+            Moraš imati račun za prijavu ekipe.
           </p>
 
-          <div className="mt-8 flex flex-wrap gap-4">
+          <div className="mt-8 flex gap-4">
             <a
               href="/login"
-              className="rounded-xl bg-yellow-400 px-6 py-3 font-bold text-black transition hover:bg-yellow-300"
+              className="rounded-xl bg-yellow-400 px-6 py-3 font-bold text-black"
             >
               Login
             </a>
 
             <a
               href="/registracija"
-              className="rounded-xl border border-yellow-500/40 px-6 py-3 font-bold text-yellow-300 transition hover:bg-yellow-500/10"
+              className="rounded-xl border border-yellow-500/40 px-6 py-3 font-bold text-yellow-300"
             >
               Registracija
             </a>
@@ -163,35 +182,17 @@ if (existingTeam) {
   return (
     <main className="mx-auto max-w-5xl px-6 py-12">
       <div className="mb-10">
-        <p className="mb-4 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
-          Bela Arena prijava
-        </p>
-
         <h1 className="text-5xl font-black text-yellow-400">
           Prijava ekipe
         </h1>
-
-        <p className="mt-4 max-w-2xl text-zinc-300">
-          Odaberi turnir, upiši podatke ekipe i pozovi partnera preko emaila.
-        </p>
       </div>
-
-      {tournaments.length === 0 && (
-        <div className="mb-8 rounded-2xl border border-red-500/30 bg-red-500/10 p-5 text-red-300">
-          Trenutno nema dostupnih turnira.
-        </div>
-      )}
 
       <form
         onSubmit={handleSubmit}
-        className="rounded-3xl border border-white/10 bg-zinc-950/80 p-8 shadow-2xl"
+        className="rounded-3xl border border-white/10 bg-zinc-950/80 p-8"
       >
         <div className="grid gap-5 md:grid-cols-2">
-          <div className="md:col-span-2">
-            <label className="mb-2 block text-sm font-bold text-yellow-300">
-              Turnir
-            </label>
-
+          <Field label="Turnir">
             <select
               value={form.tournamentId}
               onChange={(e) =>
@@ -201,14 +202,13 @@ if (existingTeam) {
               required
             >
               <option value="">Odaberi turnir</option>
-
               {tournaments.map((tournament) => (
                 <option key={tournament.id} value={tournament.id}>
-                  {tournament.name} — {tournament.location}
+                  {tournament.name}
                 </option>
               ))}
             </select>
-          </div>
+          </Field>
 
           <Field label="Naziv ekipe">
             <input
@@ -217,7 +217,6 @@ if (existingTeam) {
                 setForm({ ...form, teamName: e.target.value })
               }
               className="input"
-              placeholder="npr. Kumovi"
               required
             />
           </Field>
@@ -227,7 +226,6 @@ if (existingTeam) {
               value={form.city}
               onChange={(e) => setForm({ ...form, city: e.target.value })}
               className="input"
-              placeholder="npr. Novska"
             />
           </Field>
 
@@ -236,7 +234,6 @@ if (existingTeam) {
               value={form.captain}
               onChange={(e) => setForm({ ...form, captain: e.target.value })}
               className="input"
-              placeholder="Ime kapetana"
               required
             />
           </Field>
@@ -248,7 +245,6 @@ if (existingTeam) {
                 setForm({ ...form, playerOne: e.target.value })
               }
               className="input"
-              placeholder="Ime prvog igrača"
               required
             />
           </Field>
@@ -260,7 +256,6 @@ if (existingTeam) {
                 setForm({ ...form, playerTwo: e.target.value })
               }
               className="input"
-              placeholder="Ime drugog igrača"
               required
             />
           </Field>
@@ -273,7 +268,6 @@ if (existingTeam) {
                 setForm({ ...form, partnerEmail: e.target.value })
               }
               className="input"
-              placeholder="partner@email.com"
               required
             />
           </Field>
@@ -283,27 +277,16 @@ if (existingTeam) {
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
               className="input"
-              placeholder="099..."
-            />
-          </Field>
-
-          <Field label="Email kapetana">
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="input"
-              placeholder="email@example.com"
             />
           </Field>
         </div>
 
         <button
           type="submit"
-          disabled={loading || tournaments.length === 0}
-          className="mt-8 rounded-xl bg-yellow-400 px-8 py-4 font-black text-black transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={loading}
+          className="mt-8 rounded-xl bg-yellow-400 px-8 py-4 font-black text-black"
         >
-          {loading ? "Šaljem prijavu..." : "Prijavi ekipu"}
+          {loading ? "Šaljem..." : "Prijavi ekipu"}
         </button>
       </form>
 
