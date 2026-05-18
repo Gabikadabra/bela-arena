@@ -312,48 +312,7 @@ export default function MojRacunPage() {
             </div>
           </section>
 
-          <section className="rounded-3xl border border-white/10 bg-zinc-950/80 p-8">
-            <h2 className="text-3xl font-black text-yellow-400">Pozivnice</h2>
-
-            <div className="mt-6 space-y-4">
-              {invites.length === 0 && (
-                <div className="rounded-2xl bg-zinc-900 p-5 text-zinc-300">
-                  Nemaš novih pozivnica.
-                </div>
-              )}
-
-              {invites.map((invite) => (
-                <div
-                  key={invite.id}
-                  className="rounded-2xl border border-yellow-500/20 bg-zinc-900 p-5"
-                >
-                  <h3 className="text-2xl font-bold text-yellow-300">
-                    {invite.name || invite.team_name || "Poziv u ekipu"}
-                  </h3>
-
-                  <p className="mt-2 text-zinc-400">
-                    Netko te dodao u svoju ekipu.
-                  </p>
-
-                  <div className="mt-5 flex flex-wrap gap-3">
-                    <button
-                      onClick={() => acceptInvite(invite.id)}
-                      className="rounded-xl bg-green-400 px-5 py-2 font-bold text-black"
-                    >
-                      Prihvati
-                    </button>
-
-                    <button
-                      onClick={() => rejectInvite(invite.id)}
-                      className="rounded-xl border border-red-500/40 px-5 py-2 font-bold text-red-300"
-                    >
-                      Odbij
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
+          
         </div>
       </div>
 
