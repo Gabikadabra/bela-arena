@@ -61,13 +61,13 @@ export default function NoviTurnirPage() {
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-12">
+    <main className="page">
       <div className="mb-10">
-        <p className="mb-4 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
+        <p className="badge">
           Admin
         </p>
 
-        <h1 className="text-5xl font-black text-yellow-400">
+        <h1 className="page-title">
           Novi turnir
         </h1>
 
@@ -78,7 +78,7 @@ export default function NoviTurnirPage() {
 
       <form
         onSubmit={handleSubmit}
-        className="rounded-3xl border border-white/10 bg-zinc-950/80 p-8 shadow-2xl"
+        className="card"
       >
         <div className="grid gap-5 md:grid-cols-2">
           <Field label="Naziv turnira">
@@ -168,7 +168,7 @@ export default function NoviTurnirPage() {
             </select>
           </Field>
 
-          <div className="md:col-span-2 rounded-2xl border border-white/10 bg-zinc-900 p-5">
+          <div className="md:col-span-2 item-card">
             <label className="flex cursor-pointer items-center gap-3">
               <input
                 type="checkbox"
@@ -202,14 +202,14 @@ export default function NoviTurnirPage() {
           <button
             type="submit"
             disabled={loading}
-            className="rounded-xl bg-yellow-400 px-8 py-4 font-black text-black transition hover:bg-yellow-300 disabled:opacity-50"
+            className="btn-primary disabled:opacity-50"
           >
             {loading ? "Spremam..." : "Kreiraj turnir"}
           </button>
 
           <a
             href="/admin"
-            className="rounded-xl border border-yellow-500/40 px-8 py-4 font-bold text-yellow-300 transition hover:bg-yellow-500/10"
+            className="btn-outline"
           >
             Nazad na admin
           </a>

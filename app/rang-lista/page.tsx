@@ -66,27 +66,27 @@ export default function RangListaPage() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-7xl px-6 py-12">
+      <main className="page">
         <p className="text-zinc-300">Učitavam rang listu...</p>
       </main>
     );
   }
 
   return (
-    <main className="mx-auto max-w-7xl px-6 py-12">
+    <main className="page">
       <div className="mb-10">
-        <p className="mb-4 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
+        <p className="badge">
           Bela Arena statistika
         </p>
 
-        <h1 className="text-5xl font-black text-yellow-400">Rang lista</h1>
+        <h1 className="page-title">Rang lista</h1>
 
         <p className="mt-4 max-w-2xl text-zinc-300">
           ELO, pobjede, bodovi, zvanja, streakovi i najbolji rezultati.
         </p>
       </div>
 
-      <section className="mb-8 rounded-3xl border border-white/10 bg-zinc-950/80 p-6">
+      <section className="mb-8 card">
         <label className="mb-2 block text-sm font-bold text-yellow-300">
           Filter po turniru
         </label>
@@ -154,7 +154,7 @@ export default function RangListaPage() {
               key={`${team.team_id}-${team.tournament_id || "global"}`}
               className="grid gap-3 p-4 text-zinc-200 xl:grid-cols-[70px_1.5fr_repeat(8,1fr)] xl:items-center"
             >
-              <div className="text-3xl font-black text-yellow-400">
+              <div className="section-title">
                 #{index + 1}
               </div>
 
@@ -271,7 +271,7 @@ function Highlight({
   sub: string;
 }) {
   return (
-    <div className="rounded-3xl border border-yellow-500/20 bg-zinc-950 p-6">
+    <div className="stat-card">
       <p className="text-sm text-zinc-400">{title}</p>
       <p className="mt-2 text-2xl font-black text-yellow-400">{value}</p>
       <p className="mt-1 text-zinc-400">{sub}</p>

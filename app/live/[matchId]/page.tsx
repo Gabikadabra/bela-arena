@@ -118,7 +118,7 @@ export default function LiveMatchPage({
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-5xl px-6 py-12">
+      <main className="page">
         <p>Učitavam live rezultat...</p>
       </main>
     );
@@ -126,7 +126,7 @@ export default function LiveMatchPage({
 
   if (!match) {
     return (
-      <main className="mx-auto max-w-5xl px-6 py-12">
+      <main className="page">
         <div className="rounded-3xl border border-red-500/30 bg-red-500/10 p-8 text-red-300">
           Meč nije pronađen.
         </div>
@@ -135,13 +135,13 @@ export default function LiveMatchPage({
   }
 
   return (
-    <main className="mx-auto max-w-7xl px-6 py-12">
+    <main className="page">
       <div className="mb-10 text-center">
         <p className="mb-4 inline-block rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-300">
           ● LIVE
         </p>
 
-        <h1 className="text-4xl font-black text-yellow-400 md:text-6xl">
+        <h1 className="page-title md:text-6xl">
           {match.team_a_name} vs {match.team_b_name}
         </h1>
 
@@ -177,13 +177,13 @@ export default function LiveMatchPage({
       </section>
 
       {lastGame && (
-        <section className="mt-8 rounded-3xl border border-white/10 bg-zinc-950/80 p-8">
-          <h2 className="text-3xl font-black text-yellow-400">
+        <section className="mt-8 card">
+          <h2 className="section-title">
             Zadnje dijeljenje
           </h2>
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <div className="rounded-2xl bg-zinc-900 p-5">
+            <div className="item-card">
               <p className="font-bold text-yellow-300">{match.team_a_name}</p>
               <p className="mt-2 text-3xl font-black">
                 +{lastGame.team_a_total}
@@ -195,7 +195,7 @@ export default function LiveMatchPage({
               </p>
             </div>
 
-            <div className="rounded-2xl bg-zinc-900 p-5">
+            <div className="item-card">
               <p className="font-bold text-yellow-300">{match.team_b_name}</p>
               <p className="mt-2 text-3xl font-black">
                 +{lastGame.team_b_total}
@@ -230,14 +230,14 @@ export default function LiveMatchPage({
       )}
 
       {sets.length > 0 && (
-        <section className="mt-8 rounded-3xl border border-white/10 bg-zinc-950/80 p-8">
-          <h2 className="text-3xl font-black text-yellow-400">
+        <section className="mt-8 card">
+          <h2 className="section-title">
             Završeni setovi
           </h2>
 
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             {sets.map((set) => (
-              <div key={set.id} className="rounded-2xl bg-zinc-900 p-5">
+              <div key={set.id} className="item-card">
                 <p className="text-sm text-zinc-400">
                   Set {set.set_number}
                 </p>
@@ -251,7 +251,7 @@ export default function LiveMatchPage({
       )}
 
       <section className="mt-8">
-        <h2 className="text-3xl font-black text-yellow-400">
+        <h2 className="section-title">
           Povijest dijeljenja
         </h2>
 
@@ -262,7 +262,7 @@ export default function LiveMatchPage({
             .map((game) => (
               <div
                 key={game.id}
-                className="rounded-2xl border border-white/10 bg-zinc-950 p-5"
+                className="item-card"
               >
                 <p className="text-sm text-zinc-500">
                   Set {game.set_number} · Dijeljenje {game.game_number}

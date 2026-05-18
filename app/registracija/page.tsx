@@ -33,15 +33,19 @@ export default function RegistracijaPage() {
   }
 
   return (
-    <main className="mx-auto max-w-xl px-6 py-12">
-      <h1 className="text-4xl font-black text-yellow-400">Registracija</h1>
+    <main className="page-narrow">
+      <section className="hero-card">
+        <span className="badge">Bela Arena</span>
+        <h1 className="page-title mt-4">Registracija</h1>
+        <p className="muted mt-4">Napravi račun za prijave ekipa, live rezultate i povijest mečeva.</p>
+      </section>
 
-      <form onSubmit={register} className="mt-8 space-y-4">
+      <form onSubmit={register} className="card mt-8 space-y-4">
         <input
           placeholder="Ime i prezime"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
-          className="w-full rounded-xl bg-zinc-900 p-4"
+          className="input"
           required
         />
 
@@ -50,7 +54,7 @@ export default function RegistracijaPage() {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-xl bg-zinc-900 p-4"
+          className="input"
           required
         />
 
@@ -59,17 +63,17 @@ export default function RegistracijaPage() {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-xl bg-zinc-900 p-4"
+          className="input"
           required
           minLength={6}
         />
 
-        <button className="rounded-xl bg-yellow-400 px-6 py-3 font-bold text-black">
+        <button className="btn-primary">
           Registriraj se
         </button>
       </form>
 
-      {message && <p className="mt-6 text-green-400">{message}</p>}
+      {message && <p className="mt-6 rounded-2xl border border-green-500/30 bg-green-500/10 p-4 font-bold text-green-300">{message}</p>}
     </main>
   );
 }

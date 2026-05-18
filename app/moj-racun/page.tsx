@@ -149,9 +149,9 @@ export default function MojRacunPage() {
 
   if (!user) {
     return (
-      <main className="mx-auto max-w-xl px-6 py-20">
-        <div className="rounded-3xl border border-yellow-500/20 bg-zinc-950/80 p-8">
-          <h1 className="text-4xl font-black text-yellow-400">Moj račun</h1>
+      <main className="page-narrow">
+        <div className="hero-card">
+          <h1 className="page-title">Moj račun</h1>
 
           <p className="mt-4 text-zinc-300">
             Moraš se prijaviti da vidiš svoj račun.
@@ -160,14 +160,14 @@ export default function MojRacunPage() {
           <div className="mt-6 flex gap-4">
             <a
               href="/login"
-              className="rounded-xl bg-yellow-400 px-6 py-3 font-bold text-black"
+              className="btn-primary"
             >
               Login
             </a>
 
             <a
               href="/registracija"
-              className="rounded-xl border border-yellow-500/40 px-6 py-3 font-bold text-yellow-300"
+              className="btn-outline"
             >
               Registracija
             </a>
@@ -178,28 +178,28 @@ export default function MojRacunPage() {
   }
 
   return (
-    <main className="mx-auto max-w-7xl px-6 py-12">
+    <main className="page">
       <div className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
         <div>
-          <p className="mb-4 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
+          <p className="badge">
             Korisnički račun
           </p>
 
-          <h1 className="text-5xl font-black text-yellow-400">Moj račun</h1>
+          <h1 className="page-title">Moj račun</h1>
 
           <p className="mt-3 text-zinc-300">Prijavljen si kao: {user.email}</p>
         </div>
 
         <button
           onClick={logout}
-          className="rounded-xl border border-red-500/40 px-5 py-3 font-bold text-red-300 transition hover:bg-red-500/10"
+          className="btn-danger"
         >
           Odjava
         </button>
       </div>
 
-      <section className="mb-8 rounded-3xl border border-white/10 bg-zinc-950/80 p-8">
-        <h2 className="text-3xl font-black text-yellow-400">Moji mečevi</h2>
+      <section className="mb-8 card">
+        <h2 className="section-title">Moji mečevi</h2>
 
         <p className="mt-2 text-zinc-400">
           Ovdje vidiš svoje aktivne mečeve i live rezultate.
@@ -207,7 +207,7 @@ export default function MojRacunPage() {
 
         <div className="mt-6 space-y-4">
           {activeMatches.length === 0 && (
-            <div className="rounded-2xl bg-zinc-900 p-6 text-zinc-300">
+            <div className="item-card text-zinc-300">
               Trenutno nemaš aktivnih mečeva.
             </div>
           )}
@@ -219,8 +219,8 @@ export default function MojRacunPage() {
       </section>
 
       <div className="grid gap-8 lg:grid-cols-[1fr_1fr]">
-        <section className="rounded-3xl border border-white/10 bg-zinc-950/80 p-8">
-          <h2 className="text-3xl font-black text-yellow-400">Profil</h2>
+        <section className="card">
+          <h2 className="section-title">Profil</h2>
 
           <form onSubmit={saveProfile} className="mt-6 space-y-4">
             <Field label="Ime i prezime">
@@ -263,7 +263,7 @@ export default function MojRacunPage() {
               />
             </Field>
 
-            <button className="rounded-xl bg-yellow-400 px-8 py-4 font-black text-black">
+            <button className="btn-primary">
               Spremi profil
             </button>
           </form>
@@ -276,12 +276,12 @@ export default function MojRacunPage() {
         </section>
 
         <div className="space-y-8">
-          <section className="rounded-3xl border border-white/10 bg-zinc-950/80 p-8">
-            <h2 className="text-3xl font-black text-yellow-400">Moje ekipe</h2>
+          <section className="card">
+            <h2 className="section-title">Moje ekipe</h2>
 
             <div className="mt-6 space-y-4">
               {teams.length === 0 && (
-                <div className="rounded-2xl bg-zinc-900 p-5 text-zinc-300">
+                <div className="item-card text-zinc-300">
                   Još nisi član nijedne ekipe.
                 </div>
               )}
@@ -289,7 +289,7 @@ export default function MojRacunPage() {
               {teams.map((team) => (
                 <div
                   key={team.id}
-                  className="rounded-2xl border border-white/10 bg-zinc-900 p-5"
+                  className="item-card"
                 >
                   <h3 className="text-2xl font-bold text-yellow-300">
                     {team.name || team.team_name || "Ekipa bez imena"}
@@ -311,8 +311,8 @@ export default function MojRacunPage() {
         </div>
       </div>
 
-      <section className="mt-8 rounded-3xl border border-white/10 bg-zinc-950/80 p-8">
-        <h2 className="text-3xl font-black text-yellow-400">Povijest</h2>
+      <section className="mt-8 card">
+        <h2 className="section-title">Povijest</h2>
 
         <p className="mt-2 text-zinc-400">
           Ovdje su tvoji završeni mečevi i rezultati koje si igrao.
@@ -320,7 +320,7 @@ export default function MojRacunPage() {
 
         <div className="mt-6 space-y-4">
           {finishedMatches.length === 0 && (
-            <div className="rounded-2xl bg-zinc-900 p-6 text-zinc-300">
+            <div className="item-card text-zinc-300">
               Još nemaš odigranih mečeva.
             </div>
           )}
@@ -348,7 +348,7 @@ function MatchCard({
     match.team_b_score ?? match.score_b ?? match.points_b ?? match.result_b ?? 0;
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-zinc-900 p-5">
+    <div className="item-card">
       <h3 className="text-2xl font-bold text-yellow-300">
         {match.team_a_name} vs {match.team_b_name}
       </h3>
@@ -373,14 +373,14 @@ function MatchCard({
         <div className="mt-5 flex flex-wrap gap-3">
           <a
             href={`/mec/${match.id}`}
-            className="rounded-xl bg-yellow-400 px-5 py-2 font-bold text-black"
+            className="btn-primary"
           >
             Upiši rezultat
           </a>
 
           <a
             href={`/live/${match.id}`}
-            className="rounded-xl border border-yellow-500/40 px-5 py-2 font-bold text-yellow-300"
+            className="btn-outline"
           >
             Live prikaz
           </a>

@@ -149,9 +149,9 @@ export default function PrijavaPage() {
 
   if (!user) {
     return (
-      <main className="mx-auto max-w-4xl px-6 py-16">
-        <div className="rounded-3xl border border-yellow-500/20 bg-zinc-950/80 p-10 shadow-2xl">
-          <h1 className="text-5xl font-black text-yellow-400">
+      <main className="page-narrow">
+        <div className="hero-card">
+          <h1 className="page-title">
             Prvo se prijavi
           </h1>
 
@@ -162,14 +162,14 @@ export default function PrijavaPage() {
           <div className="mt-8 flex gap-4">
             <a
               href="/login"
-              className="rounded-xl bg-yellow-400 px-6 py-3 font-bold text-black"
+              className="btn-primary"
             >
               Login
             </a>
 
             <a
               href="/registracija"
-              className="rounded-xl border border-yellow-500/40 px-6 py-3 font-bold text-yellow-300"
+              className="btn-outline"
             >
               Registracija
             </a>
@@ -180,16 +180,18 @@ export default function PrijavaPage() {
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-12">
-      <div className="mb-10">
-        <h1 className="text-5xl font-black text-yellow-400">
+    <main className="page">
+      <section className="hero-card mb-8">
+        <span className="badge">Turnirska prijava</span>
+        <h1 className="page-title mt-4">
           Prijava ekipe
         </h1>
-      </div>
+        <p className="muted mt-4">Unesi podatke ekipe i odaberi otvoreni turnir.</p>
+      </section>
 
       <form
         onSubmit={handleSubmit}
-        className="rounded-3xl border border-white/10 bg-zinc-950/80 p-8"
+        className="card"
       >
         <div className="grid gap-5 md:grid-cols-2">
           <Field label="Turnir">
@@ -284,7 +286,7 @@ export default function PrijavaPage() {
         <button
           type="submit"
           disabled={loading}
-          className="mt-8 rounded-xl bg-yellow-400 px-8 py-4 font-black text-black"
+          className="mt-8 btn-primary"
         >
           {loading ? "Šaljem..." : "Prijavi ekipu"}
         </button>
