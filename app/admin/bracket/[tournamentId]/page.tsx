@@ -122,14 +122,14 @@ export default function AdminBracketPage({
   }
 
   return (
-    <main className="page">
+    <main className="mx-auto max-w-7xl px-6 py-12">
       <div className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
         <div>
-          <p className="badge">
+          <p className="mb-4 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
             Admin bracket
           </p>
 
-          <h1 className="page-title">
+          <h1 className="text-5xl font-black text-yellow-400">
             {tournament?.name || "Bracket"}
           </h1>
 
@@ -140,7 +140,7 @@ export default function AdminBracketPage({
 
         <button
           onClick={autoAdvance}
-          className="btn-primary"
+          className="rounded-xl bg-yellow-400 px-6 py-3 font-black text-black transition hover:bg-yellow-300"
         >
           Auto advance winnera
         </button>
@@ -235,7 +235,7 @@ function BracketMatch({
 
         <a
           href={`/mec/${match.id}`}
-          className="btn-primary flex-1 text-sm"
+          className="flex-1 rounded-xl bg-yellow-400 px-3 py-2 text-center text-sm font-bold text-black transition hover:bg-yellow-300"
         >
           Blok
         </a>

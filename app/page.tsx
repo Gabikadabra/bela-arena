@@ -1,14 +1,14 @@
-export default function Home() {
+﻿export default function Home() {
   return (
-    <main className="page">
-      <section className="hero-card">
+    <main>
+      <section className="mx-auto max-w-7xl px-6 py-20">
         <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
           <div>
-            <p className="badge">
+            <p className="mb-4 inline-flex rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
               Igraj belu kao pravi profesionalac
             </p>
 
-            <h1 className="page-title max-w-4xl">
+            <h1 className="max-w-4xl text-5xl font-black leading-tight md:text-7xl">
               Zaigraj belu, prati rezultate i osvoji vrh ljestvice.
             </h1>
 
@@ -20,22 +20,22 @@ export default function Home() {
             <div className="mt-8 flex flex-wrap gap-4">
               <a
                 href="/turniri"
-                className="btn-primary"
+                className="rounded-xl bg-yellow-400 px-6 py-3 font-bold text-black transition hover:bg-yellow-300"
               >
                 Zaigraj odmah
               </a>
 
               <a
                 href="/rang-lista"
-                className="btn-outline"
+                className="rounded-xl border border-yellow-500/40 px-6 py-3 font-bold text-yellow-300 transition hover:bg-yellow-500/10"
               >
                 Rang lista
               </a>
             </div>
           </div>
 
-          <div className="card-glow card">
-            <div className="item-card">
+          <div className="card-glow rounded-3xl border border-yellow-500/20 bg-zinc-950/80 p-6">
+            <div className="rounded-2xl bg-zinc-900 p-5">
               <p className="text-sm text-zinc-400">Finale</p>
 
               <div className="mt-4 space-y-3">

@@ -125,7 +125,7 @@ export default function TournamentPage({
 
   if (loading) {
     return (
-      <main className="page">
+      <main className="mx-auto max-w-7xl px-6 py-12">
         <p className="text-zinc-300">Učitavam turnir...</p>
       </main>
     );
@@ -133,7 +133,7 @@ export default function TournamentPage({
 
   if (!tournament) {
     return (
-      <main className="page">
+      <main className="mx-auto max-w-7xl px-6 py-12">
         <div className="rounded-3xl border border-red-500/30 bg-red-500/10 p-8 text-red-300">
           Turnir nije pronađen.
         </div>
@@ -142,15 +142,15 @@ export default function TournamentPage({
   }
 
   return (
-    <main className="page">
-      <section className="mb-10 hero-card">
-        <p className="badge">
+    <main className="mx-auto max-w-7xl px-6 py-12">
+      <section className="mb-10 rounded-3xl border border-yellow-500/20 bg-zinc-950/80 p-8 shadow-2xl">
+        <p className="mb-4 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
           Javni turnir
         </p>
 
         <div className="flex flex-col justify-between gap-6 md:flex-row md:items-start">
           <div>
-            <h1 className="page-title">
+            <h1 className="text-5xl font-black text-yellow-400">
               {tournament.name}
             </h1>
 
@@ -176,7 +176,7 @@ export default function TournamentPage({
             {tournament.status === "open" && (
               <a
                 href="/prijava"
-                className="btn-primary"
+                className="rounded-xl bg-yellow-400 px-6 py-3 text-center font-black text-black transition hover:bg-yellow-300"
               >
                 Prijavi ekipu
               </a>
@@ -184,7 +184,7 @@ export default function TournamentPage({
 
             <a
               href="/turniri"
-              className="btn-outline"
+              className="rounded-xl border border-yellow-500/40 px-6 py-3 text-center font-bold text-yellow-300 transition hover:bg-yellow-500/10"
             >
               Svi turniri
             </a>
@@ -192,7 +192,7 @@ export default function TournamentPage({
         </div>
 
         {tournament.rules && (
-          <div className="mt-8 item-card text-zinc-300">
+          <div className="mt-8 rounded-2xl bg-zinc-900 p-5 text-zinc-300">
             <b className="text-yellow-300">Pravila:</b>
             <p className="mt-2">{tournament.rules}</p>
           </div>
@@ -208,7 +208,7 @@ export default function TournamentPage({
 
       {liveMatches.length > 0 && (
         <section className="mb-10">
-          <h2 className="section-title">
+          <h2 className="text-3xl font-black text-yellow-400">
             Live / aktivni mečevi
           </h2>
 
@@ -221,11 +221,11 @@ export default function TournamentPage({
       )}
 
       <section className="mb-10">
-        <h2 className="section-title">Ekipe</h2>
+        <h2 className="text-3xl font-black text-yellow-400">Ekipe</h2>
 
         <div className="mt-5 grid gap-4 md:grid-cols-4">
           {approvedTeams.length === 0 && (
-            <div className="item-card text-zinc-300">
+            <div className="rounded-2xl bg-zinc-950 p-6 text-zinc-300">
               Još nema potvrđenih ekipa.
             </div>
           )}
@@ -233,7 +233,7 @@ export default function TournamentPage({
           {approvedTeams.map((team) => (
             <div
               key={team.id}
-              className="item-card"
+              className="rounded-2xl border border-white/10 bg-zinc-950 p-5"
             >
               <h3 className="font-bold text-yellow-300">{team.name}</h3>
               <p className="text-sm text-zinc-400">{team.city}</p>
@@ -244,7 +244,7 @@ export default function TournamentPage({
 
       {Object.keys(groupedKnockout).length > 0 && (
         <section className="mb-10">
-          <h2 className="section-title">Bracket</h2>
+          <h2 className="text-3xl font-black text-yellow-400">Bracket</h2>
 
           <div className="mt-5 overflow-x-auto pb-5">
             <div className="flex min-w-max gap-5">
@@ -270,7 +270,7 @@ export default function TournamentPage({
 
       {finishedMatches.length > 0 && (
         <section className="mb-10">
-          <h2 className="section-title">
+          <h2 className="text-3xl font-black text-yellow-400">
             Završeni mečevi
           </h2>
 
@@ -284,7 +284,7 @@ export default function TournamentPage({
 
       {games.length > 0 && (
         <section>
-          <h2 className="section-title">
+          <h2 className="text-3xl font-black text-yellow-400">
             Zadnja dijeljenja
           </h2>
 
@@ -295,7 +295,7 @@ export default function TournamentPage({
               return (
                 <div
                   key={game.id}
-                  className="item-card"
+                  className="rounded-2xl border border-white/10 bg-zinc-950 p-5"
                 >
                   <p className="text-sm text-zinc-500">
                     {match?.team_a_name} vs {match?.team_b_name} · Set{" "}
@@ -339,9 +339,9 @@ function Badge({ label }: { label: string }) {
 
 function Info({ title, value }: { title: string; value: any }) {
   return (
-    <div className="item-card">
+    <div className="rounded-2xl border border-white/10 bg-zinc-950 p-6">
       <p className="text-sm text-zinc-400">{title}</p>
-      <p className="mt-2 page-title">{value}</p>
+      <p className="mt-2 text-4xl font-black text-yellow-400">{value}</p>
     </div>
   );
 }
@@ -351,7 +351,7 @@ function MatchCard({ match, live }: { match: any; live?: boolean }) {
   const winnerB = match.winner_id && match.winner_id === match.team_b_id;
 
   return (
-    <div className="item-card">
+    <div className="rounded-2xl border border-white/10 bg-zinc-950 p-5">
       <div className="mb-3 flex justify-between gap-3">
         <p className="text-sm text-zinc-500">
           Meč {match.bracket_position || match.match_number}

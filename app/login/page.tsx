@@ -24,20 +24,16 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="page-narrow">
-      <section className="hero-card">
-        <span className="badge">Bela Arena</span>
-        <h1 className="page-title mt-4">Login</h1>
-        <p className="muted mt-4">Prijavi se i nastavi s turnirima, rezultatima i svojim profilom.</p>
-      </section>
+    <main className="mx-auto max-w-xl px-6 py-12">
+      <h1 className="text-4xl font-black text-yellow-400">Login</h1>
 
-      <form onSubmit={login} className="card mt-8 space-y-4">
+      <form onSubmit={login} className="mt-8 space-y-4">
         <input
           placeholder="Email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="input"
+          className="w-full rounded-xl bg-zinc-900 p-4"
           required
         />
 
@@ -46,11 +42,11 @@ export default function LoginPage() {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="input"
+          className="w-full rounded-xl bg-zinc-900 p-4"
           required
         />
 
-        <button className="btn-primary">
+        <button className="rounded-xl bg-yellow-400 px-6 py-3 font-bold text-black">
           Prijavi se
         </button>
       </form>

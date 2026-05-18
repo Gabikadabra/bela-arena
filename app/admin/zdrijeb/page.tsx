@@ -253,13 +253,13 @@ export default function ZdrijebAdminPage() {
   }, {});
 
   return (
-    <main className="page">
+    <main className="mx-auto max-w-7xl px-6 py-12">
       <div className="mb-10">
-        <p className="badge">
+        <p className="mb-4 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
           Admin ždrijeb
         </p>
 
-        <h1 className="page-title">
+        <h1 className="text-5xl font-black text-yellow-400">
           Bracket engine
         </h1>
 
@@ -268,7 +268,7 @@ export default function ZdrijebAdminPage() {
         </p>
       </div>
 
-      <section className="card">
+      <section className="rounded-3xl border border-white/10 bg-zinc-950/80 p-8">
         <label className="mb-2 block text-sm font-bold text-yellow-300">
           Turnir
         </label>
@@ -306,7 +306,7 @@ export default function ZdrijebAdminPage() {
 
         <button
           onClick={generateDraw}
-          className="mt-8 btn-primary"
+          className="mt-8 rounded-xl bg-yellow-400 px-8 py-4 font-black text-black transition hover:bg-yellow-300"
         >
           Generiraj prema formatu turnira
         </button>
@@ -319,7 +319,7 @@ export default function ZdrijebAdminPage() {
       </section>
 
       <section className="mt-10">
-        <h2 className="section-title">
+        <h2 className="text-3xl font-black text-yellow-400">
           Potvrđene ekipe
         </h2>
 
@@ -327,7 +327,7 @@ export default function ZdrijebAdminPage() {
           {teams.map((team) => (
             <div
               key={team.id}
-              className="item-card"
+              className="rounded-2xl border border-white/10 bg-zinc-950 p-5"
             >
               <h3 className="font-bold text-yellow-300">{team.name}</h3>
               <p className="text-sm text-zinc-400">{team.city}</p>
@@ -338,7 +338,7 @@ export default function ZdrijebAdminPage() {
 
       {Object.keys(groupedStandings).length > 0 && (
         <section className="mt-10">
-          <h2 className="section-title">
+          <h2 className="text-3xl font-black text-yellow-400">
             Tablice grupa
           </h2>
 
@@ -395,7 +395,7 @@ export default function ZdrijebAdminPage() {
 
       {knockoutMatches.length > 0 && (
         <section className="mt-10">
-          <h2 className="section-title">
+          <h2 className="text-3xl font-black text-yellow-400">
             Knockout bracket
           </h2>
 
@@ -411,7 +411,7 @@ export default function ZdrijebAdminPage() {
                     {roundMatches.map((match: any) => (
                       <div
                         key={match.id}
-                        className="item-card"
+                        className="rounded-2xl border border-white/10 bg-zinc-950 p-5"
                       >
                         <p className="text-sm text-zinc-500">
                           Meč {match.bracket_position || match.match_number}
@@ -444,7 +444,7 @@ export default function ZdrijebAdminPage() {
 
 function Info({ title, value }: { title: string; value: any }) {
   return (
-    <div className="item-card">
+    <div className="rounded-2xl bg-zinc-900 p-5">
       <p className="text-sm text-zinc-400">{title}</p>
       <p className="mt-2 text-2xl font-black text-yellow-400">{value}</p>
     </div>
@@ -454,13 +454,13 @@ function Info({ title, value }: { title: string; value: any }) {
 function MatchList({ title, matches }: { title: string; matches: any[] }) {
   return (
     <section className="mt-10">
-      <h2 className="section-title">{title}</h2>
+      <h2 className="text-3xl font-black text-yellow-400">{title}</h2>
 
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         {matches.map((match) => (
           <div
             key={match.id}
-            className="item-card"
+            className="rounded-2xl border border-white/10 bg-zinc-950 p-5"
           >
             <p className="text-sm text-zinc-500">
               {match.group_name ? `${match.group_name} · ` : ""}

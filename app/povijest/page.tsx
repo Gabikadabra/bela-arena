@@ -1,13 +1,3 @@
 export default function PovijestPage() {
-  return (
-    <main className="page">
-      <section className="hero-card">
-        <span className="badge">Arhiva</span>
-        <h1 className="page-title mt-4">Povijest turnira</h1>
-        <p className="muted mt-4 max-w-2xl">
-          Arhiva završenih turnira, pobjednika, bracket prikaza i statistike.
-        </p>
-      </section>
-    </main>
-  );
+  return <main className="mx-auto max-w-5xl px-6 py-12"><h1 className="text-4xl font-black text-yellow-400">Povijest turnira</h1><p className="mt-4 text-zinc-300">Arhiva zavrÄ‚â€žĂ„â€¦Ä‚â€ąĂ˘â‚¬Ë‡enih turnira, pobjednika, bracket prikaza i statistike.</p></main>
 }

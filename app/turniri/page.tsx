@@ -36,13 +36,13 @@ export default function TurniriPage() {
   }
 
   return (
-    <main className="page">
+    <main className="mx-auto max-w-7xl px-6 py-12">
       <div className="mb-10">
-        <p className="badge">
+        <p className="mb-4 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
           Bela Arena
         </p>
 
-        <h1 className="page-title">
+        <h1 className="text-5xl font-black text-yellow-400">
           Turniri
         </h1>
 
@@ -54,7 +54,7 @@ export default function TurniriPage() {
       {loading && <p className="text-zinc-300">Učitavam turnire...</p>}
 
       {!loading && tournaments.length === 0 && (
-        <div className="card text-zinc-300">
+        <div className="rounded-3xl border border-white/10 bg-zinc-950 p-8 text-zinc-300">
           Trenutno nema kreiranih turnira.
         </div>
       )}
@@ -63,7 +63,7 @@ export default function TurniriPage() {
         {tournaments.map((tournament) => (
           <article
             key={tournament.id}
-            className="card shadow-2xl transition hover:border-yellow-400/60"
+            className="rounded-3xl border border-white/10 bg-zinc-950/80 p-6 shadow-2xl transition hover:border-yellow-400/60"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -77,7 +77,7 @@ export default function TurniriPage() {
                   {tournament.status || "unknown"}
                 </span>
 
-                <h2 className="mt-4 section-title">
+                <h2 className="mt-4 text-3xl font-black text-yellow-400">
                   {tournament.name}
                 </h2>
               </div>
@@ -135,7 +135,7 @@ export default function TurniriPage() {
               {tournament.status === "open" && (
                 <a
                   href="/prijava"
-                  className="btn-primary"
+                  className="rounded-xl bg-yellow-400 px-5 py-3 font-bold text-black transition hover:bg-yellow-300"
                 >
                   Prijavi ekipu
                 </a>
@@ -143,7 +143,7 @@ export default function TurniriPage() {
 
               <a
                 href={`/tournament/${tournament.id}`}
-                className="btn-outline"
+                className="rounded-xl border border-yellow-500/40 px-5 py-3 font-bold text-yellow-300 transition hover:bg-yellow-500/10"
               >
                 Bracket
               </a>

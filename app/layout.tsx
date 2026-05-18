@@ -10,6 +10,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="hr">
       <body>
+        <div className="bela-bg-effects" aria-hidden="true" />
         <Nav />
         {children}
       </body>
