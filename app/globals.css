@@ -515,3 +515,10 @@ button, a, input, select, textarea {
     font-size: 2.25rem;
   }
 }
+
+@media (max-width: 1024px) {
+  header + main .page:first-child,
+  header + main.page {
+    padding-top: 1.5rem;
+  }
+}
