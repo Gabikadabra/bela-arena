@@ -64,6 +64,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     const saved = sessionStorage.getItem("bela_admin");
+
     if (saved === "true") {
       setIsAdmin(true);
     }
@@ -80,6 +81,16 @@ export default function AdminPage() {
       loadTeams(selectedTournament);
     }
   }, [selectedTournament]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const interval = setInterval(() => {
+      window.location.reload();
+    }, 120000); // 2 minute
+
+    return () => clearInterval(interval);
+  }, [isAdmin]);
 
   if (!isAdmin) {
     return (
@@ -124,9 +135,7 @@ export default function AdminPage() {
             Admin dashboard
           </p>
 
-          <h1 className="text-5xl font-black text-yellow-400">
-            Admin panel
-          </h1>
+          <h1 className="text-5xl font-black text-yellow-400">Admin panel</h1>
 
           <p className="mt-3 max-w-2xl text-zinc-300">
             Upravljaj turnirima, prijavama, ždrijebom i rezultatima.
@@ -175,7 +184,11 @@ export default function AdminPage() {
         </a>
 
         <a
-          href={selectedTournament ? `/admin/bracket/${selectedTournament}` : "/admin"}
+          href={
+            selectedTournament
+              ? `/admin/bracket/${selectedTournament}`
+              : "/admin"
+          }
           className="rounded-2xl border border-white/10 bg-zinc-950 p-6 font-bold transition hover:border-yellow-400 hover:bg-yellow-500/10"
         >
           <span className="block text-2xl text-yellow-300">🏁</span>
@@ -213,9 +226,11 @@ export default function AdminPage() {
         {selectedTournamentData && (
           <div className="mt-6 rounded-2xl bg-zinc-900 p-5">
             <p className="text-sm text-zinc-400">Trenutni turnir</p>
+
             <h3 className="mt-1 text-2xl font-bold text-yellow-300">
               {selectedTournamentData.name}
             </h3>
+
             <p className="text-zinc-400">
               {selectedTournamentData.location} ·{" "}
               {selectedTournamentData.starts_at}
@@ -244,13 +259,17 @@ export default function AdminPage() {
                   </h3>
 
                   <p className="text-zinc-400">{team.city}</p>
+
                   <p className="text-zinc-400">
                     Kapetan: {team.captain_name}
                   </p>
+
                   <p className="text-zinc-400">
                     Igrači: {team.player_one} / {team.player_two}
                   </p>
+
                   <p className="text-zinc-400">{team.phone}</p>
+
                   <p className="text-zinc-400">{team.email}</p>
                 </div>
 
