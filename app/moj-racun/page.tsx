@@ -144,6 +144,9 @@ export default function MojRacunPage() {
     window.location.href = "/login";
   }
 
+  const activeMatches = myMatches.filter((match) => match.status !== "finished");
+  const finishedMatches = myMatches.filter((match) => match.status === "finished");
+
   if (!user) {
     return (
       <main className="mx-auto max-w-xl px-6 py-20">
@@ -203,39 +206,14 @@ export default function MojRacunPage() {
         </p>
 
         <div className="mt-6 space-y-4">
-          {myMatches.length === 0 && (
+          {activeMatches.length === 0 && (
             <div className="rounded-2xl bg-zinc-900 p-6 text-zinc-300">
-              Trenutno nemaš mečeva.
+              Trenutno nemaš aktivnih mečeva.
             </div>
           )}
 
-          {myMatches.map((match) => (
-            <div
-              key={match.id}
-              className="rounded-2xl border border-white/10 bg-zinc-900 p-5"
-            >
-              <h3 className="text-2xl font-bold text-yellow-300">
-                {match.team_a_name} vs {match.team_b_name}
-              </h3>
-
-              <p className="mt-2 text-zinc-400">Status: {match.status}</p>
-
-              <div className="mt-5 flex flex-wrap gap-3">
-                <a
-                  href={`/mec/${match.id}`}
-                  className="rounded-xl bg-yellow-400 px-5 py-2 font-bold text-black"
-                >
-                  Upiši rezultat
-                </a>
-
-                <a
-                  href={`/live/${match.id}`}
-                  className="rounded-xl border border-yellow-500/40 px-5 py-2 font-bold text-yellow-300"
-                >
-                  Live prikaz
-                </a>
-              </div>
-            </div>
+          {activeMatches.map((match) => (
+            <MatchCard key={match.id} match={match} showButtons />
           ))}
         </div>
       </section>
@@ -298,10 +276,163 @@ export default function MojRacunPage() {
         </section>
 
         <div className="space-y-8">
-          {/* ostatak ostaje isti */}
+          <section className="rounded-3xl border border-white/10 bg-zinc-950/80 p-8">
+            <h2 className="text-3xl font-black text-yellow-400">Moje ekipe</h2>
+
+            <div className="mt-6 space-y-4">
+              {teams.length === 0 && (
+                <div className="rounded-2xl bg-zinc-900 p-5 text-zinc-300">
+                  Još nisi član nijedne ekipe.
+                </div>
+              )}
+
+              {teams.map((team) => (
+                <div
+                  key={team.id}
+                  className="rounded-2xl border border-white/10 bg-zinc-900 p-5"
+                >
+                  <h3 className="text-2xl font-bold text-yellow-300">
+                    {team.name || team.team_name || "Ekipa bez imena"}
+                  </h3>
+
+                  <p className="mt-2 text-zinc-400">
+                    Status pozivnice:{" "}
+                    <span className="font-bold text-zinc-200">
+                      {team.invite_status || "nije postavljeno"}
+                    </span>
+                  </p>
+
+                  {team.partner_email && (
+                    <p className="mt-1 text-zinc-400">
+                      Partner: {team.partner_email}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-white/10 bg-zinc-950/80 p-8">
+            <h2 className="text-3xl font-black text-yellow-400">Pozivnice</h2>
+
+            <div className="mt-6 space-y-4">
+              {invites.length === 0 && (
+                <div className="rounded-2xl bg-zinc-900 p-5 text-zinc-300">
+                  Nemaš novih pozivnica.
+                </div>
+              )}
+
+              {invites.map((invite) => (
+                <div
+                  key={invite.id}
+                  className="rounded-2xl border border-yellow-500/20 bg-zinc-900 p-5"
+                >
+                  <h3 className="text-2xl font-bold text-yellow-300">
+                    {invite.name || invite.team_name || "Poziv u ekipu"}
+                  </h3>
+
+                  <p className="mt-2 text-zinc-400">
+                    Netko te dodao u svoju ekipu.
+                  </p>
+
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <button
+                      onClick={() => acceptInvite(invite.id)}
+                      className="rounded-xl bg-green-400 px-5 py-2 font-bold text-black"
+                    >
+                      Prihvati
+                    </button>
+
+                    <button
+                      onClick={() => rejectInvite(invite.id)}
+                      className="rounded-xl border border-red-500/40 px-5 py-2 font-bold text-red-300"
+                    >
+                      Odbij
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
         </div>
       </div>
+
+      <section className="mt-8 rounded-3xl border border-white/10 bg-zinc-950/80 p-8">
+        <h2 className="text-3xl font-black text-yellow-400">Povijest</h2>
+
+        <p className="mt-2 text-zinc-400">
+          Ovdje su tvoji završeni mečevi i rezultati koje si igrao.
+        </p>
+
+        <div className="mt-6 space-y-4">
+          {finishedMatches.length === 0 && (
+            <div className="rounded-2xl bg-zinc-900 p-6 text-zinc-300">
+              Još nemaš odigranih mečeva.
+            </div>
+          )}
+
+          {finishedMatches.map((match) => (
+            <MatchCard key={match.id} match={match} />
+          ))}
+        </div>
+      </section>
     </main>
+  );
+}
+
+function MatchCard({
+  match,
+  showButtons = false
+}: {
+  match: any;
+  showButtons?: boolean;
+}) {
+  const scoreA =
+    match.team_a_score ?? match.score_a ?? match.points_a ?? match.result_a ?? 0;
+
+  const scoreB =
+    match.team_b_score ?? match.score_b ?? match.points_b ?? match.result_b ?? 0;
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-zinc-900 p-5">
+      <h3 className="text-2xl font-bold text-yellow-300">
+        {match.team_a_name} vs {match.team_b_name}
+      </h3>
+
+      <div className="mt-3 flex flex-wrap gap-3 text-sm">
+        <span className="rounded-full border border-white/10 bg-zinc-950 px-4 py-2 text-zinc-300">
+          Status: {match.status}
+        </span>
+
+        <span className="rounded-full border border-yellow-500/20 bg-yellow-500/10 px-4 py-2 font-bold text-yellow-300">
+          Rezultat: {scoreA} : {scoreB}
+        </span>
+      </div>
+
+      {match.created_at && (
+        <p className="mt-3 text-sm text-zinc-500">
+          Datum: {new Date(match.created_at).toLocaleString("hr-HR")}
+        </p>
+      )}
+
+      {showButtons && (
+        <div className="mt-5 flex flex-wrap gap-3">
+          <a
+            href={`/mec/${match.id}`}
+            className="rounded-xl bg-yellow-400 px-5 py-2 font-bold text-black"
+          >
+            Upiši rezultat
+          </a>
+
+          <a
+            href={`/live/${match.id}`}
+            className="rounded-xl border border-yellow-500/40 px-5 py-2 font-bold text-yellow-300"
+          >
+            Live prikaz
+          </a>
+        </div>
+      )}
+    </div>
   );
 }
 
