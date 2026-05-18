@@ -67,7 +67,7 @@ export default function NoviTurnirPage() {
           Admin
         </p>
 
-        <h1 className="text-5xl font-black text-yellow-400">
+        <h1 className="text-4xl font-black text-yellow-400 sm:text-5xl">
           Novi turnir
         </h1>
 
@@ -78,7 +78,7 @@ export default function NoviTurnirPage() {
 
       <form
         onSubmit={handleSubmit}
-        className="rounded-3xl border border-white/10 bg-zinc-950/80 p-8 shadow-2xl"
+        className="card shadow-2xl"
       >
         <div className="grid gap-5 md:grid-cols-2">
           <Field label="Naziv turnira">
@@ -168,7 +168,7 @@ export default function NoviTurnirPage() {
             </select>
           </Field>
 
-          <div className="md:col-span-2 rounded-2xl border border-white/10 bg-zinc-900 p-5">
+          <div className="md:col-span-2 card-soft">
             <label className="flex cursor-pointer items-center gap-3">
               <input
                 type="checkbox"

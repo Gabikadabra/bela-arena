@@ -125,7 +125,7 @@ export default function TournamentPage({
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-7xl px-6 py-12">
+      <main className="page">
         <p className="text-zinc-300">Učitavam turnir...</p>
       </main>
     );
@@ -133,7 +133,7 @@ export default function TournamentPage({
 
   if (!tournament) {
     return (
-      <main className="mx-auto max-w-7xl px-6 py-12">
+      <main className="page">
         <div className="rounded-3xl border border-red-500/30 bg-red-500/10 p-8 text-red-300">
           Turnir nije pronađen.
         </div>
@@ -142,15 +142,15 @@ export default function TournamentPage({
   }
 
   return (
-    <main className="mx-auto max-w-7xl px-6 py-12">
-      <section className="mb-10 rounded-3xl border border-yellow-500/20 bg-zinc-950/80 p-8 shadow-2xl">
+    <main className="page">
+      <section className="mb-10 card shadow-2xl">
         <p className="mb-4 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
           Javni turnir
         </p>
 
         <div className="flex flex-col justify-between gap-6 md:flex-row md:items-start">
           <div>
-            <h1 className="text-5xl font-black text-yellow-400">
+            <h1 className="text-4xl font-black text-yellow-400 sm:text-5xl">
               {tournament.name}
             </h1>
 
@@ -192,7 +192,7 @@ export default function TournamentPage({
         </div>
 
         {tournament.rules && (
-          <div className="mt-8 rounded-2xl bg-zinc-900 p-5 text-zinc-300">
+          <div className="mt-8 card-soft text-zinc-300">
             <b className="text-yellow-300">Pravila:</b>
             <p className="mt-2">{tournament.rules}</p>
           </div>
@@ -208,7 +208,7 @@ export default function TournamentPage({
 
       {liveMatches.length > 0 && (
         <section className="mb-10">
-          <h2 className="text-3xl font-black text-yellow-400">
+          <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">
             Live / aktivni mečevi
           </h2>
 
@@ -221,7 +221,7 @@ export default function TournamentPage({
       )}
 
       <section className="mb-10">
-        <h2 className="text-3xl font-black text-yellow-400">Ekipe</h2>
+        <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">Ekipe</h2>
 
         <div className="mt-5 grid gap-4 md:grid-cols-4">
           {approvedTeams.length === 0 && (
@@ -244,7 +244,7 @@ export default function TournamentPage({
 
       {Object.keys(groupedKnockout).length > 0 && (
         <section className="mb-10">
-          <h2 className="text-3xl font-black text-yellow-400">Bracket</h2>
+          <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">Bracket</h2>
 
           <div className="mt-5 overflow-x-auto pb-5">
             <div className="flex min-w-max gap-5">
@@ -270,7 +270,7 @@ export default function TournamentPage({
 
       {finishedMatches.length > 0 && (
         <section className="mb-10">
-          <h2 className="text-3xl font-black text-yellow-400">
+          <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">
             Završeni mečevi
           </h2>
 
@@ -284,7 +284,7 @@ export default function TournamentPage({
 
       {games.length > 0 && (
         <section>
-          <h2 className="text-3xl font-black text-yellow-400">
+          <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">
             Zadnja dijeljenja
           </h2>
 

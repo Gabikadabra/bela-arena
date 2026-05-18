@@ -64,7 +64,7 @@ export default function RegistracijaPage() {
           minLength={6}
         />
 
-        <button className="rounded-xl bg-yellow-400 px-6 py-3 font-bold text-black">
+        <button className="btn-primary">
           Registriraj se
         </button>
       </form>

@@ -46,7 +46,7 @@ export default function LoginPage() {
           required
         />
 
-        <button className="rounded-xl bg-yellow-400 px-6 py-3 font-bold text-black">
+        <button className="btn-primary">
           Prijavi se
         </button>
       </form>

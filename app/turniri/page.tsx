@@ -36,13 +36,13 @@ export default function TurniriPage() {
   }
 
   return (
-    <main className="mx-auto max-w-7xl px-6 py-12">
+    <main className="page">
       <div className="mb-10">
         <p className="mb-4 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
           Bela Arena
         </p>
 
-        <h1 className="text-5xl font-black text-yellow-400">
+        <h1 className="text-4xl font-black text-yellow-400 sm:text-5xl">
           Turniri
         </h1>
 
@@ -77,7 +77,7 @@ export default function TurniriPage() {
                   {tournament.status || "unknown"}
                 </span>
 
-                <h2 className="mt-4 text-3xl font-black text-yellow-400">
+                <h2 className="mt-4 text-2xl font-black text-yellow-400 sm:text-3xl">
                   {tournament.name}
                 </h2>
               </div>

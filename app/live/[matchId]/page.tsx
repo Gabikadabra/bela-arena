@@ -135,13 +135,13 @@ export default function LiveMatchPage({
   }
 
   return (
-    <main className="mx-auto max-w-7xl px-6 py-12">
+    <main className="page">
       <div className="mb-10 text-center">
         <p className="mb-4 inline-block rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-300">
           ● LIVE
         </p>
 
-        <h1 className="text-4xl font-black text-yellow-400 md:text-6xl">
+        <h1 className="text-2xl font-black text-yellow-400 sm:text-3xl sm:text-4xl md:text-6xl">
           {match.team_a_name} vs {match.team_b_name}
         </h1>
 
@@ -177,8 +177,8 @@ export default function LiveMatchPage({
       </section>
 
       {lastGame && (
-        <section className="mt-8 rounded-3xl border border-white/10 bg-zinc-950/80 p-8">
-          <h2 className="text-3xl font-black text-yellow-400">
+        <section className="mt-8 card">
+          <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">
             Zadnje dijeljenje
           </h2>
 
@@ -230,8 +230,8 @@ export default function LiveMatchPage({
       )}
 
       {sets.length > 0 && (
-        <section className="mt-8 rounded-3xl border border-white/10 bg-zinc-950/80 p-8">
-          <h2 className="text-3xl font-black text-yellow-400">
+        <section className="mt-8 card">
+          <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">
             Završeni setovi
           </h2>
 
@@ -241,7 +241,7 @@ export default function LiveMatchPage({
                 <p className="text-sm text-zinc-400">
                   Set {set.set_number}
                 </p>
-                <p className="mt-2 text-2xl font-black text-yellow-300">
+                <p className="mt-2 text-xl font-black text-yellow-300 sm:text-2xl">
                   {set.team_a_score} : {set.team_b_score}
                 </p>
               </div>
@@ -251,7 +251,7 @@ export default function LiveMatchPage({
       )}
 
       <section className="mt-8">
-        <h2 className="text-3xl font-black text-yellow-400">
+        <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">
           Povijest dijeljenja
         </h2>
 

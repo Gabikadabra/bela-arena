@@ -122,14 +122,14 @@ export default function AdminBracketPage({
   }
 
   return (
-    <main className="mx-auto max-w-7xl px-6 py-12">
+    <main className="page">
       <div className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
         <div>
           <p className="mb-4 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
             Admin bracket
           </p>
 
-          <h1 className="text-5xl font-black text-yellow-400">
+          <h1 className="text-4xl font-black text-yellow-400 sm:text-5xl">
             {tournament?.name || "Bracket"}
           </h1>
 

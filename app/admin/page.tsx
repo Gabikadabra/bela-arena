@@ -95,7 +95,7 @@ export default function AdminPage() {
   if (!isAdmin) {
     return (
       <main className="mx-auto max-w-xl px-6 py-20">
-        <div className="rounded-3xl border border-yellow-500/20 bg-zinc-950/80 p-8 shadow-2xl">
+        <div className="card shadow-2xl">
           <p className="mb-4 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
             Admin pristup
           </p>
@@ -128,14 +128,14 @@ export default function AdminPage() {
   );
 
   return (
-    <main className="mx-auto max-w-7xl px-6 py-12">
+    <main className="page">
       <div className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
         <div>
           <p className="mb-4 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
             Admin dashboard
           </p>
 
-          <h1 className="text-5xl font-black text-yellow-400">Admin panel</h1>
+          <h1 className="text-4xl font-black text-yellow-400 sm:text-5xl">Admin panel</h1>
 
           <p className="mt-3 max-w-2xl text-zinc-300">
             Upravljaj turnirima, prijavama, ždrijebom i rezultatima.
@@ -144,7 +144,7 @@ export default function AdminPage() {
 
         <button
           onClick={logoutAdmin}
-          className="rounded-xl border border-red-500/40 px-5 py-3 font-bold text-red-300 transition hover:bg-red-500/10"
+          className="btn-danger"
         >
           Odjava admina
         </button>
@@ -196,8 +196,8 @@ export default function AdminPage() {
         </a>
       </div>
 
-      <section className="rounded-3xl border border-white/10 bg-zinc-950/80 p-8">
-        <h2 className="text-3xl font-black text-yellow-400">
+      <section className="card">
+        <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">
           Prijave po turniru
         </h2>
 
@@ -227,7 +227,7 @@ export default function AdminPage() {
           <div className="mt-6 rounded-2xl bg-zinc-900 p-5">
             <p className="text-sm text-zinc-400">Trenutni turnir</p>
 
-            <h3 className="mt-1 text-2xl font-bold text-yellow-300">
+            <h3 className="mt-1 text-xl font-bold text-yellow-300 sm:text-2xl">
               {selectedTournamentData.name}
             </h3>
 
@@ -254,7 +254,7 @@ export default function AdminPage() {
             >
               <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
                 <div>
-                  <h3 className="text-2xl font-bold text-yellow-300">
+                  <h3 className="text-xl font-bold text-yellow-300 sm:text-2xl">
                     {team.name}
                   </h3>
 

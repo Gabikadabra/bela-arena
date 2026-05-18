@@ -253,13 +253,13 @@ export default function ZdrijebAdminPage() {
   }, {});
 
   return (
-    <main className="mx-auto max-w-7xl px-6 py-12">
+    <main className="page">
       <div className="mb-10">
         <p className="mb-4 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
           Admin ždrijeb
         </p>
 
-        <h1 className="text-5xl font-black text-yellow-400">
+        <h1 className="text-4xl font-black text-yellow-400 sm:text-5xl">
           Bracket engine
         </h1>
 
@@ -268,7 +268,7 @@ export default function ZdrijebAdminPage() {
         </p>
       </div>
 
-      <section className="rounded-3xl border border-white/10 bg-zinc-950/80 p-8">
+      <section className="card">
         <label className="mb-2 block text-sm font-bold text-yellow-300">
           Turnir
         </label>
@@ -319,7 +319,7 @@ export default function ZdrijebAdminPage() {
       </section>
 
       <section className="mt-10">
-        <h2 className="text-3xl font-black text-yellow-400">
+        <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">
           Potvrđene ekipe
         </h2>
 
@@ -338,7 +338,7 @@ export default function ZdrijebAdminPage() {
 
       {Object.keys(groupedStandings).length > 0 && (
         <section className="mt-10">
-          <h2 className="text-3xl font-black text-yellow-400">
+          <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">
             Tablice grupa
           </h2>
 
@@ -395,7 +395,7 @@ export default function ZdrijebAdminPage() {
 
       {knockoutMatches.length > 0 && (
         <section className="mt-10">
-          <h2 className="text-3xl font-black text-yellow-400">
+          <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">
             Knockout bracket
           </h2>
 
@@ -454,7 +454,7 @@ function Info({ title, value }: { title: string; value: any }) {
 function MatchList({ title, matches }: { title: string; matches: any[] }) {
   return (
     <section className="mt-10">
-      <h2 className="text-3xl font-black text-yellow-400">{title}</h2>
+      <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">{title}</h2>
 
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         {matches.map((match) => (
