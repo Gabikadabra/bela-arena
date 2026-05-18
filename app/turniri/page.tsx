@@ -148,12 +148,8 @@ export default function TurniriPage() {
                 Bracket
               </a>
 
-              <a
-                href={`/admin/zdrijeb`}
-                className="rounded-xl border border-white/10 px-5 py-3 font-bold text-zinc-200 transition hover:border-yellow-400"
-              >
-                Ždrijeb
-              </a>
+              
+              
             </div>
           </article>
         ))}
