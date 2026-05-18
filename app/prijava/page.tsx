@@ -69,6 +69,19 @@ export default function PrijavaPage() {
     }
 
     setLoading(true);
+    const { data: existingTeam } = await supabase
+  .from("teams")
+  .select("id, name")
+  .eq("tournament_id", form.tournamentId)
+  .eq("captain_user_id", user.id)
+  .maybeSingle();
+
+if (existingTeam) {
+  setMessageType("error");
+  setMessage("Već si prijavio ekipu za ovaj turnir.");
+  setLoading(false);
+  return;
+}
 
     const { error } = await supabase.from("teams").insert({
       tournament_id: form.tournamentId,
