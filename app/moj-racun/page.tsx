@@ -295,12 +295,7 @@ export default function MojRacunPage() {
                     {team.name || team.team_name || "Ekipa bez imena"}
                   </h3>
 
-                  <p className="mt-2 text-zinc-400">
-                    Status pozivnice:{" "}
-                    <span className="font-bold text-zinc-200">
-                      {team.invite_status || "nije postavljeno"}
-                    </span>
-                  </p>
+                  
 
                   {team.partner_email && (
                     <p className="mt-1 text-zinc-400">
