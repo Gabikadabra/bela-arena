@@ -9,7 +9,7 @@
             </p>
 
             <h1 className="max-w-4xl text-5xl font-black leading-tight md:text-7xl">
-              Zaigraj belu, prati rezultate i osvoji vrh ljestvice kao u esportu.
+              Zaigraj belu, prati rezultate i osvoji vrh ljestvice.
             </h1>
 
             <p className="mt-6 max-w-2xl text-lg text-zinc-300">
