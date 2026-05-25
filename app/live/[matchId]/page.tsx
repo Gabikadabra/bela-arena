@@ -92,6 +92,21 @@ export default function LiveMatchPage({
   }
 
   const currentSet = match?.current_set || 1;
+  const groupScoreLimit = tournament?.group_score_limit || tournament?.score_limit || 1001;
+  const knockoutScoreLimit = tournament?.knockout_score_limit || tournament?.score_limit || 1001;
+  const scoreLimit = match?.phase === "group" ? groupScoreLimit : knockoutScoreLimit;
+  const legacyBestOf = Number(String(tournament?.match_format || "best_of_1").replace("best_of_", "")) || 1;
+  const groupBestOf = Number(tournament?.group_best_of || 1);
+  const knockoutBestOf = Number(tournament?.knockout_best_of || legacyBestOf || 1);
+  const matchBestOf = match?.phase === "group" ? groupBestOf : knockoutBestOf;
+  const setsToWin = Math.ceil(matchBestOf / 2);
+
+  function prettyBestOf(bestOf: number) {
+    if (bestOf === 5) return "do 3 pobjede";
+    if (bestOf === 3) return "do 2 pobjede";
+    return "jedna partija";
+  }
+
   const currentSetGames = games.filter(
     (game) => Number(game.set_number) === Number(currentSet)
   );
@@ -146,7 +161,7 @@ export default function LiveMatchPage({
         </h1>
 
         <p className="mt-3 text-zinc-300">
-          Set {currentSet} · igra se do {tournament?.score_limit || 1001}
+          Set {currentSet} · {match?.phase === "group" ? "grupa" : "knockout"} do {scoreLimit} · {prettyBestOf(matchBestOf)} · treba {setsToWin} set(ova)
         </p>
       </div>
 
