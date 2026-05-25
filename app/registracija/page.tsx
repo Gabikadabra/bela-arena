@@ -105,7 +105,7 @@ export default function RegistracijaPage() {
       {message && <p className="mt-6 rounded-2xl border border-green-500/30 bg-green-500/10 p-4 text-green-300">{message}</p>}
 
         <p className="muted mt-6 text-center text-sm">
-          Već imaš račun? <a href="/login" className="font-black text-yellow-300">Prijavi se</a>
+          Već imaš račun? <a href="/login" className="font-black text-[#d4b06a]">Prijavi se</a>
         </p>
       </section>
     </main>

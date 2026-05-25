@@ -151,7 +151,7 @@ export default function MojRacunPage() {
     return (
       <main className="mx-auto max-w-xl px-6 py-20">
         <div className="card">
-          <h1 className="text-4xl font-black text-yellow-400">Moj račun</h1>
+          <h1 className="text-4xl font-black text-[#f3dfad]">Moj račun</h1>
 
           <p className="mt-4 text-zinc-300">
             Moraš se prijaviti da vidiš svoj račun.
@@ -181,11 +181,11 @@ export default function MojRacunPage() {
     <main className="page">
       <div className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
         <div>
-          <p className="mb-4 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
+          <p className="mb-4 inline-block rounded-full border border-[#d4b06a]/30 bg-[#d4b06a]/10 px-4 py-2 text-sm text-[#d4b06a]">
             Korisnički račun
           </p>
 
-          <h1 className="text-4xl font-black text-yellow-400 sm:text-5xl">Moj račun</h1>
+          <h1 className="text-4xl font-black text-[#f3dfad] sm:text-5xl">Moj račun</h1>
 
           <p className="mt-3 text-zinc-300">Prijavljen si kao: {user.email}</p>
         </div>
@@ -199,7 +199,7 @@ export default function MojRacunPage() {
       </div>
 
       <section className="mb-8 card">
-        <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">Moji mečevi</h2>
+        <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">Moji mečevi</h2>
 
         <p className="mt-2 text-zinc-400">
           Ovdje vidiš svoje aktivne mečeve i live rezultate.
@@ -220,7 +220,7 @@ export default function MojRacunPage() {
 
       <div className="grid gap-8 lg:grid-cols-[1fr_1fr]">
         <section className="card">
-          <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">Profil</h2>
+          <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">Profil</h2>
 
           <form onSubmit={saveProfile} className="mt-6 space-y-4">
             <Field label="Ime i prezime">
@@ -263,7 +263,7 @@ export default function MojRacunPage() {
               />
             </Field>
 
-            <button className="rounded-xl bg-yellow-400 px-8 py-4 font-black text-black">
+            <button className="rounded-xl bg-[#d4b06a] px-8 py-4 font-black text-black">
               Spremi profil
             </button>
           </form>
@@ -277,7 +277,7 @@ export default function MojRacunPage() {
 
         <div className="space-y-8">
           <section className="card">
-            <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">Moje ekipe</h2>
+            <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">Moje ekipe</h2>
 
             <div className="mt-6 space-y-4">
               {teams.length === 0 && (
@@ -291,7 +291,7 @@ export default function MojRacunPage() {
                   key={team.id}
                   className="card-soft"
                 >
-                  <h3 className="text-xl font-bold text-yellow-300 sm:text-2xl">
+                  <h3 className="text-xl font-bold text-[#d4b06a] sm:text-2xl">
                     {team.name || team.team_name || "Ekipa bez imena"}
                   </h3>
 
@@ -312,7 +312,7 @@ export default function MojRacunPage() {
       </div>
 
       <section className="mt-8 card">
-        <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">Povijest</h2>
+        <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">Povijest</h2>
 
         <p className="mt-2 text-zinc-400">
           Ovdje su tvoji završeni mečevi i rezultati koje si igrao.
@@ -349,16 +349,16 @@ function MatchCard({
 
   return (
     <div className="card-soft">
-      <h3 className="text-xl font-bold text-yellow-300 sm:text-2xl">
+      <h3 className="text-xl font-bold text-[#d4b06a] sm:text-2xl">
         {match.team_a_name} vs {match.team_b_name}
       </h3>
 
       <div className="mt-3 flex flex-wrap gap-3 text-sm">
-        <span className="rounded-full border border-white/10 bg-zinc-950 px-4 py-2 text-zinc-300">
+        <span className="rounded-full border border-[#d4b06a]/15 bg-[#0a2018] px-4 py-2 text-zinc-300">
           Status: {match.status}
         </span>
 
-        <span className="rounded-full border border-yellow-500/20 bg-yellow-500/10 px-4 py-2 font-bold text-yellow-300">
+        <span className="rounded-full border border-[#d4b06a]/20 bg-[#d4b06a]/10 px-4 py-2 font-bold text-[#d4b06a]">
           Rezultat: {scoreA} : {scoreB}
         </span>
       </div>
@@ -399,7 +399,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-bold text-yellow-300">
+      <span className="mb-2 block text-sm font-bold text-[#d4b06a]">
         {label}
       </span>
       {children}

@@ -150,8 +150,8 @@ export default function PrijavaPage() {
   if (!user) {
     return (
       <main className="mx-auto max-w-4xl px-6 py-16">
-        <div className="rounded-3xl border border-yellow-500/20 bg-zinc-950/80 p-10 shadow-2xl">
-          <h1 className="text-4xl font-black text-yellow-400 sm:text-5xl">
+        <div className="rounded-3xl border border-[#d4b06a]/20 bg-[#184332]/85 p-10 shadow-2xl">
+          <h1 className="text-4xl font-black text-[#f3dfad] sm:text-5xl">
             Prvo se prijavi
           </h1>
 
@@ -182,7 +182,7 @@ export default function PrijavaPage() {
   return (
     <main className="mx-auto max-w-5xl px-6 py-12">
       <div className="mb-10">
-        <h1 className="text-4xl font-black text-yellow-400 sm:text-5xl">
+        <h1 className="text-4xl font-black text-[#f3dfad] sm:text-5xl">
           Prijava ekipe
         </h1>
       </div>
@@ -284,7 +284,7 @@ export default function PrijavaPage() {
         <button
           type="submit"
           disabled={loading}
-          className="mt-8 rounded-xl bg-yellow-400 px-8 py-4 font-black text-black"
+          className="mt-8 rounded-xl bg-[#d4b06a] px-8 py-4 font-black text-black"
         >
           {loading ? "Šaljem..." : "Prijavi ekipu"}
         </button>
@@ -314,7 +314,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-bold text-yellow-300">
+      <span className="mb-2 block text-sm font-bold text-[#d4b06a]">
         {label}
       </span>
       {children}

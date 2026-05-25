@@ -40,7 +40,7 @@ export default function AuthCallbackPage() {
   return (
     <main className="page flex min-h-[70vh] items-center justify-center">
       <section className="card w-full max-w-md text-center">
-        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-yellow-400 text-3xl font-black text-black">
+        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#d4b06a] text-3xl font-black text-black">
           G
         </div>
 

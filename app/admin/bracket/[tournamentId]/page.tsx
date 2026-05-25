@@ -125,11 +125,11 @@ export default function AdminBracketPage({
     <main className="page">
       <div className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
         <div>
-          <p className="mb-4 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
+          <p className="mb-4 inline-block rounded-full border border-[#d4b06a]/30 bg-[#d4b06a]/10 px-4 py-2 text-sm text-[#d4b06a]">
             Admin bracket
           </p>
 
-          <h1 className="text-4xl font-black text-yellow-400 sm:text-5xl">
+          <h1 className="text-4xl font-black text-[#f3dfad] sm:text-5xl">
             {tournament?.name || "Bracket"}
           </h1>
 
@@ -140,14 +140,14 @@ export default function AdminBracketPage({
 
         <button
           onClick={autoAdvance}
-          className="rounded-xl bg-yellow-400 px-6 py-3 font-black text-black transition hover:bg-yellow-300"
+          className="rounded-xl bg-[#d4b06a] px-6 py-3 font-black text-black transition hover:bg-[#f3dfad]"
         >
           Auto advance winnera
         </button>
       </div>
 
       {message && (
-        <div className="mb-8 rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-5 text-yellow-300">
+        <div className="mb-8 rounded-2xl border border-[#d4b06a]/30 bg-[#d4b06a]/10 p-5 text-[#d4b06a]">
           {message}
         </div>
       )}
@@ -156,7 +156,7 @@ export default function AdminBracketPage({
         <div className="flex min-w-max gap-6">
           {Object.entries(rounds).map(([round, roundMatches]: any) => (
             <div key={round} className="w-80 shrink-0">
-              <h2 className="mb-5 text-2xl font-black text-yellow-400">
+              <h2 className="mb-5 text-2xl font-black text-[#f3dfad]">
                 {roundTitle(Number(round))}
               </h2>
 
@@ -188,7 +188,7 @@ function BracketMatch({
   const isLive = match.status === "scheduled";
 
   return (
-    <div className="relative rounded-2xl border border-white/10 bg-zinc-950 p-4 shadow-xl">
+    <div className="relative rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-4 shadow-xl">
       <div className="mb-3 flex items-center justify-between">
         <p className="text-xs text-zinc-500">
           Meč {match.match_number}
@@ -199,8 +199,8 @@ function BracketMatch({
             isFinished
               ? "bg-green-500/20 text-green-300"
               : isLive
-              ? "bg-yellow-500/20 text-yellow-300"
-              : "bg-zinc-800 text-zinc-400"
+              ? "bg-[#d4b06a]/20 text-[#d4b06a]"
+              : "bg-[#21503d] text-zinc-400"
           }`}
         >
           {match.status}
@@ -228,14 +228,14 @@ function BracketMatch({
       <div className="mt-4 flex gap-2">
         <a
           href={`/live/${match.id}`}
-          className="flex-1 rounded-xl border border-yellow-500/30 px-3 py-2 text-center text-sm font-bold text-yellow-300 transition hover:bg-yellow-500/10"
+          className="flex-1 rounded-xl border border-[#d4b06a]/30 px-3 py-2 text-center text-sm font-bold text-[#d4b06a] transition hover:bg-[#d4b06a]/10"
         >
           Live
         </a>
 
         <a
           href={`/mec/${match.id}`}
-          className="flex-1 rounded-xl bg-yellow-400 px-3 py-2 text-center text-sm font-bold text-black transition hover:bg-yellow-300"
+          className="flex-1 rounded-xl bg-[#d4b06a] px-3 py-2 text-center text-sm font-bold text-black transition hover:bg-[#f3dfad]"
         >
           Blok
         </a>
@@ -258,7 +258,7 @@ function TeamRow({
       className={`mb-2 flex items-center justify-between rounded-xl p-3 ${
         winner
           ? "bg-green-500/20 text-green-300"
-          : "bg-zinc-900 text-zinc-200"
+          : "bg-[#12392b] text-zinc-200"
       }`}
     >
       <span className="font-bold">{name}</span>

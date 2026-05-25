@@ -96,11 +96,11 @@ export default function AdminPage() {
     return (
       <main className="mx-auto max-w-xl px-6 py-20">
         <div className="card shadow-2xl">
-          <p className="mb-4 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
+          <p className="mb-4 inline-block rounded-full border border-[#d4b06a]/30 bg-[#d4b06a]/10 px-4 py-2 text-sm text-[#d4b06a]">
             Admin pristup
           </p>
 
-          <h1 className="text-4xl font-black text-yellow-400">
+          <h1 className="text-4xl font-black text-[#f3dfad]">
             Unesi admin lozinku
           </h1>
 
@@ -114,7 +114,7 @@ export default function AdminPage() {
               required
             />
 
-            <button className="rounded-xl bg-yellow-400 px-8 py-4 font-black text-black transition hover:bg-yellow-300">
+            <button className="rounded-xl bg-[#d4b06a] px-8 py-4 font-black text-black transition hover:bg-[#f3dfad]">
               Uđi u admin
             </button>
           </form>
@@ -131,11 +131,11 @@ export default function AdminPage() {
     <main className="page">
       <div className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
         <div>
-          <p className="mb-4 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
+          <p className="mb-4 inline-block rounded-full border border-[#d4b06a]/30 bg-[#d4b06a]/10 px-4 py-2 text-sm text-[#d4b06a]">
             Admin dashboard
           </p>
 
-          <h1 className="text-4xl font-black text-yellow-400 sm:text-5xl">Admin panel</h1>
+          <h1 className="text-4xl font-black text-[#f3dfad] sm:text-5xl">Admin panel</h1>
 
           <p className="mt-3 max-w-2xl text-zinc-300">
             Upravljaj turnirima, prijavama, ždrijebom i rezultatima.
@@ -153,33 +153,33 @@ export default function AdminPage() {
       <div className="mb-10 grid gap-4 md:grid-cols-5">
         <a
           href="/admin/novi-turnir"
-          className="rounded-2xl border border-white/10 bg-zinc-950 p-6 font-bold transition hover:border-yellow-400 hover:bg-yellow-500/10"
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
         >
-          <span className="block text-2xl text-yellow-300">+</span>
+          <span className="block text-2xl text-[#d4b06a]">+</span>
           Novi turnir
         </a>
 
         <a
           href="/admin"
-          className="rounded-2xl border border-white/10 bg-zinc-950 p-6 font-bold transition hover:border-yellow-400 hover:bg-yellow-500/10"
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
         >
-          <span className="block text-2xl text-yellow-300">{teams.length}</span>
+          <span className="block text-2xl text-[#d4b06a]">{teams.length}</span>
           Prijave
         </a>
 
         <a
           href="/admin/zdrijeb"
-          className="rounded-2xl border border-white/10 bg-zinc-950 p-6 font-bold transition hover:border-yellow-400 hover:bg-yellow-500/10"
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
         >
-          <span className="block text-2xl text-yellow-300">🎲</span>
+          <span className="block text-2xl text-[#d4b06a]">🎲</span>
           Ždrijeb
         </a>
 
         <a
           href="/admin/rezultati"
-          className="rounded-2xl border border-white/10 bg-zinc-950 p-6 font-bold transition hover:border-yellow-400 hover:bg-yellow-500/10"
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
         >
-          <span className="block text-2xl text-yellow-300">🏆</span>
+          <span className="block text-2xl text-[#d4b06a]">🏆</span>
           Rezultati
         </a>
 
@@ -189,15 +189,15 @@ export default function AdminPage() {
               ? `/admin/bracket/${selectedTournament}`
               : "/admin"
           }
-          className="rounded-2xl border border-white/10 bg-zinc-950 p-6 font-bold transition hover:border-yellow-400 hover:bg-yellow-500/10"
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
         >
-          <span className="block text-2xl text-yellow-300">🏁</span>
+          <span className="block text-2xl text-[#d4b06a]">🏁</span>
           Bracket
         </a>
       </div>
 
       <section className="card">
-        <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">
+        <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">
           Prijave po turniru
         </h2>
 
@@ -206,7 +206,7 @@ export default function AdminPage() {
         </p>
 
         <div className="mt-6">
-          <label className="mb-2 block text-sm font-bold text-yellow-300">
+          <label className="mb-2 block text-sm font-bold text-[#d4b06a]">
             Odaberi turnir
           </label>
 
@@ -224,10 +224,10 @@ export default function AdminPage() {
         </div>
 
         {selectedTournamentData && (
-          <div className="mt-6 rounded-2xl bg-zinc-900 p-5">
+          <div className="mt-6 rounded-2xl bg-[#12392b] p-5">
             <p className="text-sm text-zinc-400">Trenutni turnir</p>
 
-            <h3 className="mt-1 text-xl font-bold text-yellow-300 sm:text-2xl">
+            <h3 className="mt-1 text-xl font-bold text-[#d4b06a] sm:text-2xl">
               {selectedTournamentData.name}
             </h3>
 
@@ -242,7 +242,7 @@ export default function AdminPage() {
           {loading && <p>Učitavam...</p>}
 
           {!loading && teams.length === 0 && (
-            <div className="rounded-2xl bg-zinc-900 p-6">
+            <div className="rounded-2xl bg-[#12392b] p-6">
               Nema prijavljenih ekipa za ovaj turnir.
             </div>
           )}
@@ -250,11 +250,11 @@ export default function AdminPage() {
           {teams.map((team) => (
             <div
               key={team.id}
-              className="rounded-2xl border border-white/10 bg-zinc-900 p-6"
+              className="rounded-2xl border border-[#d4b06a]/15 bg-[#12392b] p-6"
             >
               <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
                 <div>
-                  <h3 className="text-xl font-bold text-yellow-300 sm:text-2xl">
+                  <h3 className="text-xl font-bold text-[#d4b06a] sm:text-2xl">
                     {team.name}
                   </h3>
 
@@ -280,7 +280,7 @@ export default function AdminPage() {
                         ? "bg-green-500/20 text-green-300"
                         : team.status === "rejected"
                         ? "bg-red-500/20 text-red-300"
-                        : "bg-yellow-500/20 text-yellow-300"
+                        : "bg-[#d4b06a]/20 text-[#d4b06a]"
                     }`}
                   >
                     {team.status}

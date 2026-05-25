@@ -400,11 +400,11 @@ export default function MecPage({ params }: PageProps) {
     <main className="page">
       <div className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
         <div>
-          <p className="mb-4 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
+          <p className="mb-4 inline-block rounded-full border border-[#d4b06a]/30 bg-[#d4b06a]/10 px-4 py-2 text-sm text-[#d4b06a]">
             Pametni live Bela blok
           </p>
 
-          <h1 className="text-2xl font-black text-yellow-400 sm:text-3xl sm:text-4xl md:text-5xl">
+          <h1 className="text-2xl font-black text-[#f3dfad] sm:text-3xl sm:text-4xl md:text-5xl">
             {match.team_a_name} vs {match.team_b_name}
           </h1>
 
@@ -413,9 +413,9 @@ export default function MecPage({ params }: PageProps) {
           </p>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-zinc-950 p-5 text-right">
+        <div className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-5 text-right">
           <p className="text-sm text-zinc-400">Status meča</p>
-          <p className="mt-1 text-2xl font-black text-yellow-400">
+          <p className="mt-1 text-2xl font-black text-[#f3dfad]">
             {isFinished ? "Završen" : "U tijeku"}
           </p>
         </div>
@@ -430,13 +430,13 @@ export default function MecPage({ params }: PageProps) {
 
       {sets.length > 0 && (
         <section className="mb-8 card">
-          <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">Završeni setovi</h2>
+          <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">Završeni setovi</h2>
 
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             {sets.map((set) => (
-              <div key={set.id} className="rounded-2xl bg-zinc-900 p-5">
+              <div key={set.id} className="rounded-2xl bg-[#12392b] p-5">
                 <p className="text-sm text-zinc-400">Set {set.set_number}</p>
-                <p className="mt-2 text-xl font-black text-yellow-300 sm:text-2xl">
+                <p className="mt-2 text-xl font-black text-[#d4b06a] sm:text-2xl">
                   {set.team_a_score} : {set.team_b_score}
                 </p>
                 <p className="mt-2 text-sm text-zinc-400">Status: {set.status}</p>
@@ -447,7 +447,7 @@ export default function MecPage({ params }: PageProps) {
       )}
 
       {!user && (
-        <div className="mb-8 rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-5 text-yellow-300">
+        <div className="mb-8 rounded-2xl border border-[#d4b06a]/30 bg-[#d4b06a]/10 p-5 text-[#d4b06a]">
           Moraš biti prijavljen za upis dijeljenja.
         </div>
       )}
@@ -458,29 +458,29 @@ export default function MecPage({ params }: PageProps) {
       >
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">Novo dijeljenje</h2>
+            <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">Novo dijeljenje</h2>
             <p className="mt-2 text-zinc-400">
               Upiši samo štihove ekipe A. Druga ekipa se računa automatski: 162 - štihovi ekipe A.
             </p>
           </div>
 
-          <div className="rounded-2xl bg-zinc-900 p-4 text-sm text-zinc-300">
-            Nakon ovog unosa: <b className="text-yellow-300">{afterSubmitA}</b> :{" "}
-            <b className="text-yellow-300">{afterSubmitB}</b>
+          <div className="rounded-2xl bg-[#12392b] p-4 text-sm text-zinc-300">
+            Nakon ovog unosa: <b className="text-[#d4b06a]">{afterSubmitA}</b> :{" "}
+            <b className="text-[#d4b06a]">{afterSubmitB}</b>
           </div>
         </div>
 
         <div className="mt-6 grid gap-5 md:grid-cols-2">
           <div className="md:col-span-2">
-            <label className="mb-2 block text-sm font-bold text-yellow-300">Tko je zvao?</label>
+            <label className="mb-2 block text-sm font-bold text-[#d4b06a]">Tko je zvao?</label>
             <div className="grid gap-3 md:grid-cols-2">
               <button
                 type="button"
                 onClick={() => setForm({ ...form, callerTeam: "A" })}
                 className={`rounded-2xl border p-5 font-black transition ${
                   form.callerTeam === "A"
-                    ? "border-yellow-400 bg-yellow-400 text-black"
-                    : "border-white/10 bg-zinc-900 text-white hover:border-yellow-400"
+                    ? "border-[#f3dfad] bg-[#d4b06a] text-black"
+                    : "border-[#d4b06a]/15 bg-[#12392b] text-white hover:border-[#f3dfad]"
                 }`}
               >
                 {match.team_a_name}
@@ -491,8 +491,8 @@ export default function MecPage({ params }: PageProps) {
                 onClick={() => setForm({ ...form, callerTeam: "B" })}
                 className={`rounded-2xl border p-5 font-black transition ${
                   form.callerTeam === "B"
-                    ? "border-yellow-400 bg-yellow-400 text-black"
-                    : "border-white/10 bg-zinc-900 text-white hover:border-yellow-400"
+                    ? "border-[#f3dfad] bg-[#d4b06a] text-black"
+                    : "border-[#d4b06a]/15 bg-[#12392b] text-white hover:border-[#f3dfad]"
                 }`}
               >
                 {match.team_b_name}
@@ -553,7 +553,7 @@ export default function MecPage({ params }: PageProps) {
               onChange={(event) => setForm({ ...form, teamABela: event.target.checked })}
               className="h-5 w-5"
             />
-            <span className="font-bold text-yellow-300">Bela za {match.team_a_name}</span>
+            <span className="font-bold text-[#d4b06a]">Bela za {match.team_a_name}</span>
           </label>
 
           <label className="flex cursor-pointer items-center gap-3 card-soft">
@@ -563,11 +563,11 @@ export default function MecPage({ params }: PageProps) {
               onChange={(event) => setForm({ ...form, teamBBela: event.target.checked })}
               className="h-5 w-5"
             />
-            <span className="font-bold text-yellow-300">Bela za {match.team_b_name}</span>
+            <span className="font-bold text-[#d4b06a]">Bela za {match.team_b_name}</span>
           </label>
 
           <div className="md:col-span-2 card-soft">
-            <h3 className="text-xl font-black text-yellow-300">Pregled obračuna</h3>
+            <h3 className="text-xl font-black text-[#d4b06a]">Pregled obračuna</h3>
             <div className="mt-4 grid gap-3 md:grid-cols-3">
               <PreviewBox title="Normalno A" value={preview.normalA} />
               <PreviewBox title="Normalno B" value={preview.normalB} />
@@ -593,7 +593,7 @@ export default function MecPage({ params }: PageProps) {
         <button
           type="submit"
           disabled={saving || !user || isFinished}
-          className="mt-8 rounded-xl bg-yellow-400 px-8 py-4 font-black text-black transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-8 rounded-xl bg-[#d4b06a] px-8 py-4 font-black text-black transition hover:bg-[#f3dfad] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving ? "Spremam..." : "Dodaj dijeljenje"}
         </button>
@@ -612,36 +612,36 @@ export default function MecPage({ params }: PageProps) {
       )}
 
       <section className="mt-10">
-        <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">Povijest dijeljenja</h2>
+        <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">Povijest dijeljenja</h2>
 
         <div className="mt-5 space-y-4">
           {games.length === 0 && (
-            <div className="rounded-2xl border border-white/10 bg-zinc-950 p-6 text-zinc-300">
+            <div className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 text-zinc-300">
               Još nema upisanih dijeljenja.
             </div>
           )}
 
           {games.map((game) => (
-            <div key={game.id} className="rounded-2xl border border-white/10 bg-zinc-950 p-5">
+            <div key={game.id} className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-5">
               <p className="text-sm text-zinc-500">
                 Set {game.set_number} · Dijeljenje {game.game_number}
               </p>
 
               <div className="mt-3 grid gap-3 md:grid-cols-2">
-                <div className="rounded-xl bg-zinc-900 p-4">
-                  <b className="text-yellow-300">{match.team_a_name}</b>
+                <div className="rounded-xl bg-[#12392b] p-4">
+                  <b className="text-[#d4b06a]">{match.team_a_name}</b>
                   <p className="mt-2 text-zinc-300">Štihovi: {game.team_a_tricks}</p>
                   <p className="text-zinc-300">Zvanja: {game.team_a_declarations}</p>
                   <p className="text-zinc-300">Bela: {game.team_a_bela ? "Da" : "Ne"}</p>
-                  <p className="mt-2 font-bold text-yellow-300">Ukupno: {game.team_a_total}</p>
+                  <p className="mt-2 font-bold text-[#d4b06a]">Ukupno: {game.team_a_total}</p>
                 </div>
 
-                <div className="rounded-xl bg-zinc-900 p-4">
-                  <b className="text-yellow-300">{match.team_b_name}</b>
+                <div className="rounded-xl bg-[#12392b] p-4">
+                  <b className="text-[#d4b06a]">{match.team_b_name}</b>
                   <p className="mt-2 text-zinc-300">Štihovi: {game.team_b_tricks}</p>
                   <p className="text-zinc-300">Zvanja: {game.team_b_declarations}</p>
                   <p className="text-zinc-300">Bela: {game.team_b_bela ? "Da" : "Ne"}</p>
-                  <p className="mt-2 font-bold text-yellow-300">Ukupno: {game.team_b_total}</p>
+                  <p className="mt-2 font-bold text-[#d4b06a]">Ukupno: {game.team_b_total}</p>
                 </div>
               </div>
 
@@ -665,9 +665,9 @@ export default function MecPage({ params }: PageProps) {
 
 function Info({ title, value, subtitle }: { title: string; value: any; subtitle?: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-zinc-950 p-6">
+    <div className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6">
       <p className="text-sm text-zinc-400">{title}</p>
-      <p className="mt-2 text-4xl font-black text-yellow-400">{value}</p>
+      <p className="mt-2 text-4xl font-black text-[#f3dfad]">{value}</p>
       {subtitle && <p className="mt-1 text-sm text-zinc-500">{subtitle}</p>}
     </div>
   );
@@ -675,7 +675,7 @@ function Info({ title, value, subtitle }: { title: string; value: any; subtitle?
 
 function PreviewBox({ title, value, danger }: { title: string; value: any; danger?: boolean }) {
   return (
-    <div className={`rounded-xl p-4 ${danger ? "bg-red-500/10 text-red-300" : "bg-black/30 text-zinc-200"}`}>
+    <div className={`rounded-xl p-4 ${danger ? "bg-red-500/10 text-red-300" : "bg-[#0a2018]/45 text-zinc-200"}`}>
       <p className="text-xs text-zinc-400">{title}</p>
       <p className="mt-1 text-xl font-black">{value}</p>
     </div>
@@ -685,7 +685,7 @@ function PreviewBox({ title, value, danger }: { title: string; value: any; dange
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-bold text-yellow-300">{label}</span>
+      <span className="mb-2 block text-sm font-bold text-[#d4b06a]">{label}</span>
       {children}
     </label>
   );

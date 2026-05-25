@@ -63,11 +63,11 @@ export default function NoviTurnirPage() {
   return (
     <main className="mx-auto max-w-5xl px-6 py-12">
       <div className="mb-10">
-        <p className="mb-4 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
+        <p className="mb-4 inline-block rounded-full border border-[#d4b06a]/30 bg-[#d4b06a]/10 px-4 py-2 text-sm text-[#d4b06a]">
           Admin
         </p>
 
-        <h1 className="text-4xl font-black text-yellow-400 sm:text-5xl">
+        <h1 className="text-4xl font-black text-[#f3dfad] sm:text-5xl">
           Novi turnir
         </h1>
 
@@ -176,7 +176,7 @@ export default function NoviTurnirPage() {
                 onChange={(e) => setForm({ ...form, hasRepechage: e.target.checked })}
                 className="h-5 w-5"
               />
-              <span className="font-bold text-yellow-300">
+              <span className="font-bold text-[#d4b06a]">
                 Uključi repešaž
               </span>
             </label>
@@ -202,14 +202,14 @@ export default function NoviTurnirPage() {
           <button
             type="submit"
             disabled={loading}
-            className="rounded-xl bg-yellow-400 px-8 py-4 font-black text-black transition hover:bg-yellow-300 disabled:opacity-50"
+            className="rounded-xl bg-[#d4b06a] px-8 py-4 font-black text-black transition hover:bg-[#f3dfad] disabled:opacity-50"
           >
             {loading ? "Spremam..." : "Kreiraj turnir"}
           </button>
 
           <a
             href="/admin"
-            className="rounded-xl border border-yellow-500/40 px-8 py-4 font-bold text-yellow-300 transition hover:bg-yellow-500/10"
+            className="rounded-xl border border-[#d4b06a]/40 px-8 py-4 font-bold text-[#d4b06a] transition hover:bg-[#d4b06a]/10"
           >
             Nazad na admin
           </a>
@@ -234,7 +234,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-bold text-yellow-300">
+      <span className="mb-2 block text-sm font-bold text-[#d4b06a]">
         {label}
       </span>
       {children}

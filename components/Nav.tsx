@@ -24,15 +24,15 @@ export default function Nav() {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-yellow-500/10 bg-black/75 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-[#d4b06a]/10 bg-[#0a2018]/85 backdrop-blur-xl">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
         <Link href="/" className="group flex items-center gap-3" onClick={() => setOpen(false)}>
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-yellow-500/30 bg-yellow-500/10 text-xl font-black text-yellow-300 shadow-[0_0_25px_rgba(250,204,21,0.12)] transition group-hover:scale-105">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#d4b06a]/30 bg-[#d4b06a]/10 text-xl font-black text-[#d4b06a] shadow-[0_0_25px_rgba(212,176,106,0.16)] transition group-hover:scale-105">
             BA
           </div>
 
           <div className="leading-tight">
-            <p className="text-lg font-black text-yellow-400">Bela Arena</p>
+            <p className="text-lg font-black text-[#f3dfad]">Bela Arena</p>
             <p className="hidden text-xs font-bold uppercase tracking-[0.22em] text-zinc-500 sm:block">
               Turnir platforma
             </p>
@@ -46,8 +46,8 @@ export default function Nav() {
               href={link.href}
               className={`rounded-xl px-4 py-2 text-sm font-black transition ${
                 isActive(link.href)
-                  ? "bg-yellow-400 text-black shadow-[0_0_24px_rgba(250,204,21,0.16)]"
-                  : "text-zinc-300 hover:bg-yellow-500/10 hover:text-yellow-300"
+                  ? "bg-[#d4b06a] text-black shadow-[0_0_24px_rgba(212,176,106,0.18)]"
+                  : "text-zinc-300 hover:bg-[#d4b06a]/10 hover:text-[#d4b06a]"
               }`}
             >
               {link.label}
@@ -58,7 +58,7 @@ export default function Nav() {
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-yellow-500/30 bg-yellow-500/10 text-yellow-300 transition hover:bg-yellow-500/20 lg:hidden"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#d4b06a]/30 bg-[#d4b06a]/10 text-[#d4b06a] transition hover:bg-[#d4b06a]/20 lg:hidden"
           aria-label={open ? "Zatvori meni" : "Otvori meni"}
           aria-expanded={open}
         >
@@ -83,7 +83,7 @@ export default function Nav() {
       </nav>
 
       {open && (
-        <div className="border-t border-yellow-500/10 bg-zinc-950/98 px-4 pb-5 pt-3 shadow-2xl lg:hidden">
+        <div className="border-t border-[#d4b06a]/10 bg-[#0a2018]/95 px-4 pb-5 pt-3 shadow-2xl lg:hidden">
           <div className="mx-auto grid max-w-7xl gap-2">
             {navLinks.map((link) => (
               <Link
@@ -92,8 +92,8 @@ export default function Nav() {
                 onClick={() => setOpen(false)}
                 className={`flex items-center justify-between rounded-2xl border px-4 py-4 text-base font-black transition ${
                   isActive(link.href)
-                    ? "border-yellow-400/50 bg-yellow-400 text-black"
-                    : "border-white/10 bg-black/30 text-zinc-200 hover:border-yellow-500/30 hover:bg-yellow-500/10 hover:text-yellow-300"
+                    ? "border-[#f3dfad]/50 bg-[#d4b06a] text-black"
+                    : "border-[#d4b06a]/15 bg-[#0a2018]/45 text-zinc-200 hover:border-[#d4b06a]/30 hover:bg-[#d4b06a]/10 hover:text-[#d4b06a]"
                 }`}
               >
                 <span>{link.label}</span>

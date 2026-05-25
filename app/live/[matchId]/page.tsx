@@ -141,7 +141,7 @@ export default function LiveMatchPage({
           ● LIVE
         </p>
 
-        <h1 className="text-2xl font-black text-yellow-400 sm:text-3xl sm:text-4xl md:text-6xl">
+        <h1 className="text-2xl font-black text-[#f3dfad] sm:text-3xl sm:text-4xl md:text-6xl">
           {match.team_a_name} vs {match.team_b_name}
         </h1>
 
@@ -151,11 +151,11 @@ export default function LiveMatchPage({
       </div>
 
       <section className="grid gap-6 md:grid-cols-2">
-        <div className="rounded-3xl border border-yellow-500/20 bg-zinc-950 p-8 text-center">
+        <div className="rounded-3xl border border-[#d4b06a]/20 bg-[#0a2018] p-8 text-center">
           <p className="text-xl font-bold text-zinc-300">
             {match.team_a_name}
           </p>
-          <p className="mt-5 text-7xl font-black text-yellow-400">
+          <p className="mt-5 text-7xl font-black text-[#f3dfad]">
             {totalA}
           </p>
           <p className="mt-3 text-zinc-500">
@@ -163,11 +163,11 @@ export default function LiveMatchPage({
           </p>
         </div>
 
-        <div className="rounded-3xl border border-yellow-500/20 bg-zinc-950 p-8 text-center">
+        <div className="rounded-3xl border border-[#d4b06a]/20 bg-[#0a2018] p-8 text-center">
           <p className="text-xl font-bold text-zinc-300">
             {match.team_b_name}
           </p>
-          <p className="mt-5 text-7xl font-black text-yellow-400">
+          <p className="mt-5 text-7xl font-black text-[#f3dfad]">
             {totalB}
           </p>
           <p className="mt-3 text-zinc-500">
@@ -178,13 +178,13 @@ export default function LiveMatchPage({
 
       {lastGame && (
         <section className="mt-8 card">
-          <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">
+          <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">
             Zadnje dijeljenje
           </h2>
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <div className="rounded-2xl bg-zinc-900 p-5">
-              <p className="font-bold text-yellow-300">{match.team_a_name}</p>
+            <div className="rounded-2xl bg-[#12392b] p-5">
+              <p className="font-bold text-[#d4b06a]">{match.team_a_name}</p>
               <p className="mt-2 text-3xl font-black">
                 +{lastGame.team_a_total}
               </p>
@@ -195,8 +195,8 @@ export default function LiveMatchPage({
               </p>
             </div>
 
-            <div className="rounded-2xl bg-zinc-900 p-5">
-              <p className="font-bold text-yellow-300">{match.team_b_name}</p>
+            <div className="rounded-2xl bg-[#12392b] p-5">
+              <p className="font-bold text-[#d4b06a]">{match.team_b_name}</p>
               <p className="mt-2 text-3xl font-black">
                 +{lastGame.team_b_total}
               </p>
@@ -231,17 +231,17 @@ export default function LiveMatchPage({
 
       {sets.length > 0 && (
         <section className="mt-8 card">
-          <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">
+          <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">
             Završeni setovi
           </h2>
 
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             {sets.map((set) => (
-              <div key={set.id} className="rounded-2xl bg-zinc-900 p-5">
+              <div key={set.id} className="rounded-2xl bg-[#12392b] p-5">
                 <p className="text-sm text-zinc-400">
                   Set {set.set_number}
                 </p>
-                <p className="mt-2 text-xl font-black text-yellow-300 sm:text-2xl">
+                <p className="mt-2 text-xl font-black text-[#d4b06a] sm:text-2xl">
                   {set.team_a_score} : {set.team_b_score}
                 </p>
               </div>
@@ -251,7 +251,7 @@ export default function LiveMatchPage({
       )}
 
       <section className="mt-8">
-        <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">
+        <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">
           Povijest dijeljenja
         </h2>
 
@@ -262,7 +262,7 @@ export default function LiveMatchPage({
             .map((game) => (
               <div
                 key={game.id}
-                className="rounded-2xl border border-white/10 bg-zinc-950 p-5"
+                className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-5"
               >
                 <p className="text-sm text-zinc-500">
                   Set {game.set_number} · Dijeljenje {game.game_number}

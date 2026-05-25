@@ -144,13 +144,13 @@ export default function TournamentPage({
   return (
     <main className="page">
       <section className="mb-10 card shadow-2xl">
-        <p className="mb-4 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
+        <p className="mb-4 inline-block rounded-full border border-[#d4b06a]/30 bg-[#d4b06a]/10 px-4 py-2 text-sm text-[#d4b06a]">
           Javni turnir
         </p>
 
         <div className="flex flex-col justify-between gap-6 md:flex-row md:items-start">
           <div>
-            <h1 className="text-4xl font-black text-yellow-400 sm:text-5xl">
+            <h1 className="text-4xl font-black text-[#f3dfad] sm:text-5xl">
               {tournament.name}
             </h1>
 
@@ -176,7 +176,7 @@ export default function TournamentPage({
             {tournament.status === "open" && (
               <a
                 href="/prijava"
-                className="rounded-xl bg-yellow-400 px-6 py-3 text-center font-black text-black transition hover:bg-yellow-300"
+                className="rounded-xl bg-[#d4b06a] px-6 py-3 text-center font-black text-black transition hover:bg-[#f3dfad]"
               >
                 Prijavi ekipu
               </a>
@@ -184,7 +184,7 @@ export default function TournamentPage({
 
             <a
               href="/turniri"
-              className="rounded-xl border border-yellow-500/40 px-6 py-3 text-center font-bold text-yellow-300 transition hover:bg-yellow-500/10"
+              className="rounded-xl border border-[#d4b06a]/40 px-6 py-3 text-center font-bold text-[#d4b06a] transition hover:bg-[#d4b06a]/10"
             >
               Svi turniri
             </a>
@@ -193,7 +193,7 @@ export default function TournamentPage({
 
         {tournament.rules && (
           <div className="mt-8 card-soft text-zinc-300">
-            <b className="text-yellow-300">Pravila:</b>
+            <b className="text-[#d4b06a]">Pravila:</b>
             <p className="mt-2">{tournament.rules}</p>
           </div>
         )}
@@ -208,7 +208,7 @@ export default function TournamentPage({
 
       {liveMatches.length > 0 && (
         <section className="mb-10">
-          <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">
+          <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">
             Live / aktivni mečevi
           </h2>
 
@@ -221,11 +221,11 @@ export default function TournamentPage({
       )}
 
       <section className="mb-10">
-        <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">Ekipe</h2>
+        <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">Ekipe</h2>
 
         <div className="mt-5 grid gap-4 md:grid-cols-4">
           {approvedTeams.length === 0 && (
-            <div className="rounded-2xl bg-zinc-950 p-6 text-zinc-300">
+            <div className="rounded-2xl bg-[#0a2018] p-6 text-zinc-300">
               Još nema potvrđenih ekipa.
             </div>
           )}
@@ -233,9 +233,9 @@ export default function TournamentPage({
           {approvedTeams.map((team) => (
             <div
               key={team.id}
-              className="rounded-2xl border border-white/10 bg-zinc-950 p-5"
+              className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-5"
             >
-              <h3 className="font-bold text-yellow-300">{team.name}</h3>
+              <h3 className="font-bold text-[#d4b06a]">{team.name}</h3>
               <p className="text-sm text-zinc-400">{team.city}</p>
             </div>
           ))}
@@ -244,14 +244,14 @@ export default function TournamentPage({
 
       {Object.keys(groupedKnockout).length > 0 && (
         <section className="mb-10">
-          <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">Bracket</h2>
+          <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">Bracket</h2>
 
           <div className="mt-5 overflow-x-auto pb-5">
             <div className="flex min-w-max gap-5">
               {Object.entries(groupedKnockout).map(
                 ([round, roundMatches]: any) => (
                   <div key={round} className="w-80 shrink-0">
-                    <h3 className="mb-4 text-xl font-bold text-yellow-300">
+                    <h3 className="mb-4 text-xl font-bold text-[#d4b06a]">
                       Runda {round}
                     </h3>
 
@@ -270,7 +270,7 @@ export default function TournamentPage({
 
       {finishedMatches.length > 0 && (
         <section className="mb-10">
-          <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">
+          <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">
             Završeni mečevi
           </h2>
 
@@ -284,7 +284,7 @@ export default function TournamentPage({
 
       {games.length > 0 && (
         <section>
-          <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">
+          <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">
             Zadnja dijeljenja
           </h2>
 
@@ -295,7 +295,7 @@ export default function TournamentPage({
               return (
                 <div
                   key={game.id}
-                  className="rounded-2xl border border-white/10 bg-zinc-950 p-5"
+                  className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-5"
                 >
                   <p className="text-sm text-zinc-500">
                     {match?.team_a_name} vs {match?.team_b_name} · Set{" "}
@@ -331,7 +331,7 @@ export default function TournamentPage({
 
 function Badge({ label }: { label: string }) {
   return (
-    <span className="rounded-full bg-yellow-500/10 px-4 py-2 text-sm font-bold text-yellow-300">
+    <span className="rounded-full bg-[#d4b06a]/10 px-4 py-2 text-sm font-bold text-[#d4b06a]">
       {label}
     </span>
   );
@@ -339,9 +339,9 @@ function Badge({ label }: { label: string }) {
 
 function Info({ title, value }: { title: string; value: any }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-zinc-950 p-6">
+    <div className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6">
       <p className="text-sm text-zinc-400">{title}</p>
-      <p className="mt-2 text-4xl font-black text-yellow-400">{value}</p>
+      <p className="mt-2 text-4xl font-black text-[#f3dfad]">{value}</p>
     </div>
   );
 }
@@ -351,7 +351,7 @@ function MatchCard({ match, live }: { match: any; live?: boolean }) {
   const winnerB = match.winner_id && match.winner_id === match.team_b_id;
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-zinc-950 p-5">
+    <div className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-5">
       <div className="mb-3 flex justify-between gap-3">
         <p className="text-sm text-zinc-500">
           Meč {match.bracket_position || match.match_number}
@@ -363,7 +363,7 @@ function MatchCard({ match, live }: { match: any; live?: boolean }) {
               ? "bg-green-500/20 text-green-300"
               : live
               ? "bg-red-500/20 text-red-300"
-              : "bg-yellow-500/20 text-yellow-300"
+              : "bg-[#d4b06a]/20 text-[#d4b06a]"
           }`}
         >
           {live ? "LIVE" : match.status}
@@ -385,7 +385,7 @@ function MatchCard({ match, live }: { match: any; live?: boolean }) {
       <div className="mt-4 flex gap-3">
         <a
           href={`/live/${match.id}`}
-          className="flex-1 rounded-xl border border-yellow-500/40 px-4 py-2 text-center font-bold text-yellow-300 transition hover:bg-yellow-500/10"
+          className="flex-1 rounded-xl border border-[#d4b06a]/40 px-4 py-2 text-center font-bold text-[#d4b06a] transition hover:bg-[#d4b06a]/10"
         >
           Live
         </a>
@@ -406,7 +406,7 @@ function TeamLine({
   return (
     <div
       className={`mb-2 flex justify-between rounded-xl p-3 ${
-        winner ? "bg-green-500/20 text-green-300" : "bg-zinc-900 text-zinc-200"
+        winner ? "bg-green-500/20 text-green-300" : "bg-[#12392b] text-zinc-200"
       }`}
     >
       <span className="font-bold">{name}</span>

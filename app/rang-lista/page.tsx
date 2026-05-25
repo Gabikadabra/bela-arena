@@ -75,19 +75,19 @@ export default function RangListaPage() {
   return (
     <main className="page">
       <div className="mb-10">
-        <p className="mb-4 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
+        <p className="mb-4 inline-block rounded-full border border-[#d4b06a]/30 bg-[#d4b06a]/10 px-4 py-2 text-sm text-[#d4b06a]">
           Bela Arena statistika
         </p>
 
-        <h1 className="text-4xl font-black text-yellow-400 sm:text-5xl">Rang lista</h1>
+        <h1 className="text-4xl font-black text-[#f3dfad] sm:text-5xl">Rang lista</h1>
 
         <p className="mt-4 max-w-2xl text-zinc-300">
           ELO, pobjede, bodovi, zvanja, streakovi i najbolji rezultati.
         </p>
       </div>
 
-      <section className="mb-8 rounded-3xl border border-white/10 bg-zinc-950/80 p-6">
-        <label className="mb-2 block text-sm font-bold text-yellow-300">
+      <section className="mb-8 rounded-3xl border border-[#d4b06a]/15 bg-[#184332]/85 p-6">
+        <label className="mb-2 block text-sm font-bold text-[#d4b06a]">
           Filter po turniru
         </label>
 
@@ -128,8 +128,8 @@ export default function RangListaPage() {
         />
       </section>
 
-      <section className="overflow-hidden rounded-3xl border border-white/10 bg-zinc-950/80">
-        <div className="grid grid-cols-[70px_1.5fr_repeat(8,1fr)] gap-2 border-b border-white/10 bg-yellow-500/10 p-4 text-sm font-black text-yellow-300 max-xl:hidden">
+      <section className="overflow-hidden rounded-3xl border border-[#d4b06a]/15 bg-[#184332]/85">
+        <div className="grid grid-cols-[70px_1.5fr_repeat(8,1fr)] gap-2 border-b border-[#d4b06a]/15 bg-[#d4b06a]/10 p-4 text-sm font-black text-[#d4b06a] max-xl:hidden">
           <div>#</div>
           <div>Ekipa</div>
           <div>ELO</div>
@@ -154,12 +154,12 @@ export default function RangListaPage() {
               key={`${team.team_id}-${team.tournament_id || "global"}`}
               className="grid gap-3 p-4 text-zinc-200 xl:grid-cols-[70px_1.5fr_repeat(8,1fr)] xl:items-center"
             >
-              <div className="text-2xl font-black text-yellow-400 sm:text-3xl">
+              <div className="text-2xl font-black text-[#f3dfad] sm:text-3xl">
                 #{index + 1}
               </div>
 
               <div>
-                <p className="text-xl font-black text-yellow-300">
+                <p className="text-xl font-black text-[#d4b06a]">
                   {team.team_name}
                 </p>
                 <p className="text-sm text-zinc-500">
@@ -271,9 +271,9 @@ function Highlight({
   sub: string;
 }) {
   return (
-    <div className="rounded-3xl border border-yellow-500/20 bg-zinc-950 p-6">
+    <div className="rounded-3xl border border-[#d4b06a]/20 bg-[#0a2018] p-6">
       <p className="text-sm text-zinc-400">{title}</p>
-      <p className="mt-2 text-2xl font-black text-yellow-400">{value}</p>
+      <p className="mt-2 text-2xl font-black text-[#f3dfad]">{value}</p>
       <p className="mt-1 text-zinc-400">{sub}</p>
     </div>
   );

@@ -85,7 +85,7 @@ export default function LoginPage() {
       </form>
 
         <p className="muted mt-6 text-center text-sm">
-          Nemaš račun? <a href="/registracija" className="font-black text-yellow-300">Registriraj se</a>
+          Nemaš račun? <a href="/registracija" className="font-black text-[#d4b06a]">Registriraj se</a>
         </p>
       </section>
     </main>

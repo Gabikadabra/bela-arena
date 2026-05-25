@@ -255,11 +255,11 @@ export default function ZdrijebAdminPage() {
   return (
     <main className="page">
       <div className="mb-10">
-        <p className="mb-4 inline-block rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-sm text-yellow-300">
+        <p className="mb-4 inline-block rounded-full border border-[#d4b06a]/30 bg-[#d4b06a]/10 px-4 py-2 text-sm text-[#d4b06a]">
           Admin ždrijeb
         </p>
 
-        <h1 className="text-4xl font-black text-yellow-400 sm:text-5xl">
+        <h1 className="text-4xl font-black text-[#f3dfad] sm:text-5xl">
           Bracket engine
         </h1>
 
@@ -269,7 +269,7 @@ export default function ZdrijebAdminPage() {
       </div>
 
       <section className="card">
-        <label className="mb-2 block text-sm font-bold text-yellow-300">
+        <label className="mb-2 block text-sm font-bold text-[#d4b06a]">
           Turnir
         </label>
 
@@ -295,9 +295,9 @@ export default function ZdrijebAdminPage() {
         )}
 
         {tournament?.tournament_format === "round_robin" && (
-          <p className="mt-5 rounded-2xl bg-zinc-900 p-4 text-zinc-300">
+          <p className="mt-5 rounded-2xl bg-[#12392b] p-4 text-zinc-300">
             Round robin s {teams.length} ekipa generira{" "}
-            <b className="text-yellow-300">
+            <b className="text-[#d4b06a]">
               {calculateRoundRobinMatchCount(teams.length)}
             </b>{" "}
             mečeva.
@@ -306,20 +306,20 @@ export default function ZdrijebAdminPage() {
 
         <button
           onClick={generateDraw}
-          className="mt-8 rounded-xl bg-yellow-400 px-8 py-4 font-black text-black transition hover:bg-yellow-300"
+          className="mt-8 rounded-xl bg-[#d4b06a] px-8 py-4 font-black text-black transition hover:bg-[#f3dfad]"
         >
           Generiraj prema formatu turnira
         </button>
 
         {message && (
-          <div className="mt-6 rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-5 text-yellow-300">
+          <div className="mt-6 rounded-2xl border border-[#d4b06a]/30 bg-[#d4b06a]/10 p-5 text-[#d4b06a]">
             {message}
           </div>
         )}
       </section>
 
       <section className="mt-10">
-        <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">
+        <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">
           Potvrđene ekipe
         </h2>
 
@@ -327,9 +327,9 @@ export default function ZdrijebAdminPage() {
           {teams.map((team) => (
             <div
               key={team.id}
-              className="rounded-2xl border border-white/10 bg-zinc-950 p-5"
+              className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-5"
             >
-              <h3 className="font-bold text-yellow-300">{team.name}</h3>
+              <h3 className="font-bold text-[#d4b06a]">{team.name}</h3>
               <p className="text-sm text-zinc-400">{team.city}</p>
             </div>
           ))}
@@ -338,7 +338,7 @@ export default function ZdrijebAdminPage() {
 
       {Object.keys(groupedStandings).length > 0 && (
         <section className="mt-10">
-          <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">
+          <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">
             Tablice grupa
           </h2>
 
@@ -346,9 +346,9 @@ export default function ZdrijebAdminPage() {
             {Object.entries(groupedStandings).map(([groupName, rows]: any) => (
               <div
                 key={groupName}
-                className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-950"
+                className="overflow-hidden rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018]"
               >
-                <h3 className="bg-yellow-500/10 p-4 text-xl font-bold text-yellow-300">
+                <h3 className="bg-[#d4b06a]/10 p-4 text-xl font-bold text-[#d4b06a]">
                   {groupName}
                 </h3>
 
@@ -366,8 +366,8 @@ export default function ZdrijebAdminPage() {
 
                   <tbody>
                     {rows.map((row: any) => (
-                      <tr key={row.id} className="border-t border-white/10">
-                        <td className="p-3 font-bold text-yellow-300">
+                      <tr key={row.id} className="border-t border-[#d4b06a]/15">
+                        <td className="p-3 font-bold text-[#d4b06a]">
                           {row.team_name}
                         </td>
                         <td>{row.played}</td>
@@ -395,7 +395,7 @@ export default function ZdrijebAdminPage() {
 
       {knockoutMatches.length > 0 && (
         <section className="mt-10">
-          <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">
+          <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">
             Knockout bracket
           </h2>
 
@@ -403,7 +403,7 @@ export default function ZdrijebAdminPage() {
             {Object.entries(groupedKnockout).map(
               ([round, roundMatches]: any) => (
                 <div key={round} className="min-w-72">
-                  <h3 className="mb-4 text-xl font-bold text-yellow-300">
+                  <h3 className="mb-4 text-xl font-bold text-[#d4b06a]">
                     Runda {round}
                   </h3>
 
@@ -411,17 +411,17 @@ export default function ZdrijebAdminPage() {
                     {roundMatches.map((match: any) => (
                       <div
                         key={match.id}
-                        className="rounded-2xl border border-white/10 bg-zinc-950 p-5"
+                        className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-5"
                       >
                         <p className="text-sm text-zinc-500">
                           Meč {match.bracket_position || match.match_number}
                         </p>
 
                         <div className="mt-3 space-y-2">
-                          <div className="rounded-xl bg-zinc-900 p-3 font-bold">
+                          <div className="rounded-xl bg-[#12392b] p-3 font-bold">
                             {match.team_a_name || match.team_a_seed || "Čeka"}
                           </div>
-                          <div className="rounded-xl bg-zinc-900 p-3 font-bold">
+                          <div className="rounded-xl bg-[#12392b] p-3 font-bold">
                             {match.team_b_name || match.team_b_seed || "Čeka"}
                           </div>
                         </div>
@@ -444,9 +444,9 @@ export default function ZdrijebAdminPage() {
 
 function Info({ title, value }: { title: string; value: any }) {
   return (
-    <div className="rounded-2xl bg-zinc-900 p-5">
+    <div className="rounded-2xl bg-[#12392b] p-5">
       <p className="text-sm text-zinc-400">{title}</p>
-      <p className="mt-2 text-2xl font-black text-yellow-400">{value}</p>
+      <p className="mt-2 text-2xl font-black text-[#f3dfad]">{value}</p>
     </div>
   );
 }
@@ -454,13 +454,13 @@ function Info({ title, value }: { title: string; value: any }) {
 function MatchList({ title, matches }: { title: string; matches: any[] }) {
   return (
     <section className="mt-10">
-      <h2 className="text-2xl font-black text-yellow-400 sm:text-3xl">{title}</h2>
+      <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">{title}</h2>
 
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         {matches.map((match) => (
           <div
             key={match.id}
-            className="rounded-2xl border border-white/10 bg-zinc-950 p-5"
+            className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-5"
           >
             <p className="text-sm text-zinc-500">
               {match.group_name ? `${match.group_name} · ` : ""}
@@ -469,7 +469,7 @@ function MatchList({ title, matches }: { title: string; matches: any[] }) {
 
             <div className="mt-3 flex items-center justify-between gap-4">
               <span className="font-bold">{match.team_a_name}</span>
-              <span className="text-yellow-400">VS</span>
+              <span className="text-[#f3dfad]">VS</span>
               <span className="font-bold">{match.team_b_name}</span>
             </div>
 
