@@ -152,7 +152,7 @@ export default function AdminBracketPage({
         </div>
       )}
 
-      <div className="overflow-x-auto pb-6">
+      <div className="table-scroll overflow-x-auto pb-6">
         <div className="flex min-w-max gap-6">
           {Object.entries(rounds).map(([round, roundMatches]: any) => (
             <div key={round} className="w-80 shrink-0">
