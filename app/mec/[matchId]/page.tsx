@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { syncTournamentAfterResult } from "@/lib/tournamentProgress";
 
@@ -36,9 +36,21 @@ export default function MecPage({ params }: PageProps) {
     "success"
   );
 
+  const loadingRef = useRef(false);
+
   const [form, setForm] = useState({
-    teamAScore: 0,
-    teamBScore: 0,
+    teamAScore: "",
+    teamADeclarations: 0,
+    teamBDeclarations: 0,
+    teamABela: false,
+    teamBBela: false,
+    note: ""
+  });
+
+  const [editingGame, setEditingGame] = useState<any>(null);
+
+  const [editForm, setEditForm] = useState({
+    teamAScore: "",
     teamADeclarations: 0,
     teamBDeclarations: 0,
     teamABela: false,
@@ -64,7 +76,7 @@ export default function MecPage({ params }: PageProps) {
           filter: `id=eq.${matchId}`
         },
         () => {
-          loadData();
+          loadData(false);
         }
       )
       .on(
@@ -76,7 +88,7 @@ export default function MecPage({ params }: PageProps) {
           filter: `match_id=eq.${matchId}`
         },
         () => {
-          loadData();
+          loadData(false);
         }
       )
       .on(
@@ -88,7 +100,7 @@ export default function MecPage({ params }: PageProps) {
           filter: `match_id=eq.${matchId}`
         },
         () => {
-          loadData();
+          loadData(false);
         }
       )
       .subscribe();
@@ -98,8 +110,15 @@ export default function MecPage({ params }: PageProps) {
     };
   }, [matchId]);
 
-  async function loadData() {
-    setLoading(true);
+  async function loadData(showLoader = true) {
+    if (loadingRef.current) return;
+
+    loadingRef.current = true;
+
+    if (showLoader) {
+      setLoading(true);
+    }
+
     setMessage("");
 
     const { data: userData } = await supabase.auth.getUser();
@@ -116,36 +135,40 @@ export default function MecPage({ params }: PageProps) {
       setMessageType("error");
       setMessage("Meč nije pronađen.");
       setLoading(false);
+      loadingRef.current = false;
       return;
     }
 
     setMatch(matchData);
 
-    const { data: tournamentData } = await supabase
-      .from("tournaments")
-      .select("*")
-      .eq("id", matchData.tournament_id)
-      .maybeSingle();
+    const [{ data: tournamentData }, { data: gameData }, { data: setData }] =
+      await Promise.all([
+        supabase
+          .from("tournaments")
+          .select("*")
+          .eq("id", matchData.tournament_id)
+          .maybeSingle(),
+
+        supabase
+          .from("match_games")
+          .select("*")
+          .eq("match_id", matchId)
+          .order("set_number", { ascending: true })
+          .order("game_number", { ascending: true }),
+
+        supabase
+          .from("match_sets")
+          .select("*")
+          .eq("match_id", matchId)
+          .order("set_number", { ascending: true })
+      ]);
 
     setTournament(tournamentData);
-
-    const { data: gameData } = await supabase
-      .from("match_games")
-      .select("*")
-      .eq("match_id", matchId)
-      .order("set_number", { ascending: true })
-      .order("game_number", { ascending: true });
-
     setGames(gameData || []);
-
-    const { data: setData } = await supabase
-      .from("match_sets")
-      .select("*")
-      .eq("match_id", matchId)
-      .order("set_number", { ascending: true });
-
     setSets(setData || []);
+
     setLoading(false);
+    loadingRef.current = false;
   }
 
   const currentSet = match?.current_set || 1;
@@ -206,6 +229,48 @@ export default function MecPage({ params }: PageProps) {
     if (bestOf === 3) return "Do 2 pobjede / best of 3";
     return "Jedna partija";
   }
+
+  function calculateFromForm(source: {
+    teamAScore: string;
+    teamADeclarations: number;
+    teamBDeclarations: number;
+    teamABela: boolean;
+    teamBBela: boolean;
+  }): SimpleCalculation {
+    const rawA = Math.min(162, Math.max(0, Number(source.teamAScore || 0)));
+    const rawB = 162 - rawA;
+
+    const declarationsA = Number(source.teamADeclarations || 0);
+    const declarationsB = Number(source.teamBDeclarations || 0);
+
+    const belaA = source.teamABela ? 20 : 0;
+    const belaB = source.teamBBela ? 20 : 0;
+
+    return {
+      rawA,
+      rawB,
+      declarationsA,
+      declarationsB,
+      belaA,
+      belaB,
+      finalA: rawA + declarationsA + belaA,
+      finalB: rawB + declarationsB + belaB
+    };
+  }
+
+  function calculateSimpleResult(): SimpleCalculation {
+    return calculateFromForm(form);
+  }
+
+  function calculateEditResult(): SimpleCalculation {
+    return calculateFromForm(editForm);
+  }
+
+  const preview = calculateSimpleResult();
+  const editPreview = calculateEditResult();
+
+  const afterSubmitA = totalA + preview.finalA;
+  const afterSubmitB = totalB + preview.finalB;
 
   function addDeclaration(team: TeamSide, value: number) {
     if (team === "A") {
@@ -271,31 +336,47 @@ export default function MecPage({ params }: PageProps) {
     }
   }
 
-  function calculateSimpleResult(): SimpleCalculation {
-    const rawA = Number(form.teamAScore || 0);
-    const rawB = Number(form.teamBScore || 0);
+  function openEditGame(game: any) {
+    setEditingGame(game);
 
-    const declarationsA = Number(form.teamADeclarations || 0);
-    const declarationsB = Number(form.teamBDeclarations || 0);
-
-    const belaA = form.teamABela ? 20 : 0;
-    const belaB = form.teamBBela ? 20 : 0;
-
-    return {
-      rawA,
-      rawB,
-      declarationsA,
-      declarationsB,
-      belaA,
-      belaB,
-      finalA: rawA + declarationsA + belaA,
-      finalB: rawB + declarationsB + belaB
-    };
+    setEditForm({
+      teamAScore: String(game.team_a_tricks ?? game.raw_team_a_tricks ?? 0),
+      teamADeclarations: Number(game.team_a_declarations || 0),
+      teamBDeclarations: Number(game.team_b_declarations || 0),
+      teamABela: Boolean(game.team_a_bela),
+      teamBBela: Boolean(game.team_b_bela),
+      note: game.note || ""
+    });
   }
 
-  const preview = calculateSimpleResult();
-  const afterSubmitA = totalA + preview.finalA;
-  const afterSubmitB = totalB + preview.finalB;
+  function closeEditGame() {
+    setEditingGame(null);
+
+    setEditForm({
+      teamAScore: "",
+      teamADeclarations: 0,
+      teamBDeclarations: 0,
+      teamABela: false,
+      teamBBela: false,
+      note: ""
+    });
+  }
+
+  function toggleEditBela(team: TeamSide) {
+    if (team === "A") {
+      setEditForm((old) => ({
+        ...old,
+        teamABela: !old.teamABela,
+        teamBBela: false
+      }));
+    } else {
+      setEditForm((old) => ({
+        ...old,
+        teamBBela: !old.teamBBela,
+        teamABela: false
+      }));
+    }
+  }
 
   async function advanceWinnerToNextMatch(winnerId: string, winnerName: string) {
     if (!match) return;
@@ -337,6 +418,145 @@ export default function MecPage({ params }: PageProps) {
     }
   }
 
+  async function rebuildMatchAfterHistoryChange() {
+    if (!match) return;
+
+    const { data: freshGames, error: gamesError } = await supabase
+      .from("match_games")
+      .select("*")
+      .eq("match_id", matchId)
+      .order("set_number", { ascending: true })
+      .order("game_number", { ascending: true });
+
+    if (gamesError) throw gamesError;
+
+    const allGames = freshGames || [];
+
+    const { error: deleteSetsError } = await supabase
+      .from("match_sets")
+      .delete()
+      .eq("match_id", matchId);
+
+    if (deleteSetsError) throw deleteSetsError;
+
+    let setsA = 0;
+    let setsB = 0;
+    let activeSet = 1;
+    let activeScoreA = 0;
+    let activeScoreB = 0;
+    let finalWinnerId: string | null = null;
+    let finalStatus = "scheduled";
+
+    const setNumbers = Array.from(
+      new Set(allGames.map((game) => Number(game.set_number || 1)))
+    ).sort((a, b) => a - b);
+
+    for (const setNumber of setNumbers) {
+      const setGames = allGames.filter(
+        (game) => Number(game.set_number || 1) === setNumber
+      );
+
+      const setScoreA = setGames.reduce(
+        (sum, game) => sum + Number(game.team_a_total || 0),
+        0
+      );
+
+      const setScoreB = setGames.reduce(
+        (sum, game) => sum + Number(game.team_b_total || 0),
+        0
+      );
+
+      const setIsFinished =
+        (setScoreA >= scoreLimit || setScoreB >= scoreLimit) &&
+        setScoreA !== setScoreB;
+
+      if (setIsFinished) {
+        const setWinnerId =
+          setScoreA > setScoreB ? match.team_a_id : match.team_b_id;
+
+        if (setWinnerId === match.team_a_id) {
+          setsA += 1;
+        } else {
+          setsB += 1;
+        }
+
+        const { error: insertSetError } = await supabase
+          .from("match_sets")
+          .insert({
+            match_id: matchId,
+            set_number: setNumber,
+            team_a_score: setScoreA,
+            team_b_score: setScoreB,
+            winner_id: setWinnerId,
+            status: "finished",
+            finished_at: new Date().toISOString()
+          });
+
+        if (insertSetError) throw insertSetError;
+
+        if (setsA >= setsToWin || setsB >= setsToWin) {
+          finalWinnerId = setsA > setsB ? match.team_a_id : match.team_b_id;
+          finalStatus = "finished";
+          activeSet = setNumber;
+          activeScoreA = setScoreA;
+          activeScoreB = setScoreB;
+          break;
+        }
+
+        activeSet = setNumber + 1;
+        activeScoreA = 0;
+        activeScoreB = 0;
+      } else {
+        activeSet = setNumber;
+        activeScoreA = setScoreA;
+        activeScoreB = setScoreB;
+        break;
+      }
+    }
+
+    if (allGames.length === 0) {
+      activeSet = 1;
+      activeScoreA = 0;
+      activeScoreB = 0;
+      setsA = 0;
+      setsB = 0;
+      finalWinnerId = null;
+      finalStatus = "scheduled";
+    }
+
+    const updateMatch = {
+      score_a: activeScoreA,
+      score_b: activeScoreB,
+      sets_a: setsA,
+      sets_b: setsB,
+      current_set: activeSet,
+      winner_id: finalWinnerId,
+      status: finalStatus,
+      result_status: allGames.length > 0 ? "submitted" : "draft",
+      submitted_by: user?.id || match.submitted_by || null
+    };
+
+    const { error: matchUpdateError } = await supabase
+      .from("matches")
+      .update(updateMatch)
+      .eq("id", matchId);
+
+    if (matchUpdateError) throw matchUpdateError;
+
+    await syncTournamentAfterResult({
+      ...match,
+      ...updateMatch,
+      id: matchId,
+      tournament_id: match.tournament_id,
+      phase: match.phase,
+      group_name: match.group_name,
+      round: match.round,
+      round_number: match.round_number
+    });
+
+    await loadData(false);
+  }
+
   async function addGame(event: React.FormEvent) {
     event.preventDefault();
     setMessage("");
@@ -367,15 +587,15 @@ export default function MecPage({ params }: PageProps) {
       return;
     }
 
-    if (preview.rawA < 0 || preview.rawB < 0) {
+    if (preview.rawA < 0 || preview.rawA > 162) {
       setMessageType("error");
-      setMessage("Bodovi ne mogu biti manji od 0.");
+      setMessage("Bodovi moraju biti između 0 i 162.");
       return;
     }
 
-    if (preview.finalA === 0 && preview.finalB === 0) {
+    if (form.teamAScore === "") {
       setMessageType("error");
-      setMessage("Upiši rezultat prije spremanja.");
+      setMessage("Upiši bodove prve ekipe.");
       return;
     }
 
@@ -432,7 +652,7 @@ export default function MecPage({ params }: PageProps) {
         setSaving(false);
         setMessageType("error");
         setMessage(
-          "Set ne može završiti neriješeno. Dodaj još jedno dijeljenje ili ispravi rezultat."
+          "Set ne može završiti neriješeno. Dodaj još jedan unos ili ispravi rezultat."
         );
         return;
       }
@@ -518,8 +738,7 @@ export default function MecPage({ params }: PageProps) {
     });
 
     setForm({
-      teamAScore: 0,
-      teamBScore: 0,
+      teamAScore: "",
       teamADeclarations: 0,
       teamBDeclarations: 0,
       teamABela: false,
@@ -535,7 +754,98 @@ export default function MecPage({ params }: PageProps) {
     );
 
     setSaving(false);
-    await loadData();
+    await loadData(false);
+  }
+
+  async function saveEditedGame(event: React.FormEvent) {
+    event.preventDefault();
+
+    if (!editingGame) return;
+
+    if (!user) {
+      setMessageType("error");
+      setMessage("Moraš biti prijavljen.");
+      return;
+    }
+
+    if (editForm.teamAScore === "") {
+      setMessageType("error");
+      setMessage("Upiši bodove prve ekipe.");
+      return;
+    }
+
+    if (editForm.teamABela && editForm.teamBBela) {
+      setMessageType("error");
+      setMessage("Bela može biti samo kod jedne ekipe.");
+      return;
+    }
+
+    setSaving(true);
+    setMessage("");
+
+    try {
+      const result = calculateEditResult();
+
+      const { error } = await supabase
+        .from("match_games")
+        .update({
+          raw_team_a_tricks: result.rawA,
+          raw_team_b_tricks: result.rawB,
+          team_a_tricks: result.rawA,
+          team_b_tricks: result.rawB,
+          team_a_declarations: result.declarationsA,
+          team_b_declarations: result.declarationsB,
+          team_a_bela: editForm.teamABela,
+          team_b_bela: editForm.teamBBela,
+          team_a_total: result.finalA,
+          team_b_total: result.finalB,
+          note: editForm.note
+        })
+        .eq("id", editingGame.id);
+
+      if (error) throw error;
+
+      await rebuildMatchAfterHistoryChange();
+
+      closeEditGame();
+      setMessageType("success");
+      setMessage("Unos je uspješno uređen.");
+    } catch (error: any) {
+      setMessageType("error");
+      setMessage("Greška kod uređivanja: " + error.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteGame(game: any) {
+    const confirmDelete = window.confirm(
+      "Jesi siguran da želiš obrisati ovaj unos? Rezultat meča će se ponovno izračunati."
+    );
+
+    if (!confirmDelete) return;
+
+    setSaving(true);
+    setMessage("");
+
+    try {
+      const { error } = await supabase
+        .from("match_games")
+        .delete()
+        .eq("id", game.id);
+
+      if (error) throw error;
+
+      await rebuildMatchAfterHistoryChange();
+
+      setMessageType("success");
+      setMessage("Unos je obrisan i rezultat je ponovno izračunat.");
+    } catch (error: any) {
+      setMessageType("error");
+      setMessage("Greška kod brisanja: " + error.message);
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (loading) {
@@ -559,7 +869,7 @@ export default function MecPage({ params }: PageProps) {
   }
 
   return (
-    <main className="page">
+    <main className="page pb-24">
       <section className="hero-card">
         <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
           <div>
@@ -570,8 +880,9 @@ export default function MecPage({ params }: PageProps) {
             </h1>
 
             <p className="muted mt-3 text-sm sm:text-base">
-              Set {currentSet} · {match?.phase === "group" ? "Grupa" : "Knockout"}{" "}
-              do {scoreLimit} · {prettyBestOf(matchBestOf)} · treba {setsToWin}{" "}
+              Set {currentSet} ·{" "}
+              {match?.phase === "group" ? "Grupa" : "Knockout"} do{" "}
+              {scoreLimit} · {prettyBestOf(matchBestOf)} · treba {setsToWin}{" "}
               set(ova)
             </p>
           </div>
@@ -585,27 +896,29 @@ export default function MecPage({ params }: PageProps) {
         </div>
       </section>
 
-      <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Info
-          title={match.team_a_name || "Ekipa A"}
-          value={totalA}
-          subtitle="Trenutni set"
-        />
-        <Info
-          title={match.team_b_name || "Ekipa B"}
-          value={totalB}
-          subtitle="Trenutni set"
-        />
-        <Info
-          title="Setovi A"
-          value={match.sets_a || 0}
-          subtitle={match.team_a_name}
-        />
-        <Info
-          title="Setovi B"
-          value={match.sets_b || 0}
-          subtitle={match.team_b_name}
-        />
+      <section className="sticky top-0 z-20 -mx-4 mt-5 border-y border-[rgba(212,176,106,0.12)] bg-[rgba(10,32,24,0.96)] px-4 py-3 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Info
+            title={match.team_a_name || "Ekipa A"}
+            value={totalA}
+            subtitle="Trenutni set"
+          />
+          <Info
+            title={match.team_b_name || "Ekipa B"}
+            value={totalB}
+            subtitle="Trenutni set"
+          />
+          <Info
+            title="Setovi A"
+            value={match.sets_a || 0}
+            subtitle={match.team_a_name}
+          />
+          <Info
+            title="Setovi B"
+            value={match.sets_b || 0}
+            subtitle={match.team_b_name}
+          />
+        </div>
       </section>
 
       {sets.length > 0 && (
@@ -646,7 +959,8 @@ export default function MecPage({ params }: PageProps) {
           <div>
             <h2 className="section-title">Novi unos</h2>
             <p className="muted mt-2">
-              Upiši bodove za obje ekipe. Zvanja i belu dodaješ klikom.
+              Upiši bodove za prvu ekipu. Druga se računa automatski kao 162
+              minus bodovi prve ekipe. Zvanja i belu dodaješ klikom.
             </p>
           </div>
 
@@ -664,10 +978,9 @@ export default function MecPage({ params }: PageProps) {
             onChange={(value) => setForm({ ...form, teamAScore: value })}
           />
 
-          <ScoreInput
+          <AutoScoreBox
             label={match.team_b_name || "Ekipa B"}
-            value={form.teamBScore}
-            onChange={(value) => setForm({ ...form, teamBScore: value })}
+            value={preview.rawB}
           />
         </div>
 
@@ -731,13 +1044,12 @@ export default function MecPage({ params }: PageProps) {
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <PreviewBox title="Bodovi A" value={preview.rawA} />
-            <PreviewBox title="Zvanja A" value={preview.declarationsA} />
-            <PreviewBox title="Bela A" value={preview.belaA} />
-            <PreviewBox title="Ukupno A" value={preview.finalA} />
-
             <PreviewBox title="Bodovi B" value={preview.rawB} />
+            <PreviewBox title="Zvanja A" value={preview.declarationsA} />
             <PreviewBox title="Zvanja B" value={preview.declarationsB} />
+            <PreviewBox title="Bela A" value={preview.belaA} />
             <PreviewBox title="Bela B" value={preview.belaB} />
+            <PreviewBox title="Ukupno A" value={preview.finalA} />
             <PreviewBox title="Ukupno B" value={preview.finalB} />
           </div>
         </div>
@@ -815,10 +1127,199 @@ export default function MecPage({ params }: PageProps) {
                   Napomena: {game.note}
                 </p>
               )}
+
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => openEditGame(game)}
+                  disabled={saving}
+                  className="rounded-xl border border-[rgba(212,176,106,0.35)] bg-[rgba(212,176,106,0.08)] px-4 py-3 font-black text-[var(--gold-light)] transition active:scale-95 disabled:opacity-50"
+                >
+                  Uredi unos
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => deleteGame(game)}
+                  disabled={saving}
+                  className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 font-black text-red-200 transition active:scale-95 disabled:opacity-50"
+                >
+                  Obriši unos
+                </button>
+              </div>
             </div>
           ))}
         </div>
       </section>
+
+      {editingGame && (
+        <div className="fixed inset-0 z-50 flex items-end bg-black/70 p-3 backdrop-blur sm:items-center sm:justify-center">
+          <form
+            onSubmit={saveEditedGame}
+            className="max-h-[92vh] w-full overflow-y-auto rounded-3xl border border-[rgba(212,176,106,0.25)] bg-[#0a2018] p-5 shadow-2xl sm:max-w-3xl"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="badge">Uređivanje unosa</p>
+
+                <h2 className="mt-3 text-2xl font-black text-[var(--gold-light)]">
+                  Set {editingGame.set_number} · Unos {editingGame.game_number}
+                </h2>
+
+                <p className="muted mt-2 text-sm">
+                  Promijeni bodove prve ekipe. Druga ekipa se računa automatski.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeEditGame}
+                className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 font-black text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <ScoreInput
+                label={match.team_a_name || "Ekipa A"}
+                value={editForm.teamAScore}
+                onChange={(value) =>
+                  setEditForm({ ...editForm, teamAScore: value })
+                }
+              />
+
+              <AutoScoreBox
+                label={match.team_b_name || "Ekipa B"}
+                value={editPreview.rawB}
+              />
+            </div>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <EditDeclarationsCard
+                teamName={match.team_a_name || "Ekipa A"}
+                value={editForm.teamADeclarations}
+                onAdd={(value) =>
+                  setEditForm({
+                    ...editForm,
+                    teamADeclarations:
+                      Number(editForm.teamADeclarations || 0) + value
+                  })
+                }
+                onRemove={(value) =>
+                  setEditForm({
+                    ...editForm,
+                    teamADeclarations: Math.max(
+                      0,
+                      Number(editForm.teamADeclarations || 0) - value
+                    )
+                  })
+                }
+                onClear={() =>
+                  setEditForm({ ...editForm, teamADeclarations: 0 })
+                }
+              />
+
+              <EditDeclarationsCard
+                teamName={match.team_b_name || "Ekipa B"}
+                value={editForm.teamBDeclarations}
+                onAdd={(value) =>
+                  setEditForm({
+                    ...editForm,
+                    teamBDeclarations:
+                      Number(editForm.teamBDeclarations || 0) + value
+                  })
+                }
+                onRemove={(value) =>
+                  setEditForm({
+                    ...editForm,
+                    teamBDeclarations: Math.max(
+                      0,
+                      Number(editForm.teamBDeclarations || 0) - value
+                    )
+                  })
+                }
+                onClear={() =>
+                  setEditForm({ ...editForm, teamBDeclarations: 0 })
+                }
+              />
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => toggleEditBela("A")}
+                className={`rounded-2xl border p-5 text-left font-black transition ${
+                  editForm.teamABela
+                    ? "border-[var(--gold-light)] bg-[var(--gold)] text-[#0f2f24]"
+                    : "border-[rgba(212,176,106,0.2)] bg-[rgba(10,32,24,0.75)] text-[var(--gold-light)]"
+                }`}
+              >
+                Bela - {match.team_a_name}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => toggleEditBela("B")}
+                className={`rounded-2xl border p-5 text-left font-black transition ${
+                  editForm.teamBBela
+                    ? "border-[var(--gold-light)] bg-[var(--gold)] text-[#0f2f24]"
+                    : "border-[rgba(212,176,106,0.2)] bg-[rgba(10,32,24,0.75)] text-[var(--gold-light)]"
+                }`}
+              >
+                Bela - {match.team_b_name}
+              </button>
+            </div>
+
+            <div className="card-soft mt-6">
+              <h3 className="text-xl font-black text-[var(--gold-light)]">
+                Novi obračun
+              </h3>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <PreviewBox title="Bodovi A" value={editPreview.rawA} />
+                <PreviewBox title="Bodovi B" value={editPreview.rawB} />
+                <PreviewBox title="Zvanja A" value={editPreview.declarationsA} />
+                <PreviewBox title="Zvanja B" value={editPreview.declarationsB} />
+                <PreviewBox title="Bela A" value={editPreview.belaA} />
+                <PreviewBox title="Bela B" value={editPreview.belaB} />
+                <PreviewBox title="Ukupno A" value={editPreview.finalA} />
+                <PreviewBox title="Ukupno B" value={editPreview.finalB} />
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <Field label="Napomena">
+                <textarea
+                  value={editForm.note}
+                  onChange={(event) =>
+                    setEditForm({ ...editForm, note: event.target.value })
+                  }
+                  className="input min-h-24"
+                />
+              </Field>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <button
+                type="submit"
+                disabled={saving}
+                className="btn-primary py-4 text-lg disabled:opacity-50"
+              >
+                {saving ? "Spremam..." : "Spremi promjene"}
+              </button>
+
+              <button
+                type="button"
+                onClick={closeEditGame}
+                className="btn-outline py-4 text-lg"
+              >
+                Odustani
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </main>
   );
 }
@@ -829,23 +1330,48 @@ function ScoreInput({
   onChange
 }: {
   label: string;
-  value: number;
-  onChange: (value: number) => void;
+  value: string;
+  onChange: (value: string) => void;
 }) {
   return (
     <label className="block rounded-2xl border border-[rgba(212,176,106,0.15)] bg-[rgba(10,32,24,0.7)] p-4">
       <span className="block text-sm font-black text-[var(--gold)]">
         {label}
       </span>
+
       <input
-        type="number"
+        type="text"
         value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
-        className="mt-3 w-full rounded-2xl border border-[rgba(212,176,106,0.15)] bg-[rgba(5,22,15,0.85)] px-4 py-5 text-center text-4xl font-black text-[var(--gold-light)] outline-none focus:border-[var(--gold)]"
-        min={0}
+        onChange={(event) => {
+          const onlyNumbers = event.target.value.replace(/\D/g, "");
+          const numberValue = Math.min(162, Number(onlyNumbers || 0));
+
+          onChange(onlyNumbers === "" ? "" : String(numberValue));
+        }}
+        className="no-spinner mt-3 w-full rounded-2xl border border-[rgba(212,176,106,0.15)] bg-[rgba(5,22,15,0.85)] px-4 py-5 text-center text-5xl font-black text-[var(--gold-light)] outline-none focus:border-[var(--gold)]"
+        placeholder="0"
         inputMode="numeric"
+        pattern="[0-9]*"
       />
     </label>
+  );
+}
+
+function AutoScoreBox({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="block rounded-2xl border border-[rgba(212,176,106,0.15)] bg-[rgba(10,32,24,0.45)] p-4 opacity-95">
+      <span className="block text-sm font-black text-[var(--gold)]">
+        {label}
+      </span>
+
+      <div className="mt-3 w-full rounded-2xl border border-[rgba(212,176,106,0.08)] bg-[rgba(5,22,15,0.55)] px-4 py-5 text-center text-5xl font-black text-[var(--gold-light)]">
+        {value}
+      </div>
+
+      <p className="mt-3 text-center text-xs font-bold text-white/45">
+        Automatski: 162 - bodovi prve ekipe
+      </p>
+    </div>
   );
 }
 
@@ -919,6 +1445,30 @@ function DeclarationsCard({
   );
 }
 
+function EditDeclarationsCard({
+  teamName,
+  value,
+  onAdd,
+  onRemove,
+  onClear
+}: {
+  teamName: string;
+  value: number;
+  onAdd: (value: number) => void;
+  onRemove: (value: number) => void;
+  onClear: () => void;
+}) {
+  return (
+    <DeclarationsCard
+      teamName={teamName}
+      value={value}
+      onAdd={onAdd}
+      onRemove={onRemove}
+      onClear={onClear}
+    />
+  );
+}
+
 function Info({
   title,
   value,
@@ -929,23 +1479,21 @@ function Info({
   subtitle?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-[rgba(212,176,106,0.15)] bg-[rgba(10,32,24,0.8)] p-5">
-      <p className="text-sm text-white/55">{title}</p>
-      <p className="mt-2 text-4xl font-black text-[var(--gold-light)]">
+    <div className="rounded-2xl border border-[rgba(212,176,106,0.15)] bg-[rgba(10,32,24,0.8)] p-4 md:p-5">
+      <p className="truncate text-xs text-white/55 sm:text-sm">{title}</p>
+      <p className="mt-2 text-3xl font-black text-[var(--gold-light)] sm:text-4xl">
         {value}
       </p>
-      {subtitle && <p className="mt-1 text-sm text-white/40">{subtitle}</p>}
+      {subtitle && (
+        <p className="mt-1 truncate text-xs text-white/40 sm:text-sm">
+          {subtitle}
+        </p>
+      )}
     </div>
   );
 }
 
-function PreviewBox({
-  title,
-  value
-}: {
-  title: string;
-  value: any;
-}) {
+function PreviewBox({ title, value }: { title: string; value: any }) {
   return (
     <div className="rounded-xl bg-[rgba(5,22,15,0.55)] p-4">
       <p className="text-xs text-white/45">{title}</p>

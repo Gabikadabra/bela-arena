@@ -156,7 +156,16 @@ a {
   background: radial-gradient(circle, rgba(212, 176, 106, 0.2), transparent 66%);
   pointer-events: none;
 }
+.no-spinner::-webkit-outer-spin-button,
+.no-spinner::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
 
+.no-spinner {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
 .card {
   position: relative;
   overflow: hidden;
