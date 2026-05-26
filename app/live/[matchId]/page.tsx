@@ -152,8 +152,8 @@ export default function LiveMatchPage({
   return (
     <main className="page">
       <div className="mb-10 text-center">
-        <p className="mb-4 inline-block rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-300">
-          ● LIVE
+        <p className={`mb-4 inline-block rounded-full border px-4 py-2 text-sm font-bold ${match.status === "waiting" || match.status === "bye" ? "border-zinc-500/30 bg-zinc-500/10 text-zinc-300" : match.status === "finished" ? "border-green-500/30 bg-green-500/10 text-green-300" : "border-red-500/30 bg-red-500/10 text-red-300"}`}>
+          {match.status === "waiting" || match.status === "bye" ? "● ZAKLJUČANO" : match.status === "finished" ? "● ZAVRŠENO" : "● LIVE"}
         </p>
 
         <h1 className="text-2xl font-black text-[#f3dfad] sm:text-3xl sm:text-4xl md:text-6xl">

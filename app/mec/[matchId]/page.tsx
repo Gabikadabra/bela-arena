@@ -2,6 +2,7 @@
 
 import { use, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { syncTournamentAfterResult } from "@/lib/tournamentProgress";
 
 type PageProps = {
   params: Promise<{ matchId: string }>;
@@ -425,9 +426,16 @@ export default function MecPage({ params }: PageProps) {
       return;
     }
 
-    if (setFinished) {
-      await unlockNextBergerRound();
-    }
+    await syncTournamentAfterResult({
+      ...match,
+      ...updateMatch,
+      id: matchId,
+      tournament_id: match.tournament_id,
+      phase: match.phase,
+      group_name: match.group_name,
+      round: match.round,
+      round_number: match.round_number,
+    });
 
     setForm({
       callerTeam: "A",

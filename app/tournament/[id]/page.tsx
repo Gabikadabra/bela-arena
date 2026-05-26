@@ -191,8 +191,10 @@ export default function TournamentPage({
   const approvedTeams = teams.filter((team) => team.status === "approved");
 
   const liveMatches = matches.filter(
-    (match) => match.status === "scheduled" || match.status === "waiting"
+    (match) => match.status === "scheduled" || match.status === "active" || match.status === "live"
   );
+
+  const lockedMatches = matches.filter((match) => match.status === "waiting");
 
   const finishedMatches = matches.filter((match) => match.status === "finished");
 
@@ -313,10 +315,28 @@ export default function TournamentPage({
       {liveMatches.length > 0 && (
         <section className="mb-10">
           <h2 className="section-title">Live / aktivni mečevi</h2>
+          <p className="muted mt-2">
+            Prikazuju se samo trenutno otključani mečevi. Zaključane Berger runde nisu live.
+          </p>
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             {liveMatches.map((match) => (
               <MatchCard key={match.id} match={match} live />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {lockedMatches.length > 0 && (
+        <section className="mb-10">
+          <h2 className="section-title">Zaključani mečevi</h2>
+          <p className="muted mt-2">
+            Ovi mečevi čekaju da se završi prethodna Berger runda.
+          </p>
+
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            {lockedMatches.map((match) => (
+              <MatchCard key={match.id} match={match} />
             ))}
           </div>
         </section>
@@ -489,14 +509,28 @@ function GroupTable({
 function MatchCard({ match, live }: { match: any; live?: boolean }) {
   const winnerA = match.winner_id && match.winner_id === match.team_a_id;
   const winnerB = match.winner_id && match.winner_id === match.team_b_id;
+  const locked = match.status === "waiting" || match.status === "bye";
+  const finished = match.status === "finished";
+  const statusLabel = finished ? "Završeno" : locked ? "Zaključano" : live ? "LIVE" : match.status;
+  const statusClass = finished
+    ? "bg-green-500/20 text-green-300"
+    : locked
+      ? "bg-zinc-500/20 text-zinc-300"
+      : live
+        ? "bg-red-500/20 text-red-300"
+        : "bg-[#d4b06a]/20 text-[#d4b06a]";
 
   return (
     <div className="card-soft">
       <div className="mb-3 flex justify-between gap-3">
-        <p className="text-sm text-white/45">Meč {match.bracket_position || match.match_number}</p>
+        <p className="text-sm text-white/45">
+          {match.group_name ? `${match.group_name} · ` : ""}
+          {(match.phase === "group" || match.phase === "round_robin") && match.round ? `Runda ${match.round} · ` : ""}
+          Meč {match.bracket_position || match.match_number}
+        </p>
 
-        <span className={`rounded-full px-3 py-1 text-xs font-bold ${match.status === "finished" ? "bg-green-500/20 text-green-300" : live ? "bg-red-500/20 text-red-300" : "bg-[#d4b06a]/20 text-[#d4b06a]"}`}>
-          {live ? "LIVE" : match.status}
+        <span className={`rounded-full px-3 py-1 text-xs font-bold ${statusClass}`}>
+          {statusLabel}
         </span>
       </div>
 
@@ -504,9 +538,15 @@ function MatchCard({ match, live }: { match: any; live?: boolean }) {
       <TeamLine name={match.team_b_name || match.team_b_seed || "Čeka"} score={match.score_b} winner={winnerB} />
 
       <div className="mt-4 flex gap-3">
-        <a href={`/live/${match.id}`} className="btn-outline flex-1">
-          Live
-        </a>
+        {locked ? (
+          <button disabled className="btn-outline flex-1 cursor-not-allowed opacity-50">
+            Čeka prethodnu rundu
+          </button>
+        ) : (
+          <a href={`/live/${match.id}`} className="btn-outline flex-1">
+            Live
+          </a>
+        )}
       </div>
     </div>
   );

@@ -917,6 +917,17 @@ function MatchList({ title, matches }: { title: string; matches: any[] }) {
 function MatchBox({ match }: { match: any }) {
   const winnerA = match.winner_id && match.winner_id === match.team_a_id;
   const winnerB = match.winner_id && match.winner_id === match.team_b_id;
+  const locked = match.status === "waiting" || match.status === "bye";
+  const finished = match.status === "finished";
+  const live = match.status === "scheduled" || match.status === "active" || match.status === "live";
+  const statusLabel = finished ? "Završeno" : locked ? "Zaključano" : live ? "LIVE" : match.status;
+  const statusClass = finished
+    ? "border-green-500/30 bg-green-500/15 text-green-300"
+    : locked
+      ? "border-zinc-500/25 bg-zinc-500/10 text-zinc-300"
+      : live
+        ? "border-red-500/30 bg-red-500/15 text-red-300"
+        : "border-[#d4b06a]/20 bg-[#d4b06a]/10 text-[#d4b06a]";
 
   return (
     <div className="card-soft">
@@ -926,17 +937,23 @@ function MatchBox({ match }: { match: any }) {
           {match.phase === "group" || match.phase === "round_robin" ? `Runda ${match.round} · ` : ""}
           Meč {match.bracket_position || match.match_number}
         </p>
-        <span className="rounded-full border border-[#d4b06a]/20 bg-[#d4b06a]/10 px-3 py-1 text-xs font-black text-[#d4b06a]">
-          {match.status}
+        <span className={`rounded-full border px-3 py-1 text-xs font-black ${statusClass}`}>
+          {statusLabel}
         </span>
       </div>
 
       <TeamLine name={match.team_a_name || match.team_a_seed || "Čeka"} score={match.score_a} winner={winnerA} />
       <TeamLine name={match.team_b_name || match.team_b_seed || "Čeka"} score={match.score_b} winner={winnerB} />
 
-      <a href={`/live/${match.id}`} className="btn-outline mt-4 w-full">
-        Live prikaz
-      </a>
+      {locked ? (
+        <button disabled className="btn-outline mt-4 w-full cursor-not-allowed opacity-50">
+          Čeka prethodnu rundu
+        </button>
+      ) : (
+        <a href={`/live/${match.id}`} className="btn-outline mt-4 w-full">
+          Live prikaz
+        </a>
+      )}
     </div>
   );
 }
