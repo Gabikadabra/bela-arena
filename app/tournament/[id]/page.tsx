@@ -97,11 +97,11 @@ export default function TournamentPage({
     return type || "Nije definirano";
   }
 
-  function formatBestOf(bestOf: number | string | null | undefined) {
-    const value = Number(bestOf || 1);
-    if (value === 5) return "Do 3 pobjede";
-    if (value === 3) return "Do 2 pobjede";
-    return "Jedna partija";
+  function formatMatch(format: string) {
+    if (format === "best_of_1") return "Jedna partija";
+    if (format === "best_of_3") return "Do 2 pobjede";
+    if (format === "best_of_5") return "Do 3 pobjede";
+    return format || "Nije definirano";
   }
 
   const approvedTeams = teams.filter((team) => team.status === "approved");
@@ -161,11 +161,9 @@ export default function TournamentPage({
 
             <div className="mt-6 flex flex-wrap gap-3">
               <Badge label={`Status: ${tournament.status}`} />
-              <Badge label={`Grupe do ${tournament.group_score_limit || tournament.score_limit || 1001}`} />
-              <Badge label={`Knockout do ${tournament.knockout_score_limit || tournament.score_limit || 1001}`} />
-              <Badge label={`Grupe: ${formatBestOf(tournament.group_best_of)}`} />
-              <Badge label={`Knockout: ${formatBestOf(tournament.knockout_best_of)}`} />
+              <Badge label={`Igra se do ${tournament.score_limit || 1001}`} />
               <Badge label={formatType(tournament.tournament_format)} />
+              <Badge label={formatMatch(tournament.match_format)} />
               <Badge
                 label={`Repešaž: ${
                   tournament.has_repechage ? "Da" : "Ne"
@@ -248,7 +246,7 @@ export default function TournamentPage({
         <section className="mb-10">
           <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">Bracket</h2>
 
-          <div className="table-scroll mt-5 overflow-x-auto pb-5">
+          <div className="mt-5 overflow-x-auto pb-5">
             <div className="flex min-w-max gap-5">
               {Object.entries(groupedKnockout).map(
                 ([round, roundMatches]: any) => (

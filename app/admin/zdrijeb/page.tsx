@@ -85,27 +85,75 @@ export default function ZdrijebAdminPage() {
   async function clearOldDraw() {
     if (!selectedTournament) return;
 
-    const { data: matchIds } = await supabase
+    const { data: matchIds, error: matchIdsError } = await supabase
       .from("matches")
       .select("id")
       .eq("tournament_id", selectedTournament);
 
+    if (matchIdsError) throw matchIdsError;
+
     if (matchIds && matchIds.length > 0) {
       const ids = matchIds.map((m) => m.id);
 
-      await supabase.from("match_games").delete().in("match_id", ids);
-      await supabase.from("match_sets").delete().in("match_id", ids);
+      const { error: gamesError } = await supabase
+        .from("match_games")
+        .delete()
+        .in("match_id", ids);
+
+      if (gamesError) throw gamesError;
+
+      const { error: setsError } = await supabase
+        .from("match_sets")
+        .delete()
+        .in("match_id", ids);
+
+      if (setsError) throw setsError;
     }
 
-    await supabase
+    const { error: matchesError } = await supabase
       .from("matches")
       .delete()
       .eq("tournament_id", selectedTournament);
 
-    await supabase
+    if (matchesError) throw matchesError;
+
+    const { error: standingsError } = await supabase
       .from("group_standings")
       .delete()
       .eq("tournament_id", selectedTournament);
+
+    if (standingsError) throw standingsError;
+  }
+
+  async function deleteDraw() {
+    setMessage("");
+
+    if (!selectedTournament) {
+      setMessage("Odaberi turnir.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Jesi siguran da želiš izbrisati ždrijeb? Obrisat će se svi mečevi, setovi, partije i tablice grupa za ovaj turnir. Ekipe ostaju prijavljene, a turnir se vraća na open."
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await clearOldDraw();
+
+      const { error: tournamentError } = await supabase
+        .from("tournaments")
+        .update({ status: "open" })
+        .eq("id", selectedTournament);
+
+      if (tournamentError) throw tournamentError;
+
+      setMessage("Ždrijeb je obrisan, a turnir je vraćen na open.");
+      await loadTournamentData();
+    } catch (error: any) {
+      setMessage("Greška kod brisanja ždrijeba: " + error.message);
+    }
   }
 
   async function generateDraw() {
@@ -304,12 +352,21 @@ export default function ZdrijebAdminPage() {
           </p>
         )}
 
-        <button
-          onClick={generateDraw}
-          className="mt-8 rounded-xl bg-[#d4b06a] px-8 py-4 font-black text-black transition hover:bg-[#f3dfad]"
-        >
-          Generiraj prema formatu turnira
-        </button>
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <button
+            onClick={generateDraw}
+            className="rounded-xl bg-[#d4b06a] px-8 py-4 font-black text-black transition hover:bg-[#f3dfad]"
+          >
+            Generiraj prema formatu turnira
+          </button>
+
+          <button
+            onClick={deleteDraw}
+            className="rounded-xl border border-red-400/40 bg-red-500/10 px-8 py-4 font-black text-red-200 transition hover:bg-red-500/20"
+          >
+            Izbriši ždrijeb
+          </button>
+        </div>
 
         {message && (
           <div className="mt-6 rounded-2xl border border-[#d4b06a]/30 bg-[#d4b06a]/10 p-5 text-[#d4b06a]">
@@ -399,7 +456,7 @@ export default function ZdrijebAdminPage() {
             Knockout bracket
           </h2>
 
-          <div className="table-scroll mt-5 flex gap-5 overflow-x-auto pb-4">
+          <div className="mt-5 flex gap-5 overflow-x-auto pb-4">
             {Object.entries(groupedKnockout).map(
               ([round, roundMatches]: any) => (
                 <div key={round} className="min-w-72">

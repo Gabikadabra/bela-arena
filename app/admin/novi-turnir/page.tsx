@@ -13,10 +13,8 @@ export default function NoviTurnirPage() {
     startsAt: "",
     maxTeams: 32,
     entryFee: 0,
-    groupScoreLimit: 701,
-    knockoutScoreLimit: 1001,
-    groupBestOf: 1,
-    knockoutBestOf: 3,
+    scoreLimit: 1001,
+    matchFormat: "best_of_3",
     tournamentFormat: "knockout",
     hasRepechage: false,
     rules: ""
@@ -34,12 +32,8 @@ export default function NoviTurnirPage() {
       status: "open",
       max_teams: Number(form.maxTeams),
       entry_fee: Number(form.entryFee),
-      score_limit: Number(form.knockoutScoreLimit),
-      group_score_limit: Number(form.groupScoreLimit),
-      knockout_score_limit: Number(form.knockoutScoreLimit),
-      group_best_of: Number(form.groupBestOf),
-      knockout_best_of: Number(form.knockoutBestOf),
-      match_format: `best_of_${Number(form.knockoutBestOf)}`,
+      score_limit: Number(form.scoreLimit),
+      match_format: form.matchFormat,
       tournament_format: form.tournamentFormat,
       has_repechage: form.hasRepechage,
       rules: form.rules
@@ -55,10 +49,8 @@ export default function NoviTurnirPage() {
         startsAt: "",
         maxTeams: 32,
         entryFee: 0,
-        groupScoreLimit: 701,
-        knockoutScoreLimit: 1001,
-        groupBestOf: 1,
-        knockoutBestOf: 3,
+        scoreLimit: 1001,
+        matchFormat: "best_of_3",
         tournamentFormat: "knockout",
         hasRepechage: false,
         rules: ""
@@ -140,10 +132,10 @@ export default function NoviTurnirPage() {
             />
           </Field>
 
-          <Field label="Grupe se igraju do">
+          <Field label="Igra se do">
             <select
-              value={form.groupScoreLimit}
-              onChange={(e) => setForm({ ...form, groupScoreLimit: Number(e.target.value) })}
+              value={form.scoreLimit}
+              onChange={(e) => setForm({ ...form, scoreLimit: Number(e.target.value) })}
               className="input"
             >
               <option value={501}>501</option>
@@ -152,40 +144,15 @@ export default function NoviTurnirPage() {
             </select>
           </Field>
 
-          <Field label="Knockout se igra do">
+          <Field label="Format meča">
             <select
-              value={form.knockoutScoreLimit}
-              onChange={(e) => setForm({ ...form, knockoutScoreLimit: Number(e.target.value) })}
+              value={form.matchFormat}
+              onChange={(e) => setForm({ ...form, matchFormat: e.target.value })}
               className="input"
             >
-              <option value={501}>501</option>
-              <option value={701}>701</option>
-              <option value={1001}>1001</option>
-              <option value={1501}>1501</option>
-            </select>
-          </Field>
-
-          <Field label="Grupe - format meča">
-            <select
-              value={form.groupBestOf}
-              onChange={(e) => setForm({ ...form, groupBestOf: Number(e.target.value) })}
-              className="input"
-            >
-              <option value={1}>Jedna partija</option>
-              <option value={3}>Do 2 pobjede / best of 3</option>
-              <option value={5}>Do 3 pobjede / best of 5</option>
-            </select>
-          </Field>
-
-          <Field label="Knockout - format meča">
-            <select
-              value={form.knockoutBestOf}
-              onChange={(e) => setForm({ ...form, knockoutBestOf: Number(e.target.value) })}
-              className="input"
-            >
-              <option value={1}>Jedna partija</option>
-              <option value={3}>Do 2 pobjede / best of 3</option>
-              <option value={5}>Do 3 pobjede / best of 5</option>
+              <option value="best_of_1">Jedna partija</option>
+              <option value="best_of_3">Do 2 pobjede</option>
+              <option value="best_of_5">Do 3 pobjede</option>
             </select>
           </Field>
 
@@ -224,7 +191,7 @@ export default function NoviTurnirPage() {
               <textarea
                 value={form.rules}
                 onChange={(e) => setForm({ ...form, rules: e.target.value })}
-                placeholder="npr. Grupe do 701, knockout do 1001, zvanja vrijede, bela se priznaje, pad se računa..."
+                placeholder="npr. Igra se do 1001, zvanja vrijede, bela se priznaje, pad se računa..."
                 className="input min-h-32"
               />
             </Field>

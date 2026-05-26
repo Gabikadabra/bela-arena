@@ -28,11 +28,11 @@ export default function TurniriPage() {
     return type || "Nije definirano";
   }
 
-  function formatBestOf(bestOf: number | string | null | undefined) {
-    const value = Number(bestOf || 1);
-    if (value === 5) return "Do 3 pobjede";
-    if (value === 3) return "Do 2 pobjede";
-    return "Jedna partija";
+  function formatMatch(format: string) {
+    if (format === "best_of_1") return "Jedna partija";
+    if (format === "best_of_3") return "Do 2 pobjede";
+    if (format === "best_of_5") return "Do 3 pobjede";
+    return format || "Nije definirano";
   }
 
   return (
@@ -83,8 +83,7 @@ export default function TurniriPage() {
               </div>
 
               <div className="rounded-2xl bg-[#d4b06a] px-4 py-3 text-center font-black text-black">
-                <p className="text-xs leading-none">KO</p>
-                <p>{tournament.knockout_score_limit || tournament.score_limit || 1001}</p>
+                {tournament.score_limit || 1001}
               </div>
             </div>
 
@@ -115,23 +114,8 @@ export default function TurniriPage() {
               </p>
 
               <p>
-                <b className="text-[#d4b06a]">Grupe do:</b>{" "}
-                {tournament.group_score_limit || tournament.score_limit || 1001}
-              </p>
-
-              <p>
-                <b className="text-[#d4b06a]">Knockout do:</b>{" "}
-                {tournament.knockout_score_limit || tournament.score_limit || 1001}
-              </p>
-
-              <p>
-                <b className="text-[#d4b06a]">Grupe format:</b>{" "}
-                {formatBestOf(tournament.group_best_of)}
-              </p>
-
-              <p>
-                <b className="text-[#d4b06a]">Knockout format:</b>{" "}
-                {formatBestOf(tournament.knockout_best_of)}
+                <b className="text-[#d4b06a]">Format meča:</b>{" "}
+                {formatMatch(tournament.match_format)}
               </p>
 
               <p>

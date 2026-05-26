@@ -1,0 +1,15 @@
+Dodano u app/admin/zdrijeb/page.tsx:
+
+- gumb "Izbriši ždrijeb"
+- briše match_games, match_sets, matches i group_standings za odabrani turnir
+- ekipe ostaju prijavljene
+- turnir se vraća na status: open
+
+Supabase promjene nisu potrebne.
+
+Kako koristiti:
+1. Otvori Admin -> Ždrijeb.
+2. Odaberi turnir.
+3. Klikni "Izbriši ždrijeb".
+4. Potvrdi brisanje.
+5. Turnir se vraća na otvorene prijave i možeš ponovno generirati ždrijeb.

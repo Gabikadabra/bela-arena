@@ -150,25 +150,13 @@ export default function AdminPage() {
         </button>
       </div>
 
-      <div className="mb-10 grid gap-4 md:grid-cols-2 lg:grid-cols-6">
+      <div className="mb-10 grid gap-4 md:grid-cols-5">
         <a
           href="/admin/novi-turnir"
           className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
         >
           <span className="block text-2xl text-[#d4b06a]">+</span>
           Novi turnir
-        </a>
-
-        <a
-          href={
-            selectedTournament
-              ? `/admin/uredi-turnir/${selectedTournament}`
-              : "/admin"
-          }
-          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
-        >
-          <span className="block text-2xl text-[#d4b06a]">✎</span>
-          Uredi turnir
         </a>
 
         <a
@@ -247,13 +235,6 @@ export default function AdminPage() {
               {selectedTournamentData.location} ·{" "}
               {selectedTournamentData.starts_at}
             </p>
-
-            <a
-              href={`/admin/uredi-turnir/${selectedTournamentData.id}`}
-              className="mt-4 inline-flex rounded-xl border border-[#d4b06a]/40 px-5 py-2 font-bold text-[#d4b06a] transition hover:bg-[#d4b06a]/10"
-            >
-              Uredi ovaj turnir
-            </a>
           </div>
         )}
 
