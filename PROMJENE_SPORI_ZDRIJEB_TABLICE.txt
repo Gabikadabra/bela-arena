@@ -1,0 +1,14 @@
+PROMJENE - SPORI FENSI ŽDRIJEB S TABLICAMA
+
+Dodano:
+- Ždrijeb je usporen: svaka ekipa se prikazuje oko 2.3 sekunde.
+- Maknut je fokus na kuglice; sada se veliko ime ekipe pojavi u sredini.
+- Kod grupnog formata odmah se vide sve tablice grupa.
+- Aktivna ekipa se vizualno šalje u grupu u koju ide.
+- Grupa u koju ekipa ide se posebno osvijetli.
+- Tablice se pune redom kako se ekipe izvlače.
+- Overlay je prilagođen za mobitel i desktop.
+
+Datoteke:
+- app/admin/zdrijeb/page.tsx
+- app/globals.css

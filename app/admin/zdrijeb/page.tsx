@@ -467,15 +467,15 @@ export default function ZdrijebAdminPage() {
       finished: false
     });
 
-    await sleep(450);
+    await sleep(900);
 
     for (let i = 0; i < limitedItems.length; i++) {
       setDrawAnimation((current) => ({ ...current, activeIndex: i }));
-      await sleep(i < 8 ? 720 : 420);
+      await sleep(2300);
     }
 
     setDrawAnimation((current) => ({ ...current, finished: true }));
-    await sleep(900);
+    await sleep(1400);
     setDrawAnimation(emptyDrawAnimation);
   }
 
@@ -593,7 +593,7 @@ export default function ZdrijebAdminPage() {
 
         await playDrawAnimation(
           "LIVE ŽDRIJEB GRUPA",
-          "Kuglice izvlače ekipe po grupama",
+          "Ekipe se polako prikazuju i odlaze u svoju grupu",
           getDrawAnimationItems("groups_knockout", teams, generatedGroups.standings)
         );
         await clearOldDraw();
@@ -998,87 +998,159 @@ function FancyDrawOverlay({ animation }: { animation: DrawAnimationState }) {
     ? Math.round(((animation.activeIndex + 1) / animation.items.length) * 100)
     : 0;
 
+  const groupLabels = Array.from(new Set(animation.items.map((item) => item.label)));
+  const showGroupTables = groupLabels.length > 1 && groupLabels.every((label) => label.toLowerCase().includes("grupa"));
+
+  const tableLabels = showGroupTables ? groupLabels : groupLabels.slice(0, 8);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-[#020806]/95 px-3 py-5 backdrop-blur-xl">
       <div className="draw-lights" />
       <div className="draw-confetti" />
 
-      <div className="relative w-full max-w-5xl rounded-[2rem] border border-[#d4b06a]/35 bg-gradient-to-b from-[#12392b]/95 to-[#061710]/95 p-4 shadow-[0_0_90px_rgba(212,176,106,0.18)] sm:p-8">
+      <div className="relative w-full max-w-7xl rounded-[2rem] border border-[#d4b06a]/35 bg-gradient-to-b from-[#12392b]/95 to-[#061710]/95 p-4 shadow-[0_0_90px_rgba(212,176,106,0.18)] sm:p-7">
         <div className="text-center">
-          <span className="badge">Bela Arena show</span>
-          <h2 className="mt-4 text-3xl font-black text-[#f3dfad] sm:text-5xl">
+          <span className="badge">Bela Arena live draw</span>
+          <h2 className="mt-3 text-2xl font-black text-[#f3dfad] sm:text-5xl">
             {animation.title}
           </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-sm font-semibold text-white/65 sm:text-base">
+          <p className="mx-auto mt-2 max-w-3xl text-sm font-semibold text-white/65 sm:text-base">
             {animation.subtitle}
           </p>
         </div>
 
-        <div className="mt-7 grid gap-5 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
-          <div className="rounded-[1.8rem] border border-[#d4b06a]/20 bg-black/20 p-5 text-center">
-            <div className="draw-ball mx-auto flex h-40 w-40 items-center justify-center rounded-full border border-[#f3dfad]/40 bg-gradient-to-br from-[#f3dfad] via-[#d4b06a] to-[#8f6b2d] text-5xl font-black text-[#071810] shadow-[0_0_70px_rgba(212,176,106,0.45)] sm:h-52 sm:w-52 sm:text-7xl">
-              {activeItem ? animation.activeIndex + 1 : "?"}
-            </div>
+        <div className="mt-6 h-2 overflow-hidden rounded-full bg-white/10">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-[#d4b06a] to-[#f3dfad] transition-all duration-700"
+            style={{ width: `${Math.min(progress, 100)}%` }}
+          />
+        </div>
 
-            <div className="mt-5 min-h-[108px] rounded-3xl border border-[#d4b06a]/20 bg-[#061710]/75 p-4">
+        <div className="mt-6 grid gap-5 lg:grid-cols-[0.95fr_1.45fr] lg:items-stretch">
+          <div className="relative overflow-hidden rounded-[1.8rem] border border-[#d4b06a]/20 bg-black/25 p-5 text-center">
+            <div className="absolute inset-x-6 top-6 h-24 rounded-full bg-[#d4b06a]/10 blur-3xl" />
+
+            <p className="relative text-xs font-black uppercase tracking-[0.28em] text-[#d4b06a]/75">
+              Trenutno se izvlači
+            </p>
+
+            <div className="relative mt-6 flex min-h-[245px] items-center justify-center">
               {activeItem ? (
-                <div className="draw-reveal">
-                  <p className="text-xs font-black uppercase tracking-[0.24em] text-[#d4b06a]/80">
-                    {activeItem.label}
-                  </p>
-                  <h3 className="mt-2 text-2xl font-black text-[#f3dfad] sm:text-3xl">
+                <div key={`${animation.activeIndex}-${activeItem.title}`} className="draw-team-card">
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-[#071810]/60">Ekipa</p>
+                  <h3 className="mt-3 text-3xl font-black text-[#071810] sm:text-5xl">
                     {activeItem.title}
                   </h3>
-                  <p className="mt-1 text-sm font-semibold text-white/55">
-                    {activeItem.subtitle}
-                  </p>
+                  <div className="mt-5 inline-flex rounded-full bg-[#071810] px-4 py-2 text-sm font-black text-[#f3dfad]">
+                    Ide u {activeItem.label}
+                  </div>
+                  {activeItem.subtitle && (
+                    <p className="mt-3 text-sm font-bold text-[#071810]/65">{activeItem.subtitle}</p>
+                  )}
                 </div>
               ) : (
-                <div className="flex h-full items-center justify-center text-sm font-bold text-white/50">
-                  Kuglice se miješaju...
+                <div className="draw-waiting-card">
+                  <p className="text-lg font-black text-[#f3dfad]">Priprema izvlačenja...</p>
+                  <p className="mt-2 text-sm font-semibold text-white/45">Sve tablice čekaju ekipe.</p>
                 </div>
               )}
+            </div>
+
+            <div className="relative mt-4 rounded-3xl border border-[#d4b06a]/20 bg-[#061710]/75 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs font-black uppercase tracking-[0.2em] text-white/45">Napredak</span>
+                <span className="rounded-full border border-[#d4b06a]/25 bg-[#d4b06a]/10 px-3 py-1 text-xs font-black text-[#d4b06a]">
+                  {Math.max(animation.activeIndex + 1, 0)}/{animation.items.length}
+                </span>
+              </div>
+              <p className="mt-3 text-sm font-bold text-white/55">
+                {animation.finished
+                  ? "Ždrijeb završen — spremam raspored"
+                  : activeItem
+                    ? `${activeItem.title} se upisuje u ${activeItem.label}`
+                    : "Za trenutak kreće prvo ime."}
+              </p>
             </div>
           </div>
 
           <div className="rounded-[1.8rem] border border-[#d4b06a]/15 bg-[#071810]/70 p-4">
             <div className="mb-4 flex items-center justify-between gap-3">
-              <p className="font-black text-[#f3dfad]">Izvučeno</p>
-              <span className="rounded-full border border-[#d4b06a]/25 bg-[#d4b06a]/10 px-3 py-1 text-xs font-black text-[#d4b06a]">
-                {Math.max(animation.activeIndex + 1, 0)}/{animation.items.length}
-              </span>
+              <p className="font-black text-[#f3dfad]">{showGroupTables ? "Tablice grupa" : "Izvučeno"}</p>
+              <span className="text-xs font-bold uppercase tracking-[0.18em] text-white/40">sporo izvlačenje</span>
             </div>
 
-            <div className="h-2 overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-[#d4b06a] to-[#f3dfad] transition-all duration-500"
-                style={{ width: `${Math.min(progress, 100)}%` }}
-              />
-            </div>
+            {showGroupTables ? (
+              <div className="grid max-h-[470px] gap-3 overflow-y-auto pr-1 sm:grid-cols-2 xl:grid-cols-3">
+                {tableLabels.map((label) => {
+                  const rows = revealedItems.filter((item) => item.label === label);
+                  const isActiveGroup = activeItem?.label === label;
 
-            <div className="mt-5 grid max-h-[320px] gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
-              {revealedItems.map((item, index) => (
-                <div
-                  key={`${item.label}-${item.title}-${index}`}
-                  className={`rounded-2xl border p-3 transition-all duration-300 ${
-                    index === animation.activeIndex
-                      ? "border-[#d4b06a]/60 bg-[#d4b06a]/15 shadow-[0_0_28px_rgba(212,176,106,0.18)]"
-                      : "border-white/10 bg-white/[0.04]"
-                  }`}
-                >
-                  <p className="text-[0.65rem] font-black uppercase tracking-[0.18em] text-[#d4b06a]/70">
-                    {item.label}
-                  </p>
-                  <p className="mt-1 font-black text-[#f3dfad]">{item.title}</p>
-                  <p className="text-xs text-white/45">{item.subtitle}</p>
-                </div>
-              ))}
-            </div>
+                  return (
+                    <div
+                      key={label}
+                      className={`min-h-[190px] rounded-3xl border p-3 transition-all duration-500 ${
+                        isActiveGroup
+                          ? "border-[#d4b06a]/70 bg-[#d4b06a]/15 shadow-[0_0_30px_rgba(212,176,106,0.16)]"
+                          : "border-white/10 bg-white/[0.035]"
+                      }`}
+                    >
+                      <div className="mb-3 flex items-center justify-between gap-2">
+                        <h3 className="font-black text-[#f3dfad]">{label}</h3>
+                        <span className="rounded-full bg-black/25 px-2 py-1 text-[0.65rem] font-black text-white/45">
+                          {rows.length} ekipa
+                        </span>
+                      </div>
+
+                      <div className="space-y-2">
+                        {rows.length === 0 ? (
+                          <div className="rounded-2xl border border-dashed border-white/10 p-3 text-center text-xs font-bold text-white/35">
+                            Čeka prvo ime
+                          </div>
+                        ) : (
+                          rows.map((item, index) => (
+                            <div
+                              key={`${item.label}-${item.title}-${index}`}
+                              className={`draw-table-row rounded-2xl border px-3 py-2 ${
+                                item === activeItem
+                                  ? "border-[#f3dfad]/70 bg-[#f3dfad]/15"
+                                  : "border-white/10 bg-black/20"
+                              }`}
+                            >
+                              <p className="text-sm font-black text-[#f3dfad]">{item.title}</p>
+                              <p className="text-[0.68rem] font-semibold text-white/40">{item.subtitle}</p>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="grid max-h-[470px] gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
+                {revealedItems.map((item, index) => (
+                  <div
+                    key={`${item.label}-${item.title}-${index}`}
+                    className={`rounded-2xl border p-3 transition-all duration-300 ${
+                      index === animation.activeIndex
+                        ? "border-[#d4b06a]/60 bg-[#d4b06a]/15 shadow-[0_0_28px_rgba(212,176,106,0.18)]"
+                        : "border-white/10 bg-white/[0.04]"
+                    }`}
+                  >
+                    <p className="text-[0.65rem] font-black uppercase tracking-[0.18em] text-[#d4b06a]/70">
+                      {item.label}
+                    </p>
+                    <p className="mt-1 font-black text-[#f3dfad]">{item.title}</p>
+                    <p className="text-xs text-white/45">{item.subtitle}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="mt-6 text-center text-xs font-bold uppercase tracking-[0.25em] text-white/45">
-          {animation.finished ? "Ždrijeb završen — spremam raspored" : "Bela Arena · live draw experience"}
+        <div className="mt-5 text-center text-xs font-bold uppercase tracking-[0.25em] text-white/45">
+          {animation.finished ? "Ždrijeb završen — spremam raspored" : "Bela Arena · Champions League style"}
         </div>
       </div>
     </div>

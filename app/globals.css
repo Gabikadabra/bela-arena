@@ -666,3 +666,85 @@ button, a, input, select, textarea {
     background-size: 90px 90px, 120px 120px, 150px 150px;
   }
 }
+
+/* Slower table draw animation */
+.draw-team-card {
+  width: min(100%, 430px);
+  border-radius: 2rem;
+  border: 1px solid rgba(243, 223, 173, 0.65);
+  background: linear-gradient(135deg, #f3dfad, #d4b06a 55%, #9c7430);
+  padding: 1.35rem;
+  box-shadow: 0 0 70px rgba(212, 176, 106, 0.32);
+  animation: drawTeamToTable 2.05s cubic-bezier(0.2, 0.82, 0.22, 1) both;
+}
+
+.draw-waiting-card {
+  width: min(100%, 380px);
+  border-radius: 2rem;
+  border: 1px dashed rgba(212, 176, 106, 0.32);
+  background: rgba(6, 23, 16, 0.72);
+  padding: 1.5rem;
+}
+
+.draw-table-row {
+  animation: drawTableRowIn 0.55s ease both;
+}
+
+@keyframes drawTeamToTable {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.9);
+    filter: blur(8px);
+  }
+  22% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+  68% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0.35;
+    transform: translateX(38%) translateY(-8px) scale(0.72);
+    filter: blur(2px);
+  }
+}
+
+@keyframes drawTableRowIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 1024px) {
+  @keyframes drawTeamToTable {
+    0% {
+      opacity: 0;
+      transform: translateY(30px) scale(0.9);
+      filter: blur(8px);
+    }
+    22% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+    68% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+    100% {
+      opacity: 0.35;
+      transform: translateY(55px) scale(0.72);
+      filter: blur(2px);
+    }
+  }
+}
