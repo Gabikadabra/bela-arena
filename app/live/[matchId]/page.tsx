@@ -45,6 +45,18 @@ export default function LiveMatchPage({
           loadData();
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "match_sets",
+          filter: `match_id=eq.${matchId}`
+        },
+        () => {
+          loadData();
+        }
+      )
       .subscribe();
 
     return () => {
@@ -203,11 +215,7 @@ export default function LiveMatchPage({
               <p className="mt-2 text-3xl font-black">
                 +{lastGame.team_a_total}
               </p>
-              <p className="mt-2 text-sm text-zinc-400">
-                Štihovi: {lastGame.team_a_tricks} · Zvanja:{" "}
-                {lastGame.team_a_declarations} · Bela:{" "}
-                {lastGame.team_a_bela ? "Da" : "Ne"}
-              </p>
+              <p className="mt-2 text-sm text-zinc-400">Zadnji unos rezultata</p>
             </div>
 
             <div className="rounded-2xl bg-[#12392b] p-5">
@@ -215,20 +223,13 @@ export default function LiveMatchPage({
               <p className="mt-2 text-3xl font-black">
                 +{lastGame.team_b_total}
               </p>
-              <p className="mt-2 text-sm text-zinc-400">
-                Štihovi: {lastGame.team_b_tricks} · Zvanja:{" "}
-                {lastGame.team_b_declarations} · Bela:{" "}
-                {lastGame.team_b_bela ? "Da" : "Ne"}
-              </p>
+              <p className="mt-2 text-sm text-zinc-400">Zadnji unos rezultata</p>
             </div>
           </div>
 
           <div className="mt-5 flex flex-wrap gap-3">
             <span className="rounded-full bg-blue-500/20 px-4 py-2 text-blue-300">
-              Zvali:{" "}
-              {lastGame.caller_team === "A"
-                ? match.team_a_name
-                : match.team_b_name}
+              Unos rezultata
             </span>
 
             <span
@@ -238,7 +239,7 @@ export default function LiveMatchPage({
                   : "bg-green-500/20 text-green-300"
               }`}
             >
-              Pad: {lastGame.called_team_fell ? "Da" : "Ne"}
+              Status: OK
             </span>
           </div>
         </section>
