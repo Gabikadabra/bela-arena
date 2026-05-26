@@ -8,6 +8,19 @@ type PageProps = {
   params: Promise<{ matchId: string }>;
 };
 
+type TeamSide = "A" | "B";
+
+type SimpleCalculation = {
+  rawA: number;
+  rawB: number;
+  declarationsA: number;
+  declarationsB: number;
+  belaA: number;
+  belaB: number;
+  finalA: number;
+  finalB: number;
+};
+
 export default function MecPage({ params }: PageProps) {
   const { matchId } = use(params);
 
@@ -19,32 +32,40 @@ export default function MecPage({ params }: PageProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState<"success" | "error">("success");
+  const [messageType, setMessageType] = useState<"success" | "error">(
+    "success"
+  );
 
   const [form, setForm] = useState({
-    teamAScore: "",
-    teamBScore: "",
-    note: "",
+    teamAScore: 0,
+    teamBScore: 0,
+    teamADeclarations: 0,
+    teamBDeclarations: 0,
+    teamABela: false,
+    teamBBela: false,
+    note: ""
   });
 
   useEffect(() => {
-    loadData(true);
+    loadData();
   }, [matchId]);
 
   useEffect(() => {
     if (!matchId) return;
 
     const channel = supabase
-      .channel(`match-realtime-${matchId}`)
+      .channel(`match-live-${matchId}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "matches",
-          filter: `id=eq.${matchId}`,
+          filter: `id=eq.${matchId}`
         },
-        () => loadData(false),
+        () => {
+          loadData();
+        }
       )
       .on(
         "postgres_changes",
@@ -52,9 +73,11 @@ export default function MecPage({ params }: PageProps) {
           event: "*",
           schema: "public",
           table: "match_games",
-          filter: `match_id=eq.${matchId}`,
+          filter: `match_id=eq.${matchId}`
         },
-        () => loadData(false),
+        () => {
+          loadData();
+        }
       )
       .on(
         "postgres_changes",
@@ -62,9 +85,11 @@ export default function MecPage({ params }: PageProps) {
           event: "*",
           schema: "public",
           table: "match_sets",
-          filter: `match_id=eq.${matchId}`,
+          filter: `match_id=eq.${matchId}`
         },
-        () => loadData(false),
+        () => {
+          loadData();
+        }
       )
       .subscribe();
 
@@ -73,8 +98,9 @@ export default function MecPage({ params }: PageProps) {
     };
   }, [matchId]);
 
-  async function loadData(showSpinner = false) {
-    if (showSpinner) setLoading(true);
+  async function loadData() {
+    setLoading(true);
+    setMessage("");
 
     const { data: userData } = await supabase.auth.getUser();
     setUser(userData.user);
@@ -123,53 +149,57 @@ export default function MecPage({ params }: PageProps) {
   }
 
   const currentSet = match?.current_set || 1;
+
   const groupScoreLimit =
     tournament?.group_score_limit || tournament?.score_limit || 1001;
+
   const knockoutScoreLimit =
     tournament?.knockout_score_limit || tournament?.score_limit || 1001;
+
   const scoreLimit =
     match?.phase === "group" ? groupScoreLimit : knockoutScoreLimit;
+
   const legacyBestOf =
     Number(
-      String(tournament?.match_format || "best_of_1").replace("best_of_", ""),
+      String(tournament?.match_format || "best_of_1").replace("best_of_", "")
     ) || 1;
+
   const groupBestOf = Number(tournament?.group_best_of || 1);
+
   const knockoutBestOf = Number(
-    tournament?.knockout_best_of || legacyBestOf || 1,
+    tournament?.knockout_best_of || legacyBestOf || 1
   );
+
   const matchBestOf = match?.phase === "group" ? groupBestOf : knockoutBestOf;
+
   const setsToWin = Math.ceil(matchBestOf / 2);
+
   const isFinished = match?.status === "finished";
   const isLocked = match?.status === "waiting" || match?.status === "bye";
 
   const currentSetGames = useMemo(
     () =>
       games.filter((game) => Number(game.set_number) === Number(currentSet)),
-    [games, currentSet],
+    [games, currentSet]
   );
 
   const totalA = useMemo(
     () =>
       currentSetGames.reduce(
         (sum, game) => sum + Number(game.team_a_total || 0),
-        0,
+        0
       ),
-    [currentSetGames],
+    [currentSetGames]
   );
 
   const totalB = useMemo(
     () =>
       currentSetGames.reduce(
         (sum, game) => sum + Number(game.team_b_total || 0),
-        0,
+        0
       ),
-    [currentSetGames],
+    [currentSetGames]
   );
-
-  const enteredA = Number(form.teamAScore || 0);
-  const enteredB = Number(form.teamBScore || 0);
-  const afterSubmitA = totalA + enteredA;
-  const afterSubmitB = totalB + enteredB;
 
   function prettyBestOf(bestOf: number) {
     if (bestOf === 5) return "Do 3 pobjede / best of 5";
@@ -177,10 +207,97 @@ export default function MecPage({ params }: PageProps) {
     return "Jedna partija";
   }
 
-  async function advanceWinnerToNextMatch(
-    winnerId: string,
-    winnerName: string,
-  ) {
+  function addDeclaration(team: TeamSide, value: number) {
+    if (team === "A") {
+      setForm((old) => ({
+        ...old,
+        teamADeclarations: Number(old.teamADeclarations || 0) + value
+      }));
+    } else {
+      setForm((old) => ({
+        ...old,
+        teamBDeclarations: Number(old.teamBDeclarations || 0) + value
+      }));
+    }
+  }
+
+  function removeDeclaration(team: TeamSide, value: number) {
+    if (team === "A") {
+      setForm((old) => ({
+        ...old,
+        teamADeclarations: Math.max(
+          0,
+          Number(old.teamADeclarations || 0) - value
+        )
+      }));
+    } else {
+      setForm((old) => ({
+        ...old,
+        teamBDeclarations: Math.max(
+          0,
+          Number(old.teamBDeclarations || 0) - value
+        )
+      }));
+    }
+  }
+
+  function clearDeclarations(team: TeamSide) {
+    if (team === "A") {
+      setForm((old) => ({
+        ...old,
+        teamADeclarations: 0
+      }));
+    } else {
+      setForm((old) => ({
+        ...old,
+        teamBDeclarations: 0
+      }));
+    }
+  }
+
+  function toggleBela(team: TeamSide) {
+    if (team === "A") {
+      setForm((old) => ({
+        ...old,
+        teamABela: !old.teamABela,
+        teamBBela: false
+      }));
+    } else {
+      setForm((old) => ({
+        ...old,
+        teamBBela: !old.teamBBela,
+        teamABela: false
+      }));
+    }
+  }
+
+  function calculateSimpleResult(): SimpleCalculation {
+    const rawA = Number(form.teamAScore || 0);
+    const rawB = Number(form.teamBScore || 0);
+
+    const declarationsA = Number(form.teamADeclarations || 0);
+    const declarationsB = Number(form.teamBDeclarations || 0);
+
+    const belaA = form.teamABela ? 20 : 0;
+    const belaB = form.teamBBela ? 20 : 0;
+
+    return {
+      rawA,
+      rawB,
+      declarationsA,
+      declarationsB,
+      belaA,
+      belaB,
+      finalA: rawA + declarationsA + belaA,
+      finalB: rawB + declarationsB + belaB
+    };
+  }
+
+  const preview = calculateSimpleResult();
+  const afterSubmitA = totalA + preview.finalA;
+  const afterSubmitB = totalB + preview.finalB;
+
+  async function advanceWinnerToNextMatch(winnerId: string, winnerName: string) {
     if (!match) return;
 
     const currentRound = match.round || match.round_number || 1;
@@ -205,7 +322,7 @@ export default function MecPage({ params }: PageProps) {
         .update({
           team_a_id: winnerId,
           team_a_name: winnerName,
-          status: nextMatch.team_b_id ? "scheduled" : "waiting",
+          status: nextMatch.team_b_id ? "scheduled" : "waiting"
         })
         .eq("id", nextMatch.id);
     } else {
@@ -214,13 +331,13 @@ export default function MecPage({ params }: PageProps) {
         .update({
           team_b_id: winnerId,
           team_b_name: winnerName,
-          status: nextMatch.team_a_id ? "scheduled" : "waiting",
+          status: nextMatch.team_a_id ? "scheduled" : "waiting"
         })
         .eq("id", nextMatch.id);
     }
   }
 
-  async function submitResult(event: React.FormEvent) {
+  async function addGame(event: React.FormEvent) {
     event.preventDefault();
     setMessage("");
 
@@ -245,40 +362,34 @@ export default function MecPage({ params }: PageProps) {
     if (isLocked) {
       setMessageType("error");
       setMessage(
-        "Ovaj meč je zaključan. Prvo treba završiti prethodnu Berger rundu.",
+        "Ovaj meč je zaključan. Prvo treba završiti prethodnu Berger rundu."
       );
       return;
     }
 
-    if (!form.teamAScore && !form.teamBScore) {
+    if (preview.rawA < 0 || preview.rawB < 0) {
       setMessageType("error");
-      setMessage("Upiši rezultat barem jedne ekipe.");
+      setMessage("Bodovi ne mogu biti manji od 0.");
       return;
     }
 
-    if (enteredA < 0 || enteredB < 0) {
+    if (preview.finalA === 0 && preview.finalB === 0) {
       setMessageType("error");
-      setMessage("Rezultat ne može biti negativan.");
+      setMessage("Upiši rezultat prije spremanja.");
       return;
     }
 
-    if (enteredA === 0 && enteredB === 0) {
+    if (form.teamABela && form.teamBBela) {
       setMessageType("error");
-      setMessage("Rezultat ne može biti 0 : 0.");
-      return;
-    }
-
-    const setFinished = afterSubmitA >= scoreLimit || afterSubmitB >= scoreLimit;
-
-    if (setFinished && afterSubmitA === afterSubmitB) {
-      setMessageType("error");
-      setMessage("Set ne može završiti neriješeno. Ispravi rezultat.");
+      setMessage("Bela može biti samo kod jedne ekipe.");
       return;
     }
 
     setSaving(true);
 
     const gameNumber = currentSetGames.length + 1;
+    const newTotalA = totalA + preview.finalA;
+    const newTotalB = totalB + preview.finalB;
 
     const { error: gameError } = await supabase.from("match_games").insert({
       match_id: matchId,
@@ -287,17 +398,17 @@ export default function MecPage({ params }: PageProps) {
       submitted_by: user.id,
       caller_team: null,
       called_team_fell: false,
-      raw_team_a_tricks: enteredA,
-      raw_team_b_tricks: enteredB,
-      team_a_tricks: enteredA,
-      team_b_tricks: enteredB,
-      team_a_declarations: 0,
-      team_b_declarations: 0,
-      team_a_bela: false,
-      team_b_bela: false,
-      team_a_total: enteredA,
-      team_b_total: enteredB,
-      note: form.note,
+      raw_team_a_tricks: preview.rawA,
+      raw_team_b_tricks: preview.rawB,
+      team_a_tricks: preview.rawA,
+      team_b_tricks: preview.rawB,
+      team_a_declarations: preview.declarationsA,
+      team_b_declarations: preview.declarationsB,
+      team_a_bela: form.teamABela,
+      team_b_bela: form.teamBBela,
+      team_a_total: preview.finalA,
+      team_b_total: preview.finalB,
+      note: form.note
     });
 
     if (gameError) {
@@ -308,28 +419,41 @@ export default function MecPage({ params }: PageProps) {
     }
 
     let updateMatch: any = {
-      score_a: afterSubmitA,
-      score_b: afterSubmitB,
+      score_a: newTotalA,
+      score_b: newTotalB,
       result_status: "submitted",
-      submitted_by: user.id,
+      submitted_by: user.id
     };
 
+    const setFinished = newTotalA >= scoreLimit || newTotalB >= scoreLimit;
+
     if (setFinished) {
+      if (newTotalA === newTotalB) {
+        setSaving(false);
+        setMessageType("error");
+        setMessage(
+          "Set ne može završiti neriješeno. Dodaj još jedno dijeljenje ili ispravi rezultat."
+        );
+        return;
+      }
+
       const setWinnerId =
-        afterSubmitA > afterSubmitB ? match.team_a_id : match.team_b_id;
+        newTotalA > newTotalB ? match.team_a_id : match.team_b_id;
+
       const setsA = Number(match.sets_a || 0);
       const setsB = Number(match.sets_b || 0);
+
       const newSetsA = setWinnerId === match.team_a_id ? setsA + 1 : setsA;
       const newSetsB = setWinnerId === match.team_b_id ? setsB + 1 : setsB;
 
       const { error: setError } = await supabase.from("match_sets").insert({
         match_id: matchId,
         set_number: currentSet,
-        team_a_score: afterSubmitA,
-        team_b_score: afterSubmitB,
+        team_a_score: newTotalA,
+        team_b_score: newTotalB,
         winner_id: setWinnerId,
         status: "finished",
-        finished_at: new Date().toISOString(),
+        finished_at: new Date().toISOString()
       });
 
       if (setError) {
@@ -353,7 +477,7 @@ export default function MecPage({ params }: PageProps) {
           sets_b: newSetsB,
           winner_id: setWinnerId,
           status: "finished",
-          result_status: "submitted",
+          result_status: "submitted"
         };
 
         await advanceWinnerToNextMatch(setWinnerId, winnerName);
@@ -365,7 +489,7 @@ export default function MecPage({ params }: PageProps) {
           current_set: currentSet + 1,
           score_a: 0,
           score_b: 0,
-          status: "scheduled",
+          status: "scheduled"
         };
       }
     }
@@ -390,30 +514,35 @@ export default function MecPage({ params }: PageProps) {
       phase: match.phase,
       group_name: match.group_name,
       round: match.round,
-      round_number: match.round_number,
+      round_number: match.round_number
     });
 
     setForm({
-      teamAScore: "",
-      teamBScore: "",
-      note: "",
+      teamAScore: 0,
+      teamBScore: 0,
+      teamADeclarations: 0,
+      teamBDeclarations: 0,
+      teamABela: false,
+      teamBBela: false,
+      note: ""
     });
 
     setMessageType("success");
     setMessage(
       setFinished
         ? "Set je završen i rezultat je spremljen."
-        : "Rezultat je dodan uživo.",
+        : "Rezultat je dodan uživo."
     );
+
     setSaving(false);
-    await loadData(false);
+    await loadData();
   }
 
   if (loading) {
     return (
       <main className="page">
         <div className="card">
-          <p className="text-white/70">Učitavam meč...</p>
+          <p className="muted">Učitavam meč...</p>
         </div>
       </main>
     );
@@ -430,22 +559,24 @@ export default function MecPage({ params }: PageProps) {
   }
 
   return (
-    <main className="page pb-28 md:pb-12">
-      <section className="hero-card mb-6">
-        <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
+    <main className="page">
+      <section className="hero-card">
+        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
           <div>
             <p className="badge">Live unos rezultata</p>
 
-            <h1 className="mt-4 text-3xl font-black leading-tight text-[var(--gold-light)] sm:text-4xl md:text-5xl">
+            <h1 className="mt-4 text-3xl font-black leading-tight text-[var(--gold-light)] sm:text-4xl lg:text-5xl">
               {match.team_a_name} vs {match.team_b_name}
             </h1>
 
-            <p className="muted mt-3">
-              Set {currentSet} · {match?.phase === "group" ? "Grupa" : "Knockout"} do {scoreLimit} · {prettyBestOf(matchBestOf)} · treba {setsToWin} set(ova)
+            <p className="muted mt-3 text-sm sm:text-base">
+              Set {currentSet} · {match?.phase === "group" ? "Grupa" : "Knockout"}{" "}
+              do {scoreLimit} · {prettyBestOf(matchBestOf)} · treba {setsToWin}{" "}
+              set(ova)
             </p>
           </div>
 
-          <div className="rounded-2xl border border-[rgba(212,176,106,0.15)] bg-[#0a2018] p-5 text-left md:text-right">
+          <div className="rounded-2xl border border-[rgba(212,176,106,0.15)] bg-[rgba(10,32,24,0.8)] p-5 text-left lg:text-right">
             <p className="text-sm text-white/55">Status meča</p>
             <p className="mt-1 text-2xl font-black text-[var(--gold-light)]">
               {isFinished ? "Završen" : isLocked ? "Zaključan" : "U tijeku"}
@@ -454,15 +585,31 @@ export default function MecPage({ params }: PageProps) {
         </div>
       </section>
 
-      <section className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <ScoreCard title={match.team_a_name || "Ekipa A"} value={totalA} subtitle="Trenutni set" />
-        <ScoreCard title={match.team_b_name || "Ekipa B"} value={totalB} subtitle="Trenutni set" />
-        <ScoreCard title="Setovi A" value={match.sets_a || 0} subtitle={match.team_a_name} />
-        <ScoreCard title="Setovi B" value={match.sets_b || 0} subtitle={match.team_b_name} />
+      <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Info
+          title={match.team_a_name || "Ekipa A"}
+          value={totalA}
+          subtitle="Trenutni set"
+        />
+        <Info
+          title={match.team_b_name || "Ekipa B"}
+          value={totalB}
+          subtitle="Trenutni set"
+        />
+        <Info
+          title="Setovi A"
+          value={match.sets_a || 0}
+          subtitle={match.team_a_name}
+        />
+        <Info
+          title="Setovi B"
+          value={match.sets_b || 0}
+          subtitle={match.team_b_name}
+        />
       </section>
 
       {sets.length > 0 && (
-        <section className="card mb-6">
+        <section className="card mt-6">
           <h2 className="section-title">Završeni setovi</h2>
 
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -472,7 +619,9 @@ export default function MecPage({ params }: PageProps) {
                 <p className="mt-2 text-2xl font-black text-[var(--gold)]">
                   {set.team_a_score} : {set.team_b_score}
                 </p>
-                <p className="mt-2 text-sm text-white/55">Status: {set.status}</p>
+                <p className="mt-2 text-sm text-white/55">
+                  Status: {set.status}
+                </p>
               </div>
             ))}
           </div>
@@ -480,76 +629,130 @@ export default function MecPage({ params }: PageProps) {
       )}
 
       {!user && (
-        <div className="mb-6 rounded-2xl border border-[rgba(212,176,106,0.3)] bg-[rgba(212,176,106,0.1)] p-5 text-[var(--gold-light)]">
+        <div className="mt-6 rounded-2xl border border-[rgba(212,176,106,0.3)] bg-[rgba(212,176,106,0.1)] p-5 text-[var(--gold-light)]">
           Moraš biti prijavljen za upis rezultata.
         </div>
       )}
 
       {isLocked && (
-        <div className="mb-6 rounded-2xl border border-[rgba(212,176,106,0.3)] bg-[rgba(212,176,106,0.1)] p-5 text-[var(--gold-light)]">
-          Ovaj meč je zaključan jer se grupe igraju Berger sustavom po rundama. Prvo se moraju završiti svi mečevi prethodne runde.
+        <div className="mt-6 rounded-2xl border border-[rgba(212,176,106,0.3)] bg-[rgba(212,176,106,0.1)] p-5 text-[var(--gold-light)]">
+          Ovaj meč je zaključan jer se grupe igraju Berger sustavom po rundama.
+          Prvo se moraju završiti svi mečevi prethodne runde.
         </div>
       )}
 
-      <form onSubmit={submitResult} className="card shadow-2xl">
-        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+      <form onSubmit={addGame} className="card mt-6">
+        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
           <div>
-            <h2 className="section-title">Upiši rezultat</h2>
+            <h2 className="section-title">Novi unos</h2>
             <p className="muted mt-2">
-              Upiši samo bodove koje su ekipe osvojile u ovom unosu. Sve tablice, setovi i live prikaz se automatski osvježavaju.
+              Upiši bodove za obje ekipe. Zvanja i belu dodaješ klikom.
             </p>
           </div>
 
-          <div className="rounded-2xl bg-[#0a2018] p-4 text-sm text-white/70">
-            Nakon unosa: <b className="text-[var(--gold)]">{afterSubmitA}</b> : <b className="text-[var(--gold)]">{afterSubmitB}</b>
+          <div className="rounded-2xl border border-[rgba(212,176,106,0.15)] bg-[rgba(10,32,24,0.75)] p-4 text-sm text-white/75">
+            Nakon unosa:{" "}
+            <b className="text-[var(--gold-light)]">{afterSubmitA}</b> :{" "}
+            <b className="text-[var(--gold-light)]">{afterSubmitB}</b>
           </div>
         </div>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          <Field label={match.team_a_name || "Ekipa A"}>
-            <input
-              type="number"
-              inputMode="numeric"
-              value={form.teamAScore}
-              onChange={(event) =>
-                setForm({ ...form, teamAScore: event.target.value })
-              }
-              className="input text-center text-3xl font-black md:text-left"
-              min={0}
-              placeholder="0"
-            />
-          </Field>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <ScoreInput
+            label={match.team_a_name || "Ekipa A"}
+            value={form.teamAScore}
+            onChange={(value) => setForm({ ...form, teamAScore: value })}
+          />
 
-          <Field label={match.team_b_name || "Ekipa B"}>
-            <input
-              type="number"
-              inputMode="numeric"
-              value={form.teamBScore}
-              onChange={(event) =>
-                setForm({ ...form, teamBScore: event.target.value })
-              }
-              className="input text-center text-3xl font-black md:text-left"
-              min={0}
-              placeholder="0"
-            />
-          </Field>
+          <ScoreInput
+            label={match.team_b_name || "Ekipa B"}
+            value={form.teamBScore}
+            onChange={(value) => setForm({ ...form, teamBScore: value })}
+          />
+        </div>
 
-          <div className="md:col-span-2">
-            <Field label="Napomena">
-              <textarea
-                value={form.note}
-                onChange={(event) => setForm({ ...form, note: event.target.value })}
-                className="input min-h-24"
-                placeholder="npr. ispravak rezultata, dogovor, sporna situacija..."
-              />
-            </Field>
+        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          <DeclarationsCard
+            teamName={match.team_a_name || "Ekipa A"}
+            value={form.teamADeclarations}
+            onAdd={(value) => addDeclaration("A", value)}
+            onRemove={(value) => removeDeclaration("A", value)}
+            onClear={() => clearDeclarations("A")}
+          />
+
+          <DeclarationsCard
+            teamName={match.team_b_name || "Ekipa B"}
+            value={form.teamBDeclarations}
+            onAdd={(value) => addDeclaration("B", value)}
+            onRemove={(value) => removeDeclaration("B", value)}
+            onClear={() => clearDeclarations("B")}
+          />
+        </div>
+
+        <div className="mt-6">
+          <h3 className="text-lg font-black text-[var(--gold-light)]">
+            Bela
+          </h3>
+          <p className="muted mt-1 text-sm">
+            Bela može biti označena samo za jednu ekipu.
+          </p>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => toggleBela("A")}
+              className={`rounded-2xl border p-5 text-left font-black transition active:scale-[0.98] ${
+                form.teamABela
+                  ? "border-[var(--gold-light)] bg-[var(--gold)] text-[#0f2f24]"
+                  : "border-[rgba(212,176,106,0.2)] bg-[rgba(10,32,24,0.75)] text-[var(--gold-light)]"
+              }`}
+            >
+              Bela - {match.team_a_name}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => toggleBela("B")}
+              className={`rounded-2xl border p-5 text-left font-black transition active:scale-[0.98] ${
+                form.teamBBela
+                  ? "border-[var(--gold-light)] bg-[var(--gold)] text-[#0f2f24]"
+                  : "border-[rgba(212,176,106,0.2)] bg-[rgba(10,32,24,0.75)] text-[var(--gold-light)]"
+              }`}
+            >
+              Bela - {match.team_b_name}
+            </button>
           </div>
         </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-3">
-          <QuickButton label="+162 A" onClick={() => setForm({ ...form, teamAScore: String(enteredA + 162) })} />
-          <QuickButton label="+162 B" onClick={() => setForm({ ...form, teamBScore: String(enteredB + 162) })} />
-          <QuickButton label="Očisti" onClick={() => setForm({ ...form, teamAScore: "", teamBScore: "" })} />
+        <div className="card-soft mt-6">
+          <h3 className="text-xl font-black text-[var(--gold-light)]">
+            Pregled unosa
+          </h3>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <PreviewBox title="Bodovi A" value={preview.rawA} />
+            <PreviewBox title="Zvanja A" value={preview.declarationsA} />
+            <PreviewBox title="Bela A" value={preview.belaA} />
+            <PreviewBox title="Ukupno A" value={preview.finalA} />
+
+            <PreviewBox title="Bodovi B" value={preview.rawB} />
+            <PreviewBox title="Zvanja B" value={preview.declarationsB} />
+            <PreviewBox title="Bela B" value={preview.belaB} />
+            <PreviewBox title="Ukupno B" value={preview.finalB} />
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <Field label="Napomena">
+            <textarea
+              value={form.note}
+              onChange={(event) =>
+                setForm({ ...form, note: event.target.value })
+              }
+              className="input min-h-24"
+              placeholder="npr. sporna situacija, dogovor..."
+            />
+          </Field>
         </div>
 
         <button
@@ -573,79 +776,219 @@ export default function MecPage({ params }: PageProps) {
         </div>
       )}
 
-      <section className="mt-8">
+      <section className="mt-10">
         <h2 className="section-title">Povijest unosa</h2>
 
-        <div className="mt-5 space-y-3">
+        <div className="mt-5 space-y-4">
           {games.length === 0 && (
-            <div className="rounded-2xl border border-[rgba(212,176,106,0.15)] bg-[#0a2018] p-6 text-white/70">
-              Još nema upisanih rezultata.
+            <div className="card-soft">
+              <p className="muted">Još nema upisanih rezultata.</p>
             </div>
           )}
 
-          {games
-            .slice()
-            .reverse()
-            .map((game) => (
-              <div key={game.id} className="rounded-2xl border border-[rgba(212,176,106,0.15)] bg-[#0a2018] p-5">
-                <p className="text-sm text-white/45">
-                  Set {game.set_number} · Unos {game.game_number}
-                </p>
+          {games.map((game) => (
+            <div key={game.id} className="card-soft">
+              <p className="text-sm text-white/45">
+                Set {game.set_number} · Unos {game.game_number}
+              </p>
 
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-xl bg-[#12392b] p-4">
-                    <b className="text-[var(--gold)]">{match.team_a_name}</b>
-                    <p className="mt-2 text-3xl font-black text-[var(--gold-light)]">+{game.team_a_total}</p>
-                  </div>
+              <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                <HistoryTeamBox
+                  name={match.team_a_name}
+                  tricks={game.team_a_tricks}
+                  declarations={game.team_a_declarations}
+                  bela={game.team_a_bela}
+                  total={game.team_a_total}
+                />
 
-                  <div className="rounded-xl bg-[#12392b] p-4">
-                    <b className="text-[var(--gold)]">{match.team_b_name}</b>
-                    <p className="mt-2 text-3xl font-black text-[var(--gold-light)]">+{game.team_b_total}</p>
-                  </div>
-                </div>
-
-                {game.note && <p className="mt-3 text-sm text-white/60">Napomena: {game.note}</p>}
+                <HistoryTeamBox
+                  name={match.team_b_name}
+                  tricks={game.team_b_tricks}
+                  declarations={game.team_b_declarations}
+                  bela={game.team_b_bela}
+                  total={game.team_b_total}
+                />
               </div>
-            ))}
+
+              {game.note && (
+                <p className="mt-3 text-sm text-white/55">
+                  Napomena: {game.note}
+                </p>
+              )}
+            </div>
+          ))}
         </div>
       </section>
     </main>
   );
 }
 
-function ScoreCard({
+function ScoreInput({
+  label,
+  value,
+  onChange
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <label className="block rounded-2xl border border-[rgba(212,176,106,0.15)] bg-[rgba(10,32,24,0.7)] p-4">
+      <span className="block text-sm font-black text-[var(--gold)]">
+        {label}
+      </span>
+      <input
+        type="number"
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="mt-3 w-full rounded-2xl border border-[rgba(212,176,106,0.15)] bg-[rgba(5,22,15,0.85)] px-4 py-5 text-center text-4xl font-black text-[var(--gold-light)] outline-none focus:border-[var(--gold)]"
+        min={0}
+        inputMode="numeric"
+      />
+    </label>
+  );
+}
+
+function DeclarationsCard({
+  teamName,
+  value,
+  onAdd,
+  onRemove,
+  onClear
+}: {
+  teamName: string;
+  value: number;
+  onAdd: (value: number) => void;
+  onRemove: (value: number) => void;
+  onClear: () => void;
+}) {
+  const values = [20, 50, 100, 150, 200];
+
+  return (
+    <div className="card-soft">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-black text-[var(--gold)]">Zvanja</p>
+          <h3 className="mt-1 text-xl font-black text-[var(--gold-light)]">
+            {teamName}
+          </h3>
+        </div>
+
+        <div className="rounded-2xl bg-[rgba(5,22,15,0.75)] px-4 py-3 text-right">
+          <p className="text-xs text-white/45">Ukupno</p>
+          <p className="text-2xl font-black text-[var(--gold-light)]">
+            {value}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-5 gap-2">
+        {values.map((declarationValue) => (
+          <button
+            key={declarationValue}
+            type="button"
+            onClick={() => onAdd(declarationValue)}
+            className="rounded-xl border border-[rgba(212,176,106,0.2)] bg-[rgba(5,22,15,0.7)] py-3 text-sm font-black text-[var(--gold-light)] transition active:scale-95"
+          >
+            +{declarationValue}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-3 grid grid-cols-5 gap-2">
+        {values.map((declarationValue) => (
+          <button
+            key={declarationValue}
+            type="button"
+            onClick={() => onRemove(declarationValue)}
+            className="rounded-xl border border-red-500/20 bg-red-500/10 py-3 text-sm font-black text-red-200 transition active:scale-95"
+          >
+            -{declarationValue}
+          </button>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        onClick={onClear}
+        className="mt-3 w-full rounded-xl border border-red-500/25 bg-red-500/10 py-3 font-black text-red-200"
+      >
+        Očisti zvanja
+      </button>
+    </div>
+  );
+}
+
+function Info({
   title,
   value,
-  subtitle,
+  subtitle
 }: {
   title: string;
   value: any;
   subtitle?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-[rgba(212,176,106,0.15)] bg-[#0a2018] p-5">
-      <p className="truncate text-sm text-white/55">{title}</p>
-      <p className="mt-2 text-4xl font-black text-[var(--gold-light)]">{value}</p>
-      {subtitle && <p className="mt-1 truncate text-sm text-white/40">{subtitle}</p>}
+    <div className="rounded-2xl border border-[rgba(212,176,106,0.15)] bg-[rgba(10,32,24,0.8)] p-5">
+      <p className="text-sm text-white/55">{title}</p>
+      <p className="mt-2 text-4xl font-black text-[var(--gold-light)]">
+        {value}
+      </p>
+      {subtitle && <p className="mt-1 text-sm text-white/40">{subtitle}</p>}
     </div>
   );
 }
 
-function QuickButton({ label, onClick }: { label: string; onClick: () => void }) {
+function PreviewBox({
+  title,
+  value
+}: {
+  title: string;
+  value: any;
+}) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-2xl border border-[rgba(212,176,106,0.2)] bg-[#12392b] px-5 py-4 font-black text-[var(--gold-light)] transition hover:border-[rgba(212,176,106,0.45)] hover:bg-[#184332]"
-    >
-      {label}
-    </button>
+    <div className="rounded-xl bg-[rgba(5,22,15,0.55)] p-4">
+      <p className="text-xs text-white/45">{title}</p>
+      <p className="mt-1 text-xl font-black text-[var(--gold-light)]">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function HistoryTeamBox({
+  name,
+  tricks,
+  declarations,
+  bela,
+  total
+}: {
+  name: string;
+  tricks: any;
+  declarations: any;
+  bela: any;
+  total: any;
+}) {
+  return (
+    <div className="rounded-xl bg-[rgba(5,22,15,0.55)] p-4">
+      <b className="text-[var(--gold-light)]">{name}</b>
+
+      <div className="mt-2 space-y-1 text-sm text-white/65">
+        <p>Bodovi: {tricks}</p>
+        <p>Zvanja: {declarations}</p>
+        <p>Bela: {bela ? "Da" : "Ne"}</p>
+      </div>
+
+      <p className="mt-3 text-xl font-black text-[var(--gold)]">
+        Ukupno: {total}
+      </p>
+    </div>
   );
 }
 
 function Field({
   label,
-  children,
+  children
 }: {
   label: string;
   children: React.ReactNode;
