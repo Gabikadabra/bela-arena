@@ -107,11 +107,22 @@ export default function TournamentPage({
       )
       .on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "match_games"
-        },
+        { event: "*", schema: "public", table: "tournaments", filter: `id=eq.${id}` },
+        () => loadData()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "teams", filter: `tournament_id=eq.${id}` },
+        () => loadData()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "match_games" },
+        () => loadData()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "match_sets" },
         () => loadData()
       )
       .subscribe();

@@ -9,10 +9,23 @@ export default function OdaberiTurnirZaUredjivanjePage() {
 
   useEffect(() => {
     loadTournaments();
+
+    const channel = supabase
+      .channel("uredi-turnir-lista-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tournaments" },
+        () => loadTournaments(false)
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
-  async function loadTournaments() {
-    setLoading(true);
+  async function loadTournaments(showLoader = true) {
+    if (showLoader) setLoading(true);
 
     const { data, error } = await supabase
       .from("tournaments")

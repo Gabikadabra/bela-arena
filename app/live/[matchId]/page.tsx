@@ -57,6 +57,13 @@ export default function LiveMatchPage({
           loadData();
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tournaments" },
+        () => {
+          loadData();
+        }
+      )
       .subscribe();
 
     return () => {

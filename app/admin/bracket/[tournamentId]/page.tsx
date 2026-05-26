@@ -16,6 +16,24 @@ export default function AdminBracketPage({
 
   useEffect(() => {
     loadData();
+
+    const channel = supabase
+      .channel(`admin-bracket-${tournamentId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "matches", filter: `tournament_id=eq.${tournamentId}` },
+        () => loadData()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tournaments", filter: `id=eq.${tournamentId}` },
+        () => loadData()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [tournamentId]);
 
   async function loadData() {

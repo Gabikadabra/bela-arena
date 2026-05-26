@@ -37,7 +37,9 @@ export default function AdminPage() {
     setTournaments(data || []);
 
     if (data && data.length > 0) {
-      setSelectedTournament(data[0].id);
+      setSelectedTournament((current) =>
+        current && data.some((t) => t.id === current) ? current : data[0].id
+      );
     }
   }
 
@@ -71,26 +73,57 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (isAdmin) {
-      loadTournaments();
-    }
-  }, [isAdmin]);
-
-  useEffect(() => {
-    if (selectedTournament) {
-      loadTeams(selectedTournament);
-    }
-  }, [selectedTournament]);
-
-  useEffect(() => {
     if (!isAdmin) return;
 
-    const interval = setInterval(() => {
-      window.location.reload();
-    }, 120000); // 2 minute
+    loadTournaments();
 
-    return () => clearInterval(interval);
+    const channel = supabase
+      .channel("admin-tournaments-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tournaments" },
+        () => loadTournaments()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (!selectedTournament) return;
+
+    loadTeams(selectedTournament);
+
+    const channel = supabase
+      .channel(`admin-teams-${selectedTournament}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "teams",
+          filter: `tournament_id=eq.${selectedTournament}`
+        },
+        () => loadTeams(selectedTournament)
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "matches",
+          filter: `tournament_id=eq.${selectedTournament}`
+        },
+        () => loadTeams(selectedTournament)
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedTournament]);
 
   if (!isAdmin) {
     return (

@@ -47,18 +47,33 @@ export default function UrediTurnirPage() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    if (tournamentId) {
-      loadTournament();
-    }
-  }, [tournamentId]);
+    if (!tournamentId) return;
+
+    loadTournament();
+
+    const channel = supabase
+      .channel(`uredi-turnir-${tournamentId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tournaments", filter: `id=eq.${tournamentId}` },
+        () => {
+          if (!saving) loadTournament(false);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [tournamentId, saving]);
 
   function dateOnly(value: string | null | undefined) {
     if (!value) return "";
     return value.slice(0, 10);
   }
 
-  async function loadTournament() {
-    setLoading(true);
+  async function loadTournament(showLoader = true) {
+    if (showLoader) setLoading(true);
     setMessage("");
 
     const { data, error } = await supabase

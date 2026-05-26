@@ -211,12 +211,63 @@ export default function ZdrijebAdminPage() {
 
   useEffect(() => {
     loadTournaments();
+
+    const channel = supabase
+      .channel("zdrijeb-tournaments-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tournaments" },
+        () => loadTournaments()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
-    if (selectedTournament) {
-      loadTournamentData();
-    }
+    if (!selectedTournament) return;
+
+    loadTournamentData();
+
+    const channel = supabase
+      .channel(`zdrijeb-${selectedTournament}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tournaments", filter: `id=eq.${selectedTournament}` },
+        () => loadTournamentData()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "teams", filter: `tournament_id=eq.${selectedTournament}` },
+        () => loadTournamentData()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "matches", filter: `tournament_id=eq.${selectedTournament}` },
+        () => loadTournamentData()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "group_standings", filter: `tournament_id=eq.${selectedTournament}` },
+        () => loadTournamentData()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "match_games" },
+        () => loadTournamentData()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "match_sets" },
+        () => loadTournamentData()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [selectedTournament]);
 
   async function loadTournaments() {
@@ -228,7 +279,9 @@ export default function ZdrijebAdminPage() {
     setTournaments(data || []);
 
     if (data && data.length > 0) {
-      setSelectedTournament(data[0].id);
+      setSelectedTournament((current) =>
+        current && data.some((t) => t.id === current) ? current : data[0].id
+      );
     }
   }
 

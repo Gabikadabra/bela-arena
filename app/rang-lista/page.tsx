@@ -12,9 +12,34 @@ export default function RangListaPage() {
 
   useEffect(() => {
     loadData();
+
+    const channel = supabase
+      .channel("rang-lista-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "matches" },
+        () => loadData(false)
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tournaments" },
+        () => loadData(false)
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "match_games" },
+        () => loadData(false)
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
-  async function loadData() {
+  async function loadData(showLoader = true) {
+    if (showLoader) setLoading(true);
+
     const { data: tournamentData } = await supabase
       .from("tournaments")
       .select("*")

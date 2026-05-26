@@ -9,9 +9,24 @@ export default function TurniriPage() {
 
   useEffect(() => {
     loadTournaments();
+
+    const channel = supabase
+      .channel("turniri-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tournaments" },
+        () => loadTournaments(false)
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
-  async function loadTournaments() {
+  async function loadTournaments(showLoader = true) {
+    if (showLoader) setLoading(true);
+
     const { data } = await supabase
       .from("tournaments")
       .select("*")

@@ -29,30 +29,54 @@ export default function PrijavaPage() {
       } = await supabase.auth.getUser();
 
       setUser(user);
-
-      const { data, error } = await supabase
-        .from("tournaments")
-        .select("*")
-        .eq("status", "open")
-        .order("starts_at", { ascending: true });
-
-      if (error) {
-        setMessageType("error");
-        setMessage("Greška kod dohvaćanja turnira: " + error.message);
-        return;
-      }
-
-      setTournaments(data || []);
-
-      setForm((prev) => ({
-        ...prev,
-        tournamentId: data?.[0]?.id || "",
-        email: user?.email || ""
-      }));
+      await loadOpenTournaments(user?.email || "");
     }
 
     init();
+
+    const channel = supabase
+      .channel("prijava-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tournaments" },
+        () => loadOpenTournaments(user?.email || form.email || "")
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "teams" },
+        () => loadOpenTournaments(user?.email || form.email || "")
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
+
+  async function loadOpenTournaments(email = "") {
+    const { data, error } = await supabase
+      .from("tournaments")
+      .select("*")
+      .eq("status", "open")
+      .order("starts_at", { ascending: true });
+
+    if (error) {
+      setMessageType("error");
+      setMessage("Greška kod dohvaćanja turnira: " + error.message);
+      return;
+    }
+
+    setTournaments(data || []);
+
+    setForm((prev) => ({
+      ...prev,
+      tournamentId:
+        prev.tournamentId && data?.some((t) => t.id === prev.tournamentId)
+          ? prev.tournamentId
+          : data?.[0]?.id || "",
+      email: prev.email || email
+    }));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
