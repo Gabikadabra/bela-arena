@@ -631,7 +631,7 @@ export default function ZdrijebAdminPage() {
         <h1 className="page-title mt-4">Bracket engine</h1>
 
         <p className="muted mt-4 max-w-2xl">
-          Generira knockout, round robin ili grupe + knockout. Nakon završetka grupa može automatski sortirati tablice i popuniti knockout.
+          Generira knockout, round robin ili grupe + knockout. Grupni i round robin mečevi slažu se Berger sustavom po rundama. Sljedeća runda se otključava tek kad prethodna završi.
         </p>
       </section>
 
@@ -675,7 +675,7 @@ export default function ZdrijebAdminPage() {
           <div className="mt-5 card-soft">
             <p className="font-bold text-[#f3dfad]">Pravila prolaska</p>
             <p className="muted mt-2">
-              Knockout prima <b className="text-[#d4b06a]">{knockoutSize}</b> ekipa. Sustav uzima najbolje iz svake grupe, a preostala mjesta popunjava najboljim idućim ekipama po bodovima, pobjedama, razlici i postignutim bodovima.
+              Knockout prima <b className="text-[#d4b06a]">{knockoutSize}</b> ekipa. Grupni mečevi se generiraju Berger sustavom, po rundama. Prvo je otključana samo 1. runda, a iduća se otključava tek kad se svi mečevi prethodne runde u toj grupi završe. Sustav zatim uzima najbolje iz svake grupe, a preostala mjesta popunjava najboljim idućim ekipama po bodovima, pobjedama, razlici i postignutim bodovima.
             </p>
           </div>
         )}
@@ -923,6 +923,7 @@ function MatchBox({ match }: { match: any }) {
       <div className="mb-3 flex items-center justify-between gap-3">
         <p className="text-sm text-white/45">
           {match.group_name ? `${match.group_name} · ` : ""}
+          {match.phase === "group" || match.phase === "round_robin" ? `Runda ${match.round} · ` : ""}
           Meč {match.bracket_position || match.match_number}
         </p>
         <span className="rounded-full border border-[#d4b06a]/20 bg-[#d4b06a]/10 px-3 py-1 text-xs font-black text-[#d4b06a]">

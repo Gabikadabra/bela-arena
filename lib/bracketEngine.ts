@@ -36,9 +36,49 @@ function nextPowerOfTwo(n: number) {
   return Math.pow(2, Math.ceil(Math.log2(n)));
 }
 
+function generateBergerRounds(teams: Team[]) {
+  const list: (Team | null)[] = [...teams];
+
+  if (list.length % 2 === 1) {
+    list.push(null);
+  }
+
+  const rounds: { teamA: Team; teamB: Team }[][] = [];
+  const count = list.length;
+  const half = count / 2;
+  const rotating = [...list];
+
+  for (let roundIndex = 0; roundIndex < count - 1; roundIndex++) {
+    const roundPairs: { teamA: Team; teamB: Team }[] = [];
+
+    for (let i = 0; i < half; i++) {
+      const left = rotating[i];
+      const right = rotating[count - 1 - i];
+
+      if (!left || !right) continue;
+
+      const swapHomeAway = roundIndex % 2 === 1;
+
+      roundPairs.push({
+        teamA: swapHomeAway ? right : left,
+        teamB: swapHomeAway ? left : right,
+      });
+    }
+
+    rounds.push(roundPairs);
+
+    const fixed = rotating[0];
+    const rest = rotating.slice(1);
+    const last = rest.pop();
+    rotating.splice(0, rotating.length, fixed, last || null, ...rest);
+  }
+
+  return rounds;
+}
+
 export function generateKnockoutMatches(
   tournamentId: string,
-  teams: Team[]
+  teams: Team[],
 ): MatchInsert[] {
   if (teams.length < 2) {
     throw new Error("Za knockout trebaju barem 2 ekipe.");
@@ -73,13 +113,8 @@ export function generateKnockoutMatches(
       team_b_id: teamB?.id || null,
       team_a_name: teamA?.name || "BYE",
       team_b_name: teamB?.name || "BYE",
-      winner_id:
-        teamA && !teamB
-          ? teamA.id
-          : teamB && !teamA
-          ? teamB.id
-          : null,
-      status: teamA && teamB ? "scheduled" : "bye"
+      winner_id: teamA && !teamB ? teamA.id : teamB && !teamA ? teamB.id : null,
+      status: teamA && teamB ? "scheduled" : "bye",
     });
 
     globalMatchNumber++;
@@ -103,7 +138,7 @@ export function generateKnockoutMatches(
         team_b_name: "Pobjednik čeka",
         team_a_seed: `W${round - 1}-${i * 2 - 1}`,
         team_b_seed: `W${round - 1}-${i * 2}`,
-        status: "waiting"
+        status: "waiting",
       });
 
       globalMatchNumber++;
@@ -117,34 +152,34 @@ export function generateKnockoutMatches(
 
 export function generateRoundRobinMatches(
   tournamentId: string,
-  teams: Team[]
+  teams: Team[],
 ): MatchInsert[] {
   if (teams.length < 2) {
     throw new Error("Za round robin trebaju barem 2 ekipe.");
   }
 
-  const list = [...teams];
   const matches: MatchInsert[] = [];
   let matchNumber = 1;
+  const bergerRounds = generateBergerRounds(teams);
 
-  for (let i = 0; i < list.length; i++) {
-    for (let j = i + 1; j < list.length; j++) {
+  bergerRounds.forEach((roundPairs, roundIndex) => {
+    roundPairs.forEach((pair, index) => {
       matches.push({
         tournament_id: tournamentId,
         phase: "round_robin",
-        round: 1,
+        round: roundIndex + 1,
         match_number: matchNumber,
-        bracket_position: matchNumber,
-        team_a_id: list[i].id,
-        team_b_id: list[j].id,
-        team_a_name: list[i].name,
-        team_b_name: list[j].name,
-        status: "scheduled"
+        bracket_position: index + 1,
+        team_a_id: pair.teamA.id,
+        team_b_id: pair.teamB.id,
+        team_a_name: pair.teamA.name,
+        team_b_name: pair.teamB.name,
+        status: roundIndex === 0 ? "scheduled" : "waiting",
       });
 
       matchNumber++;
-    }
-  }
+    });
+  });
 
   return matches;
 }
@@ -152,7 +187,7 @@ export function generateRoundRobinMatches(
 export function generateGroups(
   tournamentId: string,
   teams: Team[],
-  groupSize = 4
+  groupSize = 4,
 ): {
   matches: MatchInsert[];
   standings: GroupStandingInsert[];
@@ -182,32 +217,31 @@ export function generateGroups(
         tournament_id: tournamentId,
         group_name: groupName,
         team_id: team.id,
-        team_name: team.name
+        team_name: team.name,
       });
     });
 
-    let groupMatchNumber = 1;
+    const bergerRounds = generateBergerRounds(groupTeams);
 
-    for (let i = 0; i < groupTeams.length; i++) {
-      for (let j = i + 1; j < groupTeams.length; j++) {
+    bergerRounds.forEach((roundPairs, roundIndex) => {
+      roundPairs.forEach((pair, index) => {
         matches.push({
           tournament_id: tournamentId,
           phase: "group",
-          round: 1,
+          round: roundIndex + 1,
           match_number: globalMatchNumber,
-          bracket_position: groupMatchNumber,
+          bracket_position: index + 1,
           group_name: groupName,
-          team_a_id: groupTeams[i].id,
-          team_b_id: groupTeams[j].id,
-          team_a_name: groupTeams[i].name,
-          team_b_name: groupTeams[j].name,
-          status: "scheduled"
+          team_a_id: pair.teamA.id,
+          team_b_id: pair.teamB.id,
+          team_a_name: pair.teamA.name,
+          team_b_name: pair.teamB.name,
+          status: roundIndex === 0 ? "scheduled" : "waiting",
         });
 
         globalMatchNumber++;
-        groupMatchNumber++;
-      }
-    }
+      });
+    });
   });
 
   return { matches, standings };
@@ -215,7 +249,7 @@ export function generateGroups(
 
 export function generateGroupsKnockoutSeeds(
   tournamentId: string,
-  knockoutSize: number
+  knockoutSize: number,
 ): MatchInsert[] {
   const matches: MatchInsert[] = [];
   let globalMatchNumber = 1;
@@ -233,7 +267,7 @@ export function generateGroupsKnockoutSeeds(
       team_b_name: "Nositelj čeka",
       team_a_seed: `K${i + 1}`,
       team_b_seed: `K${i + 2}`,
-      status: "waiting"
+      status: "waiting",
     });
 
     globalMatchNumber++;
@@ -257,7 +291,7 @@ export function generateGroupsKnockoutSeeds(
         team_b_name: "Pobjednik čeka",
         team_a_seed: `W${round - 1}-${i * 2 - 1}`,
         team_b_seed: `W${round - 1}-${i * 2}`,
-        status: "waiting"
+        status: "waiting",
       });
 
       globalMatchNumber++;
@@ -271,20 +305,20 @@ export function recommendFormat(teamCount: number) {
   if (teamCount <= 8) {
     return {
       format: "round_robin",
-      note: "Mali broj ekipa — round robin je najpošteniji."
+      note: "Mali broj ekipa — round robin je najpošteniji.",
     };
   }
 
   if (teamCount <= 32) {
     return {
       format: "knockout",
-      note: "Knockout je brz i jednostavan."
+      note: "Knockout je brz i jednostavan.",
     };
   }
 
   return {
     format: "groups_knockout",
-    note: "Za velik broj ekipa najbolje su grupe pa knockout."
+    note: "Za velik broj ekipa najbolje su grupe pa knockout.",
   };
 }
 
@@ -296,8 +330,7 @@ export function calculateGroupMatchCount(teamCount: number, groupSize = 4) {
   const fullGroups = Math.floor(teamCount / groupSize);
   const remainder = teamCount % groupSize;
 
-  const fullGroupMatches =
-    fullGroups * ((groupSize * (groupSize - 1)) / 2);
+  const fullGroupMatches = fullGroups * ((groupSize * (groupSize - 1)) / 2);
 
   const remainderMatches =
     remainder > 1 ? (remainder * (remainder - 1)) / 2 : 0;
