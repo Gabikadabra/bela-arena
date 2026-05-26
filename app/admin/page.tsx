@@ -150,13 +150,21 @@ export default function AdminPage() {
         </button>
       </div>
 
-      <div className="mb-10 grid gap-4 md:grid-cols-5">
+      <div className="mb-10 grid gap-4 md:grid-cols-2 lg:grid-cols-6">
         <a
           href="/admin/novi-turnir"
           className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
         >
           <span className="block text-2xl text-[#d4b06a]">+</span>
           Novi turnir
+        </a>
+
+        <a
+          href="/admin/uredi-turnir"
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
+        >
+          <span className="block text-2xl text-[#d4b06a]">✏️</span>
+          Uredi turnir
         </a>
 
         <a

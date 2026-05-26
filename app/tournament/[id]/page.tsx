@@ -3,6 +3,69 @@
 import { use, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
+function sortStandings(rows: any[]) {
+  return [...rows].sort((a, b) => {
+    return (
+      Number(b.table_points || 0) - Number(a.table_points || 0) ||
+      Number(b.wins || 0) - Number(a.wins || 0) ||
+      Number(b.points_diff || 0) - Number(a.points_diff || 0) ||
+      Number(b.points_for || 0) - Number(a.points_for || 0) ||
+      String(a.team_name || "").localeCompare(String(b.team_name || ""), "hr")
+    );
+  });
+}
+
+function buildQualification(rows: any[], knockoutSize = 16) {
+  const grouped = rows.reduce((acc: any, row: any) => {
+    const groupName = row.group_name || "Bez grupe";
+    if (!acc[groupName]) acc[groupName] = [];
+    acc[groupName].push(row);
+    return acc;
+  }, {});
+
+  const sortedGroups = Object.fromEntries(
+    Object.entries(grouped)
+      .sort(([a], [b]) => String(a).localeCompare(String(b), "hr"))
+      .map(([groupName, groupRows]: any) => [groupName, sortStandings(groupRows)])
+  );
+
+  const groupEntries = Object.entries(sortedGroups) as [string, any[]][];
+  const groupCount = groupEntries.length || 1;
+  const directPerGroup = Math.max(1, Math.floor(knockoutSize / groupCount));
+  const directQualifiers: any[] = [];
+
+  groupEntries.forEach(([groupName, groupRows]) => {
+    groupRows.slice(0, directPerGroup).forEach((row, index) => {
+      directQualifiers.push({
+        ...row,
+        qualification_type: "direct",
+        qualification_label: `${index + 1}. u ${groupName}`
+      });
+    });
+  });
+
+  const remaining = Math.max(0, knockoutSize - directQualifiers.length);
+  const extraQualifiers = groupEntries
+    .flatMap(([groupName, groupRows]) =>
+      groupRows.slice(directPerGroup).map((row) => ({
+        ...row,
+        qualification_type: "extra",
+        qualification_label: `Najbolji dodatni (${groupName})`
+      }))
+    )
+    .sort((a, b) => sortStandings([a, b])[0] === a ? -1 : 1)
+    .slice(0, remaining);
+
+  const qualifiers = [...directQualifiers, ...extraQualifiers].slice(0, knockoutSize);
+
+  return {
+    sortedGroups,
+    qualifiers,
+    qualifierIds: new Set(qualifiers.map((row) => row.team_id)),
+    extraIds: new Set(extraQualifiers.map((row) => row.team_id))
+  };
+}
+
 export default function TournamentPage({
   params
 }: {
@@ -14,6 +77,7 @@ export default function TournamentPage({
   const [teams, setTeams] = useState<any[]>([]);
   const [matches, setMatches] = useState<any[]>([]);
   const [games, setGames] = useState<any[]>([]);
+  const [standings, setStandings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,6 +91,16 @@ export default function TournamentPage({
           event: "*",
           schema: "public",
           table: "matches",
+          filter: `tournament_id=eq.${id}`
+        },
+        () => loadData()
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "group_standings",
           filter: `tournament_id=eq.${id}`
         },
         () => loadData()
@@ -68,10 +142,20 @@ export default function TournamentPage({
       .from("matches")
       .select("*")
       .eq("tournament_id", id)
+      .order("phase", { ascending: true })
+      .order("group_name", { ascending: true })
       .order("round", { ascending: true })
       .order("bracket_position", { ascending: true });
 
     setMatches(matchData || []);
+
+    const { data: standingData } = await supabase
+      .from("group_standings")
+      .select("*")
+      .eq("tournament_id", id)
+      .order("group_name", { ascending: true });
+
+    setStandings(standingData || []);
 
     const matchIds = (matchData || []).map((m) => m.id);
 
@@ -123,10 +207,17 @@ export default function TournamentPage({
       }, {});
   }, [matches]);
 
+  const qualification = useMemo(
+    () => buildQualification(standings, Number(tournament?.knockout_size || 16)),
+    [standings, tournament?.knockout_size]
+  );
+
   if (loading) {
     return (
       <main className="page">
-        <p className="text-zinc-300">Učitavam turnir...</p>
+        <div className="card">
+          <p className="muted">Učitavam turnir...</p>
+        </div>
       </main>
     );
   }
@@ -143,20 +234,15 @@ export default function TournamentPage({
 
   return (
     <main className="page">
-      <section className="mb-10 card shadow-2xl">
-        <p className="mb-4 inline-block rounded-full border border-[#d4b06a]/30 bg-[#d4b06a]/10 px-4 py-2 text-sm text-[#d4b06a]">
-          Javni turnir
-        </p>
+      <section className="hero-card mb-10">
+        <span className="badge">Javni turnir</span>
 
-        <div className="flex flex-col justify-between gap-6 md:flex-row md:items-start">
+        <div className="mt-4 flex flex-col justify-between gap-6 md:flex-row md:items-start">
           <div>
-            <h1 className="text-4xl font-black text-[#f3dfad] sm:text-5xl">
-              {tournament.name}
-            </h1>
+            <h1 className="page-title">{tournament.name}</h1>
 
-            <p className="mt-4 text-lg text-zinc-300">
-              {tournament.location} ·{" "}
-              {tournament.starts_at || "Datum nije unesen"}
+            <p className="muted mt-4 text-lg">
+              {tournament.location} · {tournament.starts_at || "Datum nije unesen"}
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
@@ -164,35 +250,25 @@ export default function TournamentPage({
               <Badge label={`Igra se do ${tournament.score_limit || 1001}`} />
               <Badge label={formatType(tournament.tournament_format)} />
               <Badge label={formatMatch(tournament.match_format)} />
-              <Badge
-                label={`Repešaž: ${
-                  tournament.has_repechage ? "Da" : "Ne"
-                }`}
-              />
+              <Badge label={`Repešaž: ${tournament.has_repechage ? "Da" : "Ne"}`} />
             </div>
           </div>
 
           <div className="flex flex-col gap-3">
             {tournament.status === "open" && (
-              <a
-                href="/prijava"
-                className="rounded-xl bg-[#d4b06a] px-6 py-3 text-center font-black text-black transition hover:bg-[#f3dfad]"
-              >
+              <a href="/prijava" className="btn-primary">
                 Prijavi ekipu
               </a>
             )}
 
-            <a
-              href="/turniri"
-              className="rounded-xl border border-[#d4b06a]/40 px-6 py-3 text-center font-bold text-[#d4b06a] transition hover:bg-[#d4b06a]/10"
-            >
+            <a href="/turniri" className="btn-outline">
               Svi turniri
             </a>
           </div>
         </div>
 
         {tournament.rules && (
-          <div className="mt-8 card-soft text-zinc-300">
+          <div className="mt-8 card-soft muted">
             <b className="text-[#d4b06a]">Pravila:</b>
             <p className="mt-2">{tournament.rules}</p>
           </div>
@@ -206,11 +282,37 @@ export default function TournamentPage({
         <Info title="Završeni mečevi" value={finishedMatches.length} />
       </section>
 
+      {Object.keys(qualification.sortedGroups).length > 0 && (
+        <section className="mb-10">
+          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
+            <div>
+              <h2 className="section-title">Tablice grupa</h2>
+              <p className="muted mt-2">
+                Poredak se sortira po bodovima, pobjedama, razlici i postignutim bodovima. Oznaka pokazuje tko trenutno prolazi dalje.
+              </p>
+            </div>
+            <span className="badge">
+              {qualification.qualifiers.length}/{Number(tournament?.knockout_size || 16)} prolazi
+            </span>
+          </div>
+
+          <div className="mt-5 grid gap-6 md:grid-cols-2">
+            {Object.entries(qualification.sortedGroups).map(([groupName, rows]: any) => (
+              <GroupTable
+                key={groupName}
+                groupName={groupName}
+                rows={rows}
+                qualifierIds={qualification.qualifierIds}
+                extraIds={qualification.extraIds}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       {liveMatches.length > 0 && (
         <section className="mb-10">
-          <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">
-            Live / aktivni mečevi
-          </h2>
+          <h2 className="section-title">Live / aktivni mečevi</h2>
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             {liveMatches.map((match) => (
@@ -221,22 +323,17 @@ export default function TournamentPage({
       )}
 
       <section className="mb-10">
-        <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">Ekipe</h2>
+        <h2 className="section-title">Ekipe</h2>
 
         <div className="mt-5 grid gap-4 md:grid-cols-4">
           {approvedTeams.length === 0 && (
-            <div className="rounded-2xl bg-[#0a2018] p-6 text-zinc-300">
-              Još nema potvrđenih ekipa.
-            </div>
+            <div className="card-soft muted">Još nema potvrđenih ekipa.</div>
           )}
 
           {approvedTeams.map((team) => (
-            <div
-              key={team.id}
-              className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-5"
-            >
+            <div key={team.id} className="card-soft">
               <h3 className="font-bold text-[#d4b06a]">{team.name}</h3>
-              <p className="text-sm text-zinc-400">{team.city}</p>
+              <p className="text-sm text-white/60">{team.city || "Grad nije upisan"}</p>
             </div>
           ))}
         </div>
@@ -244,7 +341,7 @@ export default function TournamentPage({
 
       {Object.keys(groupedKnockout).length > 0 && (
         <section className="mb-10">
-          <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">Bracket</h2>
+          <h2 className="section-title">Bracket</h2>
 
           <div className="mt-5 overflow-x-auto pb-5">
             <div className="flex min-w-max gap-5">
@@ -256,9 +353,11 @@ export default function TournamentPage({
                     </h3>
 
                     <div className="space-y-4">
-                      {roundMatches.map((match: any) => (
-                        <MatchCard key={match.id} match={match} />
-                      ))}
+                      {roundMatches
+                        .sort((a: any, b: any) => Number(a.bracket_position || 0) - Number(b.bracket_position || 0))
+                        .map((match: any) => (
+                          <MatchCard key={match.id} match={match} />
+                        ))}
                     </div>
                   </div>
                 )
@@ -270,9 +369,7 @@ export default function TournamentPage({
 
       {finishedMatches.length > 0 && (
         <section className="mb-10">
-          <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">
-            Završeni mečevi
-          </h2>
+          <h2 className="section-title">Završeni mečevi</h2>
 
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             {finishedMatches.map((match) => (
@@ -284,38 +381,22 @@ export default function TournamentPage({
 
       {games.length > 0 && (
         <section>
-          <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">
-            Zadnja dijeljenja
-          </h2>
+          <h2 className="section-title">Zadnja dijeljenja</h2>
 
           <div className="mt-5 space-y-3">
             {games.slice(0, 10).map((game) => {
               const match = matches.find((m) => m.id === game.match_id);
 
               return (
-                <div
-                  key={game.id}
-                  className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-5"
-                >
-                  <p className="text-sm text-zinc-500">
-                    {match?.team_a_name} vs {match?.team_b_name} · Set{" "}
-                    {game.set_number} · Dijeljenje {game.game_number}
+                <div key={game.id} className="card-soft">
+                  <p className="text-sm text-white/45">
+                    {match?.team_a_name} vs {match?.team_b_name} · Set {game.set_number} · Dijeljenje {game.game_number}
                   </p>
 
                   <div className="mt-2 flex flex-wrap justify-between gap-4">
-                    <span className="font-bold">
-                      {match?.team_a_name}: +{game.team_a_total}
-                    </span>
-                    <span className="font-bold">
-                      {match?.team_b_name}: +{game.team_b_total}
-                    </span>
-                    <span
-                      className={
-                        game.called_team_fell
-                          ? "text-red-300"
-                          : "text-green-300"
-                      }
-                    >
+                    <span className="font-bold">{match?.team_a_name}: +{game.team_a_total}</span>
+                    <span className="font-bold">{match?.team_b_name}: +{game.team_b_total}</span>
+                    <span className={game.called_team_fell ? "text-red-300" : "text-green-300"}>
                       {game.called_team_fell ? "PAD" : "OK"}
                     </span>
                   </div>
@@ -330,18 +411,77 @@ export default function TournamentPage({
 }
 
 function Badge({ label }: { label: string }) {
-  return (
-    <span className="rounded-full bg-[#d4b06a]/10 px-4 py-2 text-sm font-bold text-[#d4b06a]">
-      {label}
-    </span>
-  );
+  return <span className="badge">{label}</span>;
 }
 
 function Info({ title, value }: { title: string; value: any }) {
   return (
-    <div className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6">
-      <p className="text-sm text-zinc-400">{title}</p>
+    <div className="stat-card">
+      <p className="text-sm text-white/60">{title}</p>
       <p className="mt-2 text-4xl font-black text-[#f3dfad]">{value}</p>
+    </div>
+  );
+}
+
+function GroupTable({
+  groupName,
+  rows,
+  qualifierIds,
+  extraIds
+}: {
+  groupName: string;
+  rows: any[];
+  qualifierIds: Set<string>;
+  extraIds: Set<string>;
+}) {
+  return (
+    <div className="overflow-hidden rounded-3xl border border-[#d4b06a]/15 bg-[#0a2018]/90 shadow-2xl">
+      <h3 className="bg-[#d4b06a]/10 p-4 text-xl font-black text-[#d4b06a]">{groupName}</h3>
+
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[620px] text-left text-sm">
+          <thead className="bg-[#061710]/65 text-white/55">
+            <tr>
+              <th className="p-3">#</th>
+              <th className="p-3">Ekipa</th>
+              <th className="p-3">P</th>
+              <th className="p-3">W</th>
+              <th className="p-3">L</th>
+              <th className="p-3">Bod</th>
+              <th className="p-3">+/-</th>
+              <th className="p-3">Status</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {rows.map((row: any, index: number) => {
+              const qualified = qualifierIds.has(row.team_id);
+              const extra = extraIds.has(row.team_id);
+
+              return (
+                <tr key={row.id || row.team_id} className={`border-t border-[#d4b06a]/10 ${qualified ? "bg-[#d4b06a]/10" : ""}`}>
+                  <td className="p-3 font-black text-white/60">{index + 1}</td>
+                  <td className="p-3 font-black text-[#f3dfad]">{row.team_name}</td>
+                  <td className="p-3">{row.played}</td>
+                  <td className="p-3">{row.wins}</td>
+                  <td className="p-3">{row.losses}</td>
+                  <td className="p-3 font-black text-[#d4b06a]">{row.table_points}</td>
+                  <td className="p-3">{row.points_diff}</td>
+                  <td className="p-3">
+                    {qualified ? (
+                      <span className="rounded-full border border-[#d4b06a]/30 bg-[#d4b06a]/15 px-3 py-1 text-xs font-black text-[#f3dfad]">
+                        {extra ? "Najbolji dodatni" : "Prolazi"}
+                      </span>
+                    ) : (
+                      <span className="text-white/35">—</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -351,42 +491,20 @@ function MatchCard({ match, live }: { match: any; live?: boolean }) {
   const winnerB = match.winner_id && match.winner_id === match.team_b_id;
 
   return (
-    <div className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-5">
+    <div className="card-soft">
       <div className="mb-3 flex justify-between gap-3">
-        <p className="text-sm text-zinc-500">
-          Meč {match.bracket_position || match.match_number}
-        </p>
+        <p className="text-sm text-white/45">Meč {match.bracket_position || match.match_number}</p>
 
-        <span
-          className={`rounded-full px-3 py-1 text-xs font-bold ${
-            match.status === "finished"
-              ? "bg-green-500/20 text-green-300"
-              : live
-              ? "bg-red-500/20 text-red-300"
-              : "bg-[#d4b06a]/20 text-[#d4b06a]"
-          }`}
-        >
+        <span className={`rounded-full px-3 py-1 text-xs font-bold ${match.status === "finished" ? "bg-green-500/20 text-green-300" : live ? "bg-red-500/20 text-red-300" : "bg-[#d4b06a]/20 text-[#d4b06a]"}`}>
           {live ? "LIVE" : match.status}
         </span>
       </div>
 
-      <TeamLine
-        name={match.team_a_name || match.team_a_seed || "Čeka"}
-        score={match.score_a}
-        winner={winnerA}
-      />
-
-      <TeamLine
-        name={match.team_b_name || match.team_b_seed || "Čeka"}
-        score={match.score_b}
-        winner={winnerB}
-      />
+      <TeamLine name={match.team_a_name || match.team_a_seed || "Čeka"} score={match.score_a} winner={winnerA} />
+      <TeamLine name={match.team_b_name || match.team_b_seed || "Čeka"} score={match.score_b} winner={winnerB} />
 
       <div className="mt-4 flex gap-3">
-        <a
-          href={`/live/${match.id}`}
-          className="flex-1 rounded-xl border border-[#d4b06a]/40 px-4 py-2 text-center font-bold text-[#d4b06a] transition hover:bg-[#d4b06a]/10"
-        >
+        <a href={`/live/${match.id}`} className="btn-outline flex-1">
           Live
         </a>
       </div>
@@ -394,21 +512,9 @@ function MatchCard({ match, live }: { match: any; live?: boolean }) {
   );
 }
 
-function TeamLine({
-  name,
-  score,
-  winner
-}: {
-  name: string;
-  score: number;
-  winner: boolean;
-}) {
+function TeamLine({ name, score, winner }: { name: string; score: number; winner: boolean }) {
   return (
-    <div
-      className={`mb-2 flex justify-between rounded-xl p-3 ${
-        winner ? "bg-green-500/20 text-green-300" : "bg-[#12392b] text-zinc-200"
-      }`}
-    >
+    <div className={`mb-2 flex justify-between rounded-xl p-3 ${winner ? "bg-green-500/20 text-green-300" : "bg-[#12392b] text-zinc-200"}`}>
       <span className="font-bold">{name}</span>
       <span className="font-black">{score || 0}</span>
     </div>

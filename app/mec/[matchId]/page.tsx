@@ -98,8 +98,14 @@ export default function MecPage({ params }: PageProps) {
   }
 
   const currentSet = match?.current_set || 1;
-  const scoreLimit = tournament?.score_limit || 1001;
-  const matchFormat = tournament?.match_format || "best_of_1";
+  const groupScoreLimit = tournament?.group_score_limit || tournament?.score_limit || 1001;
+  const knockoutScoreLimit = tournament?.knockout_score_limit || tournament?.score_limit || 1001;
+  const scoreLimit = match?.phase === "group" ? groupScoreLimit : knockoutScoreLimit;
+  const legacyBestOf = Number(String(tournament?.match_format || "best_of_1").replace("best_of_", "")) || 1;
+  const groupBestOf = Number(tournament?.group_best_of || 1);
+  const knockoutBestOf = Number(tournament?.knockout_best_of || legacyBestOf || 1);
+  const matchBestOf = match?.phase === "group" ? groupBestOf : knockoutBestOf;
+  const setsToWin = Math.ceil(matchBestOf / 2);
   const isFinished = match?.status === "finished";
 
   const currentSetGames = useMemo(
@@ -117,15 +123,9 @@ export default function MecPage({ params }: PageProps) {
     [currentSetGames]
   );
 
-  function setsNeeded(format: string) {
-    if (format === "best_of_5") return 3;
-    if (format === "best_of_3") return 2;
-    return 1;
-  }
-
-  function prettyFormat(format: string) {
-    if (format === "best_of_5") return "Do 3 pobjede";
-    if (format === "best_of_3") return "Do 2 pobjede";
+  function prettyBestOf(bestOf: number) {
+    if (bestOf === 5) return "Do 3 pobjede / best of 5";
+    if (bestOf === 3) return "Do 2 pobjede / best of 3";
     return "Jedna partija";
   }
 
@@ -309,10 +309,12 @@ export default function MecPage({ params }: PageProps) {
         return;
       }
 
-      const needed = setsNeeded(matchFormat);
-      const matchFinished = newSetsA >= needed || newSetsB >= needed;
+      const matchFinished = newSetsA >= setsToWin || newSetsB >= setsToWin;
 
       if (matchFinished) {
+        const winnerName =
+          setWinnerId === match.team_a_id ? match.team_a_name : match.team_b_name;
+
         updateMatch = {
           ...updateMatch,
           sets_a: newSetsA,
@@ -320,21 +322,9 @@ export default function MecPage({ params }: PageProps) {
           winner_id: setWinnerId,
           status: "finished",
           result_status: "submitted"
-        };if (matchFinished) {
-  const winnerName =
-    setWinnerId === match.team_a_id ? match.team_a_name : match.team_b_name;
+        };
 
-  updateMatch = {
-    ...updateMatch,
-    sets_a: newSetsA,
-    sets_b: newSetsB,
-    winner_id: setWinnerId,
-    status: "finished",
-    result_status: "submitted"
-  };
-
-  await advanceWinnerToNextMatch(setWinnerId, winnerName);
-}
+        await advanceWinnerToNextMatch(setWinnerId, winnerName);
       } else {
         updateMatch = {
           ...updateMatch,
@@ -409,7 +399,7 @@ export default function MecPage({ params }: PageProps) {
           </h1>
 
           <p className="mt-3 text-zinc-300">
-            Set {currentSet} · Igra se do {scoreLimit} · {prettyFormat(matchFormat)}
+            Set {currentSet} · {match?.phase === "group" ? "Grupa" : "Knockout"} do {scoreLimit} · {prettyBestOf(matchBestOf)} · treba {setsToWin} set(ova)
           </p>
         </div>
 

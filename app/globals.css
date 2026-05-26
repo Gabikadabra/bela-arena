@@ -517,3 +517,82 @@ button, a, input, select, textarea {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Bela Arena scrollbar - globalno usklađen sa zeleno-zlatnim dizajnom */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(212, 176, 106, 0.82) rgba(8, 29, 21, 0.92);
+}
+
+*::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+
+*::-webkit-scrollbar-track {
+  background:
+    linear-gradient(180deg, rgba(8, 29, 21, 0.96), rgba(10, 32, 24, 0.96));
+  border-radius: 999px;
+  border: 1px solid rgba(212, 176, 106, 0.08);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #d4b06a, #f3dfad);
+  border-radius: 999px;
+  border: 3px solid rgba(8, 29, 21, 0.96);
+  box-shadow: 0 0 12px rgba(212, 176, 106, 0.22);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #f3dfad, #d4b06a);
+}
+
+*::-webkit-scrollbar-corner {
+  background: rgba(8, 29, 21, 0.96);
+}
+
+/* Poseban scrollbar za tablice i bracketove */
+.table-scroll {
+  border-radius: 0 0 1.75rem 1.75rem;
+  background: rgba(5, 22, 15, 0.62);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(212, 176, 106, 0.88) rgba(8, 29, 21, 0.95);
+}
+
+.table-scroll::-webkit-scrollbar {
+  height: 13px;
+  width: 13px;
+}
+
+.table-scroll::-webkit-scrollbar-track {
+  background: rgba(8, 29, 21, 0.96);
+  border-radius: 999px;
+  margin: 0.75rem;
+  border: 1px solid rgba(212, 176, 106, 0.08);
+}
+
+.table-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #d4b06a, #f3dfad);
+  border-radius: 999px;
+  border: 3px solid rgba(8, 29, 21, 0.96);
+  box-shadow: 0 0 14px rgba(212, 176, 106, 0.24);
+}
+
+.table-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, #f3dfad, #d4b06a);
+}
+
+.table-scroll::-webkit-scrollbar-corner {
+  background: rgba(8, 29, 21, 0.96);
+}
+
+@media (max-width: 768px) {
+  .table-scroll {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .table-scroll::-webkit-scrollbar {
+    display: none;
+  }
+}

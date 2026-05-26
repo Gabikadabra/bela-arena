@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import {
   generateKnockoutMatches,
@@ -11,6 +11,194 @@ import {
   calculateRoundRobinMatchCount
 } from "@/lib/bracketEngine";
 
+function standingScore(row: any) {
+  return {
+    tablePoints: Number(row.table_points || 0),
+    wins: Number(row.wins || 0),
+    pointsDiff: Number(row.points_diff || 0),
+    pointsFor: Number(row.points_for || 0),
+    teamName: String(row.team_name || "")
+  };
+}
+
+function sortStandings(rows: any[]) {
+  return [...rows].sort((a, b) => {
+    const aa = standingScore(a);
+    const bb = standingScore(b);
+
+    return (
+      bb.tablePoints - aa.tablePoints ||
+      bb.wins - aa.wins ||
+      bb.pointsDiff - aa.pointsDiff ||
+      bb.pointsFor - aa.pointsFor ||
+      aa.teamName.localeCompare(bb.teamName, "hr")
+    );
+  });
+}
+
+function calculateGroupRows(matches: any[], currentStandings: any[]) {
+  const stats = new Map<string, any>();
+
+  currentStandings.forEach((row) => {
+    if (!row.team_id) return;
+
+    stats.set(row.team_id, {
+      id: row.id,
+      tournament_id: row.tournament_id,
+      group_name: row.group_name,
+      team_id: row.team_id,
+      team_name: row.team_name,
+      played: 0,
+      wins: 0,
+      losses: 0,
+      points_for: 0,
+      points_against: 0,
+      points_diff: 0,
+      table_points: 0
+    });
+  });
+
+  matches
+    .filter(
+      (match) =>
+        match.phase === "group" &&
+        match.status === "finished" &&
+        match.team_a_id &&
+        match.team_b_id
+    )
+    .forEach((match) => {
+      const scoreA = Number(match.score_a || 0);
+      const scoreB = Number(match.score_b || 0);
+
+      if (!stats.has(match.team_a_id)) {
+        stats.set(match.team_a_id, {
+          tournament_id: match.tournament_id,
+          group_name: match.group_name,
+          team_id: match.team_a_id,
+          team_name: match.team_a_name,
+          played: 0,
+          wins: 0,
+          losses: 0,
+          points_for: 0,
+          points_against: 0,
+          points_diff: 0,
+          table_points: 0
+        });
+      }
+
+      if (!stats.has(match.team_b_id)) {
+        stats.set(match.team_b_id, {
+          tournament_id: match.tournament_id,
+          group_name: match.group_name,
+          team_id: match.team_b_id,
+          team_name: match.team_b_name,
+          played: 0,
+          wins: 0,
+          losses: 0,
+          points_for: 0,
+          points_against: 0,
+          points_diff: 0,
+          table_points: 0
+        });
+      }
+
+      const teamA = stats.get(match.team_a_id);
+      const teamB = stats.get(match.team_b_id);
+
+      teamA.played += 1;
+      teamA.points_for += scoreA;
+      teamA.points_against += scoreB;
+      teamA.points_diff = teamA.points_for - teamA.points_against;
+
+      teamB.played += 1;
+      teamB.points_for += scoreB;
+      teamB.points_against += scoreA;
+      teamB.points_diff = teamB.points_for - teamB.points_against;
+
+      if (match.winner_id === match.team_a_id || scoreA > scoreB) {
+        teamA.wins += 1;
+        teamA.table_points += 2;
+        teamB.losses += 1;
+      } else if (match.winner_id === match.team_b_id || scoreB > scoreA) {
+        teamB.wins += 1;
+        teamB.table_points += 2;
+        teamA.losses += 1;
+      }
+    });
+
+  return Array.from(stats.values());
+}
+
+function buildQualification(rows: any[], knockoutSize = 16) {
+  const grouped = rows.reduce((acc: any, row: any) => {
+    const groupName = row.group_name || "Bez grupe";
+    if (!acc[groupName]) acc[groupName] = [];
+    acc[groupName].push(row);
+    return acc;
+  }, {});
+
+  const sortedGroups = Object.fromEntries(
+    Object.entries(grouped)
+      .sort(([a], [b]) => String(a).localeCompare(String(b), "hr"))
+      .map(([groupName, groupRows]: any) => [groupName, sortStandings(groupRows)])
+  );
+
+  const groupEntries = Object.entries(sortedGroups) as [string, any[]][];
+  const groupCount = groupEntries.length || 1;
+  const directPerGroup = Math.max(1, Math.floor(knockoutSize / groupCount));
+  const directQualifiers: any[] = [];
+
+  groupEntries.forEach(([groupName, groupRows]) => {
+    groupRows.slice(0, directPerGroup).forEach((row, index) => {
+      directQualifiers.push({
+        ...row,
+        qualification_type: "direct",
+        qualification_label: `${index + 1}. u ${groupName}`,
+        group_rank: index + 1
+      });
+    });
+  });
+
+  const remaining = Math.max(0, knockoutSize - directQualifiers.length);
+  const extraCandidates = groupEntries
+    .flatMap(([groupName, groupRows]) =>
+      groupRows.slice(directPerGroup).map((row, index) => ({
+        ...row,
+        qualification_type: "extra",
+        qualification_label: `Najbolji dodatni (${groupName})`,
+        group_rank: directPerGroup + index + 1
+      }))
+    )
+    .sort((a, b) => sortStandings([a, b])[0] === a ? -1 : 1);
+
+  const extraQualifiers = extraCandidates.slice(0, remaining);
+  const qualifiers = [...directQualifiers, ...extraQualifiers]
+    .slice(0, knockoutSize)
+    .sort((a, b) => sortStandings([a, b])[0] === a ? -1 : 1)
+    .map((row, index) => ({ ...row, seed: index + 1 }));
+
+  return {
+    sortedGroups,
+    qualifiers,
+    qualifierIds: new Set(qualifiers.map((row) => row.team_id)),
+    extraIds: new Set(extraQualifiers.map((row) => row.team_id))
+  };
+}
+
+function bracketPairs(qualifiers: any[]) {
+  const sorted = [...qualifiers].sort((a, b) => Number(a.seed) - Number(b.seed));
+  const pairs: any[] = [];
+
+  for (let i = 0; i < sorted.length / 2; i++) {
+    pairs.push({
+      teamA: sorted[i],
+      teamB: sorted[sorted.length - 1 - i]
+    });
+  }
+
+  return pairs;
+}
+
 export default function ZdrijebAdminPage() {
   const [tournaments, setTournaments] = useState<any[]>([]);
   const [selectedTournament, setSelectedTournament] = useState("");
@@ -19,6 +207,7 @@ export default function ZdrijebAdminPage() {
   const [matches, setMatches] = useState<any[]>([]);
   const [standings, setStandings] = useState<any[]>([]);
   const [message, setMessage] = useState("");
+  const [working, setWorking] = useState(false);
 
   useEffect(() => {
     loadTournaments();
@@ -76,8 +265,7 @@ export default function ZdrijebAdminPage() {
       .from("group_standings")
       .select("*")
       .eq("tournament_id", selectedTournament)
-      .order("group_name", { ascending: true })
-      .order("team_name", { ascending: true });
+      .order("group_name", { ascending: true });
 
     setStandings(standingData || []);
   }
@@ -85,74 +273,57 @@ export default function ZdrijebAdminPage() {
   async function clearOldDraw() {
     if (!selectedTournament) return;
 
-    const { data: matchIds, error: matchIdsError } = await supabase
+    const { data: matchIds } = await supabase
       .from("matches")
       .select("id")
       .eq("tournament_id", selectedTournament);
 
-    if (matchIdsError) throw matchIdsError;
-
     if (matchIds && matchIds.length > 0) {
       const ids = matchIds.map((m) => m.id);
 
-      const { error: gamesError } = await supabase
-        .from("match_games")
-        .delete()
-        .in("match_id", ids);
-
-      if (gamesError) throw gamesError;
-
-      const { error: setsError } = await supabase
-        .from("match_sets")
-        .delete()
-        .in("match_id", ids);
-
-      if (setsError) throw setsError;
+      await supabase.from("match_games").delete().in("match_id", ids);
+      await supabase.from("match_sets").delete().in("match_id", ids);
     }
 
-    const { error: matchesError } = await supabase
+    await supabase
       .from("matches")
       .delete()
       .eq("tournament_id", selectedTournament);
 
-    if (matchesError) throw matchesError;
-
-    const { error: standingsError } = await supabase
+    await supabase
       .from("group_standings")
       .delete()
       .eq("tournament_id", selectedTournament);
-
-    if (standingsError) throw standingsError;
   }
 
   async function deleteDraw() {
-    setMessage("");
-
-    if (!selectedTournament) {
-      setMessage("Odaberi turnir.");
-      return;
-    }
+    if (!selectedTournament) return;
 
     const confirmed = window.confirm(
-      "Jesi siguran da želiš izbrisati ždrijeb? Obrisat će se svi mečevi, setovi, partije i tablice grupa za ovaj turnir. Ekipe ostaju prijavljene, a turnir se vraća na open."
+      "Jesi siguran da želiš izbrisati ždrijeb? Brišu se mečevi, rezultati, setovi, partije i tablice grupa. Ekipe ostaju prijavljene, a turnir se vraća na open."
     );
 
     if (!confirmed) return;
 
+    setWorking(true);
+    setMessage("");
+
     try {
       await clearOldDraw();
 
-      const { error: tournamentError } = await supabase
+      const { error } = await supabase
         .from("tournaments")
         .update({ status: "open" })
         .eq("id", selectedTournament);
 
-      if (tournamentError) throw tournamentError;
+      if (error) throw error;
 
-      setMessage("Ždrijeb je obrisan, a turnir je vraćen na open.");
+      setMessage("Ždrijeb je izbrisan, a turnir je vraćen na otvorene prijave.");
       await loadTournamentData();
     } catch (error: any) {
       setMessage("Greška kod brisanja ždrijeba: " + error.message);
+    } finally {
+      setWorking(false);
     }
   }
 
@@ -170,6 +341,7 @@ export default function ZdrijebAdminPage() {
     }
 
     try {
+      setWorking(true);
       await clearOldDraw();
 
       if (tournament.tournament_format === "knockout") {
@@ -268,7 +440,7 @@ export default function ZdrijebAdminPage() {
 
         if (matchesError) throw matchesError;
 
-        setMessage("Grupe + knockout su generirani.");
+        setMessage("Grupe + knockout su generirani. Nakon završetka grupa klikni 'Ažuriraj tablice i popuni knockout'.");
       }
 
       await supabase
@@ -279,16 +451,167 @@ export default function ZdrijebAdminPage() {
       await loadTournamentData();
     } catch (error: any) {
       setMessage("Greška: " + error.message);
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function updateGroupStandingsOnly(rows = calculateGroupRows(matches, standings)) {
+    for (const row of rows) {
+      const { error } = await supabase
+        .from("group_standings")
+        .update({
+          played: row.played,
+          wins: row.wins,
+          losses: row.losses,
+          points_for: row.points_for,
+          points_against: row.points_against,
+          points_diff: row.points_diff,
+          table_points: row.table_points
+        })
+        .eq("tournament_id", selectedTournament)
+        .eq("team_id", row.team_id);
+
+      if (error) throw error;
+    }
+  }
+
+  async function updateTablesAndAdvance() {
+    setMessage("");
+
+    if (!tournament || tournament.tournament_format !== "groups_knockout") {
+      setMessage("Ova opcija je samo za format grupe + knockout.");
+      return;
+    }
+
+    try {
+      setWorking(true);
+
+      const recalculatedRows = calculateGroupRows(matches, standings);
+      await updateGroupStandingsOnly(recalculatedRows);
+
+      const knockoutSize = Number(tournament.knockout_size || 16);
+      const qualification = buildQualification(recalculatedRows, knockoutSize);
+      const qualifiers = qualification.qualifiers;
+
+      if (qualifiers.length < knockoutSize) {
+        throw new Error(
+          `Nema dovoljno ekipa za knockout. Imam ${qualifiers.length}, treba ${knockoutSize}.`
+        );
+      }
+
+      const unfinishedGroupMatches = matches.filter(
+        (match) => match.phase === "group" && match.status !== "finished"
+      );
+
+      let currentKnockoutMatches = matches.filter(
+        (match) => match.phase === "knockout"
+      );
+
+      if (currentKnockoutMatches.length === 0) {
+        const generatedKnockout = generateGroupsKnockoutSeeds(
+          selectedTournament,
+          knockoutSize
+        );
+
+        const { data: inserted, error } = await supabase
+          .from("matches")
+          .insert(generatedKnockout)
+          .select("*");
+
+        if (error) throw error;
+        currentKnockoutMatches = inserted || [];
+      }
+
+      const firstRound = currentKnockoutMatches
+        .filter((match) => Number(match.round || 1) === 1)
+        .sort(
+          (a, b) =>
+            Number(a.bracket_position || a.match_number || 0) -
+            Number(b.bracket_position || b.match_number || 0)
+        );
+
+      if (firstRound.length < knockoutSize / 2) {
+        throw new Error(
+          "Knockout bracket nema dovoljno mjesta. Generiraj ždrijeb ponovno ili provjeri knockout_size."
+        );
+      }
+
+      await supabase
+        .from("matches")
+        .update({
+          team_a_id: null,
+          team_b_id: null,
+          team_a_name: "Pobjednik čeka",
+          team_b_name: "Pobjednik čeka",
+          winner_id: null,
+          score_a: 0,
+          score_b: 0,
+          sets_a: 0,
+          sets_b: 0,
+          current_set: 1,
+          status: "waiting",
+          result_status: "draft"
+        })
+        .eq("tournament_id", selectedTournament)
+        .eq("phase", "knockout")
+        .gt("round", 1);
+
+      const pairs = bracketPairs(qualifiers);
+
+      for (let index = 0; index < pairs.length; index++) {
+        const match = firstRound[index];
+        const pair = pairs[index];
+
+        const { error } = await supabase
+          .from("matches")
+          .update({
+            team_a_id: pair.teamA.team_id,
+            team_a_name: pair.teamA.team_name,
+            team_b_id: pair.teamB.team_id,
+            team_b_name: pair.teamB.team_name,
+            team_a_seed: `#${pair.teamA.seed} ${pair.teamA.qualification_label}`,
+            team_b_seed: `#${pair.teamB.seed} ${pair.teamB.qualification_label}`,
+            winner_id: null,
+            score_a: 0,
+            score_b: 0,
+            sets_a: 0,
+            sets_b: 0,
+            current_set: 1,
+            status: "scheduled",
+            result_status: "draft"
+          })
+          .eq("id", match.id);
+
+        if (error) throw error;
+      }
+
+      await supabase
+        .from("tournaments")
+        .update({ status: "live" })
+        .eq("id", selectedTournament);
+
+      await loadTournamentData();
+
+      setMessage(
+        unfinishedGroupMatches.length > 0
+          ? `Tablice su ažurirane i knockout je popunjen, ali još ima ${unfinishedGroupMatches.length} nezavršenih grupnih mečeva.`
+          : "Tablice su ažurirane, poredak je sortiran i knockout je automatski popunjen."
+      );
+    } catch (error: any) {
+      setMessage("Greška: " + error.message);
+    } finally {
+      setWorking(false);
     }
   }
 
   const recommended = recommendFormat(teams.length);
-
-  const groupedStandings = standings.reduce((acc: any, row: any) => {
-    if (!acc[row.group_name]) acc[row.group_name] = [];
-    acc[row.group_name].push(row);
-    return acc;
-  }, {});
+  const standingsForView = useMemo(() => calculateGroupRows(matches, standings), [matches, standings]);
+  const knockoutSize = Number(tournament?.knockout_size || 16);
+  const qualification = useMemo(
+    () => buildQualification(standingsForView, knockoutSize),
+    [standingsForView, knockoutSize]
+  );
 
   const groupMatches = matches.filter((m) => m.phase === "group");
   const knockoutMatches = matches.filter((m) => m.phase === "knockout");
@@ -302,19 +625,15 @@ export default function ZdrijebAdminPage() {
 
   return (
     <main className="page">
-      <div className="mb-10">
-        <p className="mb-4 inline-block rounded-full border border-[#d4b06a]/30 bg-[#d4b06a]/10 px-4 py-2 text-sm text-[#d4b06a]">
-          Admin ždrijeb
-        </p>
+      <section className="hero-card mb-10">
+        <span className="badge">Admin ždrijeb</span>
 
-        <h1 className="text-4xl font-black text-[#f3dfad] sm:text-5xl">
-          Bracket engine
-        </h1>
+        <h1 className="page-title mt-4">Bracket engine</h1>
 
-        <p className="mt-4 max-w-2xl text-zinc-300">
-          Generira knockout, round robin ili grupe + knockout prema pravilima turnira.
+        <p className="muted mt-4 max-w-2xl">
+          Generira knockout, round robin ili grupe + knockout. Nakon završetka grupa može automatski sortirati tablice i popuniti knockout.
         </p>
-      </div>
+      </section>
 
       <section className="card">
         <label className="mb-2 block text-sm font-bold text-[#d4b06a]">
@@ -343,7 +662,7 @@ export default function ZdrijebAdminPage() {
         )}
 
         {tournament?.tournament_format === "round_robin" && (
-          <p className="mt-5 rounded-2xl bg-[#12392b] p-4 text-zinc-300">
+          <p className="mt-5 card-soft muted">
             Round robin s {teams.length} ekipa generira{" "}
             <b className="text-[#d4b06a]">
               {calculateRoundRobinMatchCount(teams.length)}
@@ -352,90 +671,111 @@ export default function ZdrijebAdminPage() {
           </p>
         )}
 
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+        {tournament?.tournament_format === "groups_knockout" && (
+          <div className="mt-5 card-soft">
+            <p className="font-bold text-[#f3dfad]">Pravila prolaska</p>
+            <p className="muted mt-2">
+              Knockout prima <b className="text-[#d4b06a]">{knockoutSize}</b> ekipa. Sustav uzima najbolje iz svake grupe, a preostala mjesta popunjava najboljim idućim ekipama po bodovima, pobjedama, razlici i postignutim bodovima.
+            </p>
+          </div>
+        )}
+
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <button
             onClick={generateDraw}
-            className="rounded-xl bg-[#d4b06a] px-8 py-4 font-black text-black transition hover:bg-[#f3dfad]"
+            disabled={working}
+            className="btn-primary disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Generiraj prema formatu turnira
+            {working ? "Radim..." : "Generiraj prema formatu turnira"}
           </button>
+
 
           <button
             onClick={deleteDraw}
-            className="rounded-xl border border-red-400/40 bg-red-500/10 px-8 py-4 font-black text-red-200 transition hover:bg-red-500/20"
+            disabled={working || matches.length === 0}
+            className="btn-danger disabled:cursor-not-allowed disabled:opacity-60"
           >
             Izbriši ždrijeb
           </button>
+
+          {tournament?.tournament_format === "groups_knockout" && (
+            <button
+              onClick={updateTablesAndAdvance}
+              disabled={working || standings.length === 0}
+              className="btn-outline disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Ažuriraj tablice i popuni knockout
+            </button>
+          )}
         </div>
 
         {message && (
-          <div className="mt-6 rounded-2xl border border-[#d4b06a]/30 bg-[#d4b06a]/10 p-5 text-[#d4b06a]">
+          <div className="mt-6 rounded-2xl border border-[#d4b06a]/30 bg-[#d4b06a]/10 p-5 font-bold text-[#d4b06a]">
             {message}
           </div>
         )}
       </section>
 
       <section className="mt-10">
-        <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">
-          Potvrđene ekipe
-        </h2>
+        <h2 className="section-title">Potvrđene ekipe</h2>
 
         <div className="mt-5 grid gap-4 md:grid-cols-4">
           {teams.map((team) => (
-            <div
-              key={team.id}
-              className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-5"
-            >
+            <div key={team.id} className="card-soft">
               <h3 className="font-bold text-[#d4b06a]">{team.name}</h3>
-              <p className="text-sm text-zinc-400">{team.city}</p>
+              <p className="text-sm text-white/60">{team.city || "Grad nije upisan"}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {Object.keys(groupedStandings).length > 0 && (
+      {Object.keys(qualification.sortedGroups).length > 0 && (
         <section className="mt-10">
-          <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">
-            Tablice grupa
-          </h2>
+          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
+            <div>
+              <h2 className="section-title">Tablice grupa</h2>
+              <p className="muted mt-2">
+                Tablice su sortirane automatski. Zlatna oznaka znači da ekipa trenutno prolazi u knockout.
+              </p>
+            </div>
+
+            <span className="badge">
+              {qualification.qualifiers.length}/{knockoutSize} prolazi
+            </span>
+          </div>
 
           <div className="mt-5 grid gap-6 md:grid-cols-2">
-            {Object.entries(groupedStandings).map(([groupName, rows]: any) => (
-              <div
+            {Object.entries(qualification.sortedGroups).map(([groupName, rows]: any) => (
+              <GroupTable
                 key={groupName}
-                className="overflow-hidden rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018]"
-              >
-                <h3 className="bg-[#d4b06a]/10 p-4 text-xl font-bold text-[#d4b06a]">
-                  {groupName}
-                </h3>
+                groupName={groupName}
+                rows={rows}
+                qualifierIds={qualification.qualifierIds}
+                extraIds={qualification.extraIds}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
-                <table className="w-full text-left text-sm">
-                  <thead className="text-zinc-400">
-                    <tr>
-                      <th className="p-3">Ekipa</th>
-                      <th>P</th>
-                      <th>W</th>
-                      <th>L</th>
-                      <th>Bod</th>
-                      <th>+/-</th>
-                    </tr>
-                  </thead>
+      {qualification.qualifiers.length > 0 && tournament?.tournament_format === "groups_knockout" && (
+        <section className="mt-10 card">
+          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
+            <div>
+              <h2 className="section-title">Ekipe koje prolaze dalje</h2>
+              <p className="muted mt-2">Ovim redom se pune nositelji za knockout.</p>
+            </div>
+            <span className="badge">Seed lista</span>
+          </div>
 
-                  <tbody>
-                    {rows.map((row: any) => (
-                      <tr key={row.id} className="border-t border-[#d4b06a]/15">
-                        <td className="p-3 font-bold text-[#d4b06a]">
-                          {row.team_name}
-                        </td>
-                        <td>{row.played}</td>
-                        <td>{row.wins}</td>
-                        <td>{row.losses}</td>
-                        <td>{row.table_points}</td>
-                        <td>{row.points_diff}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          <div className="mt-5 grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+            {qualification.qualifiers.map((row) => (
+              <div key={row.team_id} className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018]/70 p-4">
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-[#d4b06a]/70">
+                  Seed #{row.seed}
+                </p>
+                <h3 className="mt-2 font-black text-[#f3dfad]">{row.team_name}</h3>
+                <p className="mt-1 text-sm text-white/60">{row.qualification_label}</p>
               </div>
             ))}
           </div>
@@ -452,9 +792,7 @@ export default function ZdrijebAdminPage() {
 
       {knockoutMatches.length > 0 && (
         <section className="mt-10">
-          <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">
-            Knockout bracket
-          </h2>
+          <h2 className="section-title">Knockout bracket</h2>
 
           <div className="mt-5 flex gap-5 overflow-x-auto pb-4">
             {Object.entries(groupedKnockout).map(
@@ -465,28 +803,10 @@ export default function ZdrijebAdminPage() {
                   </h3>
 
                   <div className="space-y-4">
-                    {roundMatches.map((match: any) => (
-                      <div
-                        key={match.id}
-                        className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-5"
-                      >
-                        <p className="text-sm text-zinc-500">
-                          Meč {match.bracket_position || match.match_number}
-                        </p>
-
-                        <div className="mt-3 space-y-2">
-                          <div className="rounded-xl bg-[#12392b] p-3 font-bold">
-                            {match.team_a_name || match.team_a_seed || "Čeka"}
-                          </div>
-                          <div className="rounded-xl bg-[#12392b] p-3 font-bold">
-                            {match.team_b_name || match.team_b_seed || "Čeka"}
-                          </div>
-                        </div>
-
-                        <p className="mt-3 text-sm text-zinc-400">
-                          Status: {match.status}
-                        </p>
-                      </div>
+                    {roundMatches
+                      .sort((a: any, b: any) => Number(a.bracket_position || 0) - Number(b.bracket_position || 0))
+                      .map((match: any) => (
+                      <MatchBox key={match.id} match={match} />
                     ))}
                   </div>
                 </div>
@@ -501,9 +821,81 @@ export default function ZdrijebAdminPage() {
 
 function Info({ title, value }: { title: string; value: any }) {
   return (
-    <div className="rounded-2xl bg-[#12392b] p-5">
-      <p className="text-sm text-zinc-400">{title}</p>
+    <div className="stat-card">
+      <p className="text-sm text-white/60">{title}</p>
       <p className="mt-2 text-2xl font-black text-[#f3dfad]">{value}</p>
+    </div>
+  );
+}
+
+function GroupTable({
+  groupName,
+  rows,
+  qualifierIds,
+  extraIds
+}: {
+  groupName: string;
+  rows: any[];
+  qualifierIds: Set<string>;
+  extraIds: Set<string>;
+}) {
+  return (
+    <div className="overflow-hidden rounded-3xl border border-[#d4b06a]/15 bg-[#0a2018]/90 shadow-2xl">
+      <h3 className="bg-[#d4b06a]/10 p-4 text-xl font-black text-[#d4b06a]">
+        {groupName}
+      </h3>
+
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[620px] text-left text-sm">
+          <thead className="bg-[#061710]/65 text-white/55">
+            <tr>
+              <th className="p-3">#</th>
+              <th className="p-3">Ekipa</th>
+              <th className="p-3">P</th>
+              <th className="p-3">W</th>
+              <th className="p-3">L</th>
+              <th className="p-3">Bod</th>
+              <th className="p-3">+/-</th>
+              <th className="p-3">Status</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {rows.map((row: any, index: number) => {
+              const qualified = qualifierIds.has(row.team_id);
+              const extra = extraIds.has(row.team_id);
+
+              return (
+                <tr
+                  key={row.id || row.team_id}
+                  className={`border-t border-[#d4b06a]/10 ${
+                    qualified ? "bg-[#d4b06a]/10" : ""
+                  }`}
+                >
+                  <td className="p-3 font-black text-white/60">{index + 1}</td>
+                  <td className="p-3 font-black text-[#f3dfad]">
+                    {row.team_name}
+                  </td>
+                  <td className="p-3">{row.played}</td>
+                  <td className="p-3">{row.wins}</td>
+                  <td className="p-3">{row.losses}</td>
+                  <td className="p-3 font-black text-[#d4b06a]">{row.table_points}</td>
+                  <td className="p-3">{row.points_diff}</td>
+                  <td className="p-3">
+                    {qualified ? (
+                      <span className="rounded-full border border-[#d4b06a]/30 bg-[#d4b06a]/15 px-3 py-1 text-xs font-black text-[#f3dfad]">
+                        {extra ? "Najbolji dodatni" : "Prolazi"}
+                      </span>
+                    ) : (
+                      <span className="text-white/35">—</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -511,31 +903,48 @@ function Info({ title, value }: { title: string; value: any }) {
 function MatchList({ title, matches }: { title: string; matches: any[] }) {
   return (
     <section className="mt-10">
-      <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">{title}</h2>
+      <h2 className="section-title">{title}</h2>
 
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         {matches.map((match) => (
-          <div
-            key={match.id}
-            className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-5"
-          >
-            <p className="text-sm text-zinc-500">
-              {match.group_name ? `${match.group_name} · ` : ""}
-              Meč {match.bracket_position || match.match_number}
-            </p>
-
-            <div className="mt-3 flex items-center justify-between gap-4">
-              <span className="font-bold">{match.team_a_name}</span>
-              <span className="text-[#f3dfad]">VS</span>
-              <span className="font-bold">{match.team_b_name}</span>
-            </div>
-
-            <p className="mt-3 text-sm text-zinc-400">
-              Status: {match.status}
-            </p>
-          </div>
+          <MatchBox key={match.id} match={match} />
         ))}
       </div>
     </section>
+  );
+}
+
+function MatchBox({ match }: { match: any }) {
+  const winnerA = match.winner_id && match.winner_id === match.team_a_id;
+  const winnerB = match.winner_id && match.winner_id === match.team_b_id;
+
+  return (
+    <div className="card-soft">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="text-sm text-white/45">
+          {match.group_name ? `${match.group_name} · ` : ""}
+          Meč {match.bracket_position || match.match_number}
+        </p>
+        <span className="rounded-full border border-[#d4b06a]/20 bg-[#d4b06a]/10 px-3 py-1 text-xs font-black text-[#d4b06a]">
+          {match.status}
+        </span>
+      </div>
+
+      <TeamLine name={match.team_a_name || match.team_a_seed || "Čeka"} score={match.score_a} winner={winnerA} />
+      <TeamLine name={match.team_b_name || match.team_b_seed || "Čeka"} score={match.score_b} winner={winnerB} />
+
+      <a href={`/live/${match.id}`} className="btn-outline mt-4 w-full">
+        Live prikaz
+      </a>
+    </div>
+  );
+}
+
+function TeamLine({ name, score, winner }: { name: string; score: number; winner?: boolean }) {
+  return (
+    <div className={`mb-2 flex items-center justify-between rounded-2xl p-3 ${winner ? "bg-green-500/15 text-green-200" : "bg-[#0a2018]/70 text-zinc-200"}`}>
+      <span className="font-black">{name}</span>
+      <span className="text-xl font-black text-[#f3dfad]">{score || 0}</span>
+    </div>
   );
 }
