@@ -199,6 +199,78 @@ function bracketPairs(qualifiers: any[]) {
   return pairs;
 }
 
+type DrawAnimationItem = {
+  label: string;
+  title: string;
+  subtitle?: string;
+};
+
+type DrawAnimationState = {
+  open: boolean;
+  title: string;
+  subtitle: string;
+  items: DrawAnimationItem[];
+  activeIndex: number;
+  finished: boolean;
+};
+
+const emptyDrawAnimation: DrawAnimationState = {
+  open: false,
+  title: "",
+  subtitle: "",
+  items: [],
+  activeIndex: -1,
+  finished: false
+};
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function getDrawAnimationItems(format: string, teams: any[], generated: any[] = []) {
+  if (format === "groups_knockout") {
+    const grouped: Record<string, any[]> = {};
+
+    generated
+      .filter((row: any) => row.group_name && row.team_name)
+      .forEach((row: any) => {
+        if (!grouped[row.group_name]) grouped[row.group_name] = [];
+        grouped[row.group_name].push(row);
+      });
+
+    return Object.entries(grouped)
+      .sort(([a], [b]) => a.localeCompare(b, "hr"))
+      .flatMap(([groupName, rows]) =>
+        rows.map((row, index) => ({
+          label: groupName,
+          title: row.team_name,
+          subtitle: `${index + 1}. ekipa u grupi`
+        }))
+      );
+  }
+
+  if (format === "knockout") {
+    return generated
+      .filter((match: any) => Number(match.round) === 1)
+      .flatMap((match: any) => [
+        {
+          label: `Meč ${match.bracket_position || match.match_number}`,
+          title: match.team_a_name || match.team_a_seed || "BYE",
+          subtitle: "Pozicija A"
+        },
+        {
+          label: `Meč ${match.bracket_position || match.match_number}`,
+          title: match.team_b_name || match.team_b_seed || "BYE",
+          subtitle: "Pozicija B"
+        }
+      ]);
+  }
+
+  return teams.map((team: any, index: number) => ({
+    label: `Redni broj ${index + 1}`,
+    title: team.name,
+    subtitle: team.city || "Round robin raspored"
+  }));
+}
+
 export default function ZdrijebAdminPage() {
   const [tournaments, setTournaments] = useState<any[]>([]);
   const [selectedTournament, setSelectedTournament] = useState("");
@@ -208,6 +280,7 @@ export default function ZdrijebAdminPage() {
   const [standings, setStandings] = useState<any[]>([]);
   const [message, setMessage] = useState("");
   const [working, setWorking] = useState(false);
+  const [drawAnimation, setDrawAnimation] = useState<DrawAnimationState>(emptyDrawAnimation);
 
   useEffect(() => {
     loadTournaments();
@@ -380,6 +453,32 @@ export default function ZdrijebAdminPage() {
     }
   }
 
+  async function playDrawAnimation(title: string, subtitle: string, items: DrawAnimationItem[]) {
+    const limitedItems = items.filter((item) => item.title && item.title !== "BYE");
+
+    if (limitedItems.length === 0) return;
+
+    setDrawAnimation({
+      open: true,
+      title,
+      subtitle,
+      items: limitedItems,
+      activeIndex: -1,
+      finished: false
+    });
+
+    await sleep(450);
+
+    for (let i = 0; i < limitedItems.length; i++) {
+      setDrawAnimation((current) => ({ ...current, activeIndex: i }));
+      await sleep(i < 8 ? 720 : 420);
+    }
+
+    setDrawAnimation((current) => ({ ...current, finished: true }));
+    await sleep(900);
+    setDrawAnimation(emptyDrawAnimation);
+  }
+
   async function generateDraw() {
     setMessage("");
 
@@ -395,10 +494,15 @@ export default function ZdrijebAdminPage() {
 
     try {
       setWorking(true);
-      await clearOldDraw();
 
       if (tournament.tournament_format === "knockout") {
         const generated = generateKnockoutMatches(selectedTournament, teams);
+        await playDrawAnimation(
+          "LIVE ŽDRIJEB",
+          "Izvlače se parovi knockout bracket-a",
+          getDrawAnimationItems("knockout", teams, generated)
+        );
+        await clearOldDraw();
 
         const { data: insertedMatches, error } = await supabase
           .from("matches")
@@ -461,6 +565,12 @@ export default function ZdrijebAdminPage() {
         setMessage("Knockout bracket je generiran.");
       } else if (tournament.tournament_format === "round_robin") {
         const generated = generateRoundRobinMatches(selectedTournament, teams);
+        await playDrawAnimation(
+          "LIVE ŽDRIJEB",
+          "Ekipe se predstavljaju prije izrade Berger rasporeda",
+          getDrawAnimationItems("round_robin", teams, generated)
+        );
+        await clearOldDraw();
 
         const { error } = await supabase.from("matches").insert(generated);
         if (error) throw error;
@@ -480,6 +590,13 @@ export default function ZdrijebAdminPage() {
           selectedTournament,
           knockoutSize
         );
+
+        await playDrawAnimation(
+          "LIVE ŽDRIJEB GRUPA",
+          "Kuglice izvlače ekipe po grupama",
+          getDrawAnimationItems("groups_knockout", teams, generatedGroups.standings)
+        );
+        await clearOldDraw();
 
         const { error: standingsError } = await supabase
           .from("group_standings")
@@ -678,6 +795,8 @@ export default function ZdrijebAdminPage() {
 
   return (
     <main className="page">
+      {drawAnimation.open && <FancyDrawOverlay animation={drawAnimation} />}
+
       <section className="hero-card mb-10">
         <span className="badge">Admin ždrijeb</span>
 
@@ -869,6 +988,100 @@ export default function ZdrijebAdminPage() {
         </section>
       )}
     </main>
+  );
+}
+
+function FancyDrawOverlay({ animation }: { animation: DrawAnimationState }) {
+  const activeItem = animation.items[animation.activeIndex];
+  const revealedItems = animation.items.slice(0, Math.max(animation.activeIndex + 1, 0));
+  const progress = animation.items.length
+    ? Math.round(((animation.activeIndex + 1) / animation.items.length) * 100)
+    : 0;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-[#020806]/95 px-3 py-5 backdrop-blur-xl">
+      <div className="draw-lights" />
+      <div className="draw-confetti" />
+
+      <div className="relative w-full max-w-5xl rounded-[2rem] border border-[#d4b06a]/35 bg-gradient-to-b from-[#12392b]/95 to-[#061710]/95 p-4 shadow-[0_0_90px_rgba(212,176,106,0.18)] sm:p-8">
+        <div className="text-center">
+          <span className="badge">Bela Arena show</span>
+          <h2 className="mt-4 text-3xl font-black text-[#f3dfad] sm:text-5xl">
+            {animation.title}
+          </h2>
+          <p className="mx-auto mt-3 max-w-2xl text-sm font-semibold text-white/65 sm:text-base">
+            {animation.subtitle}
+          </p>
+        </div>
+
+        <div className="mt-7 grid gap-5 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+          <div className="rounded-[1.8rem] border border-[#d4b06a]/20 bg-black/20 p-5 text-center">
+            <div className="draw-ball mx-auto flex h-40 w-40 items-center justify-center rounded-full border border-[#f3dfad]/40 bg-gradient-to-br from-[#f3dfad] via-[#d4b06a] to-[#8f6b2d] text-5xl font-black text-[#071810] shadow-[0_0_70px_rgba(212,176,106,0.45)] sm:h-52 sm:w-52 sm:text-7xl">
+              {activeItem ? animation.activeIndex + 1 : "?"}
+            </div>
+
+            <div className="mt-5 min-h-[108px] rounded-3xl border border-[#d4b06a]/20 bg-[#061710]/75 p-4">
+              {activeItem ? (
+                <div className="draw-reveal">
+                  <p className="text-xs font-black uppercase tracking-[0.24em] text-[#d4b06a]/80">
+                    {activeItem.label}
+                  </p>
+                  <h3 className="mt-2 text-2xl font-black text-[#f3dfad] sm:text-3xl">
+                    {activeItem.title}
+                  </h3>
+                  <p className="mt-1 text-sm font-semibold text-white/55">
+                    {activeItem.subtitle}
+                  </p>
+                </div>
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm font-bold text-white/50">
+                  Kuglice se miješaju...
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-[1.8rem] border border-[#d4b06a]/15 bg-[#071810]/70 p-4">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <p className="font-black text-[#f3dfad]">Izvučeno</p>
+              <span className="rounded-full border border-[#d4b06a]/25 bg-[#d4b06a]/10 px-3 py-1 text-xs font-black text-[#d4b06a]">
+                {Math.max(animation.activeIndex + 1, 0)}/{animation.items.length}
+              </span>
+            </div>
+
+            <div className="h-2 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-[#d4b06a] to-[#f3dfad] transition-all duration-500"
+                style={{ width: `${Math.min(progress, 100)}%` }}
+              />
+            </div>
+
+            <div className="mt-5 grid max-h-[320px] gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
+              {revealedItems.map((item, index) => (
+                <div
+                  key={`${item.label}-${item.title}-${index}`}
+                  className={`rounded-2xl border p-3 transition-all duration-300 ${
+                    index === animation.activeIndex
+                      ? "border-[#d4b06a]/60 bg-[#d4b06a]/15 shadow-[0_0_28px_rgba(212,176,106,0.18)]"
+                      : "border-white/10 bg-white/[0.04]"
+                  }`}
+                >
+                  <p className="text-[0.65rem] font-black uppercase tracking-[0.18em] text-[#d4b06a]/70">
+                    {item.label}
+                  </p>
+                  <p className="mt-1 font-black text-[#f3dfad]">{item.title}</p>
+                  <p className="text-xs text-white/45">{item.subtitle}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 text-center text-xs font-bold uppercase tracking-[0.25em] text-white/45">
+          {animation.finished ? "Ždrijeb završen — spremam raspored" : "Bela Arena · live draw experience"}
+        </div>
+      </div>
+    </div>
   );
 }
 
