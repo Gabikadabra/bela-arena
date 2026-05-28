@@ -183,7 +183,7 @@ export default function AdminPage() {
         </button>
       </div>
 
-      <div className="mb-10 grid gap-4 md:grid-cols-2 lg:grid-cols-6">
+      <div className="mb-10 grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <a
           href="/admin/novi-turnir"
           className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
@@ -235,6 +235,16 @@ export default function AdminPage() {
           <span className="block text-2xl text-[#d4b06a]">🏁</span>
           Bracket
         </a>
+
+        <a
+          href={selectedTournament ? `/dashboard/${selectedTournament}` : "/admin"}
+          target={selectedTournament ? "_blank" : undefined}
+          rel={selectedTournament ? "noopener noreferrer" : undefined}
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
+        >
+          <span className="block text-2xl text-[#d4b06a]">📺</span>
+          TV dashboard
+        </a>
       </div>
 
       <section className="card">
@@ -276,6 +286,24 @@ export default function AdminPage() {
               {selectedTournamentData.location} ·{" "}
               {selectedTournamentData.starts_at}
             </p>
+
+            <div className="mt-4 flex flex-wrap gap-3">
+              <a
+                href={`/tournament/${selectedTournamentData.id}`}
+                className="rounded-xl border border-[#d4b06a]/30 px-5 py-2 font-bold text-[#f3dfad] transition hover:bg-[#d4b06a]/10"
+              >
+                Otvori turnir
+              </a>
+
+              <a
+                href={`/dashboard/${selectedTournamentData.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-xl bg-[#d4b06a] px-5 py-2 font-black text-black transition hover:bg-[#f3dfad]"
+              >
+                Otvori TV dashboard
+              </a>
+            </div>
           </div>
         )}
 

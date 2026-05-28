@@ -274,6 +274,10 @@ export default function TournamentPage({
               </a>
             )}
 
+            <a href={`/dashboard/${id}`} target="_blank" rel="noopener noreferrer" className="btn-primary">
+              TV dashboard
+            </a>
+
             <a href="/turniri" className="btn-outline">
               Svi turniri
             </a>
