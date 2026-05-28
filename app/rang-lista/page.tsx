@@ -123,7 +123,7 @@ export default function RangListaPage() {
         <h1 className="text-4xl font-black text-[#f3dfad] sm:text-5xl">Rang lista</h1>
 
         <p className="mt-4 max-w-2xl text-zinc-300">
-          ELO, pobjede, bodovi, zvanja u jednoj partiji, streakovi i najbolji rezultati.
+          ELO, pobjede, bodovi, rekord zvanja u jednoj partiji, streakovi i najbolji rezultati.
         </p>
       </div>
 
@@ -146,6 +146,24 @@ export default function RangListaPage() {
         </select>
       </section>
 
+      <section className="mb-8 rounded-3xl border border-[#d4b06a]/15 bg-[#0a2018] p-6">
+        <h2 className="text-2xl font-black text-[#f3dfad]">Kako ELO funkcionira?</h2>
+        <p className="mt-3 max-w-4xl text-zinc-300">
+          ELO je broj koji pokazuje jačinu ekipe na rang-listi. Svaka ekipa kreće od 1000 ELO,
+          pobjede dižu ekipu, porazi ju spuštaju, a dodatni bodovi i zvanja daju mali bonus.
+        </p>
+        <div className="mt-5 grid gap-3 md:grid-cols-4">
+          <InfoBox title="Start" text="Svaka ekipa počinje s 1000 ELO." />
+          <InfoBox title="Pobjeda" text="Svaka pobjeda dodaje +35 ELO." />
+          <InfoBox title="Poraz" text="Svaki poraz skida -15 ELO." />
+          <InfoBox title="Bonus" text="Bodovi i ukupna zvanja dodaju mali dodatni bonus." />
+        </div>
+        <p className="mt-4 rounded-2xl border border-[#d4b06a]/15 bg-[#184332]/60 p-4 text-sm text-zinc-300">
+          Formula u aplikaciji: <span className="font-bold text-[#f3dfad]">1000 + pobjede × 35 - porazi × 15 + bodovi / 100 + zvanja / 50</span>.
+          Zbog toga najbolja ekipa nije nužno samo ona s najviše bodova, nego ona koja ima najbolju kombinaciju pobjeda, malo poraza i dobrih rezultata kroz partije.
+        </p>
+      </section>
+
       <section className="mb-10 grid gap-4 md:grid-cols-4">
         <Highlight
           title="Najveći ELO"
@@ -158,9 +176,9 @@ export default function RangListaPage() {
           sub={`${topPoints?.total_points || 0} bodova`}
         />
         <Highlight
-          title="Najviše zvanja u jednoj partiji"
+          title="Rekord zvanja u jednoj partiji"
           value={topSingleGameDeclarations?.team_name || "-"}
-          sub={`${topSingleGameDeclarations?.best_single_game_declarations || 0} zvanja u partiji`}
+          sub={`Ekipa ima ${topSingleGameDeclarations?.best_single_game_declarations || 0} zvanja u jednoj partiji`}
         />
         <Highlight
           title="Najveći streak"
@@ -347,6 +365,15 @@ function Highlight({
       <p className="text-sm text-zinc-400">{title}</p>
       <p className="mt-2 text-2xl font-black text-[#f3dfad]">{value}</p>
       <p className="mt-1 text-zinc-400">{sub}</p>
+    </div>
+  );
+}
+
+function InfoBox({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="rounded-2xl border border-[#d4b06a]/15 bg-[#184332]/60 p-4">
+      <p className="font-black text-[#d4b06a]">{title}</p>
+      <p className="mt-1 text-sm text-zinc-300">{text}</p>
     </div>
   );
 }
