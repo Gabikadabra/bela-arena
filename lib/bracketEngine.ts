@@ -2,6 +2,8 @@ export type Team = {
   id: string;
   name: string;
   city?: string;
+  seed_score?: number;
+  seed_rank?: number;
 };
 
 export type MatchInsert = {
@@ -34,6 +36,48 @@ function shuffle<T>(items: T[]) {
 
 function nextPowerOfTwo(n: number) {
   return Math.pow(2, Math.ceil(Math.log2(n)));
+}
+
+function getSeedScore(team: Team) {
+  return Number.isFinite(Number(team.seed_score)) ? Number(team.seed_score) : 1000;
+}
+
+function buildSeededGroups(teams: Team[], groupSize: number, seedCount = 8) {
+  const groupCount = Math.ceil(teams.length / groupSize);
+  const groups: Team[][] = Array.from({ length: groupCount }, () => []);
+
+  const orderedByStrength = [...teams].sort((a, b) => {
+    return (
+      getSeedScore(b) - getSeedScore(a) ||
+      String(a.name || "").localeCompare(String(b.name || ""), "hr")
+    );
+  });
+
+  const seeds = orderedByStrength.slice(0, Math.min(seedCount, orderedByStrength.length));
+  const seedIds = new Set(seeds.map((team) => team.id));
+
+  const forward = Array.from({ length: groupCount }, (_, index) => index);
+  const backward = [...forward].reverse();
+  const snakeOrder = [...forward, ...backward];
+
+  seeds.forEach((team, index) => {
+    const groupIndex = snakeOrder[index % snakeOrder.length];
+    groups[groupIndex].push({ ...team, seed_rank: index + 1 });
+  });
+
+  const remainingTeams = shuffle(teams.filter((team) => !seedIds.has(team.id)));
+
+  remainingTeams.forEach((team) => {
+    const notFullGroups = groups.filter((group) => group.length < groupSize);
+    const availableGroups = notFullGroups.length > 0 ? notFullGroups : groups;
+    const minSize = Math.min(...availableGroups.map((group) => group.length));
+    const candidates = availableGroups.filter((group) => group.length === minSize);
+    const targetGroup = candidates[Math.floor(Math.random() * candidates.length)];
+
+    targetGroup.push(team);
+  });
+
+  return groups;
 }
 
 function generateBergerRounds(teams: Team[]) {
@@ -196,14 +240,7 @@ export function generateGroups(
     throw new Error("Za grupe trebaju barem 4 ekipe.");
   }
 
-  const shuffled = shuffle(teams);
-  const groupCount = Math.ceil(shuffled.length / groupSize);
-
-  const groups: Team[][] = Array.from({ length: groupCount }, () => []);
-
-  shuffled.forEach((team, index) => {
-    groups[index % groupCount].push(team);
-  });
+  const groups = buildSeededGroups(teams, groupSize, 8);
 
   const matches: MatchInsert[] = [];
   const standings: GroupStandingInsert[] = [];

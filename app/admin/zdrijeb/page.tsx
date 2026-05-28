@@ -225,6 +225,27 @@ const emptyDrawAnimation: DrawAnimationState = {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+function normalizeTeamName(name: string) {
+  return String(name || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "")
+    .trim();
+}
+
+function buildSeedPreview(teams: any[], seedCount = 8) {
+  return [...teams]
+    .sort((a, b) => {
+      return (
+        Number(b.seed_score || 1000) - Number(a.seed_score || 1000) ||
+        String(a.name || "").localeCompare(String(b.name || ""), "hr")
+      );
+    })
+    .slice(0, Math.min(seedCount, teams.length))
+    .map((team, index) => ({ ...team, seed_rank: index + 1 }));
+}
+
 function getDrawAnimationItems(format: string, teams: any[], generated: any[] = []) {
   if (format === "groups_knockout") {
     const grouped: Record<string, any[]> = {};
@@ -242,7 +263,7 @@ function getDrawAnimationItems(format: string, teams: any[], generated: any[] = 
         rows.map((row, index) => ({
           label: groupName,
           title: row.team_name,
-          subtitle: `${index + 1}. ekipa u grupi`
+          subtitle: row.seed_rank ? `Nositelj #${row.seed_rank} · ${index + 1}. ekipa u grupi` : `${index + 1}. ekipa u grupi`
         }))
       );
   }
@@ -374,7 +395,26 @@ export default function ZdrijebAdminPage() {
       .eq("status", "approved")
       .order("created_at", { ascending: true });
 
-    setTeams(teamData || []);
+    const { data: rankingData } = await supabase
+      .from("team_ranking_stats")
+      .select("team_id, team_name, elo, wins, total_matches");
+
+    const rankingById = new Map((rankingData || []).map((row: any) => [row.team_id, row]));
+    const rankingByName = new Map(
+      (rankingData || []).map((row: any) => [normalizeTeamName(row.team_name), row])
+    );
+
+    const teamsWithSeeds = (teamData || []).map((team: any) => {
+      const ranking = rankingById.get(team.id) || rankingByName.get(normalizeTeamName(team.name));
+      return {
+        ...team,
+        seed_score: Number((ranking as any)?.elo || 1000),
+        seed_wins: Number((ranking as any)?.wins || 0),
+        seed_matches: Number((ranking as any)?.total_matches || 0)
+      };
+    });
+
+    setTeams(teamsWithSeeds);
 
     const { data: matchData } = await supabase
       .from("matches")
@@ -782,6 +822,7 @@ export default function ZdrijebAdminPage() {
     () => buildQualification(standingsForView, knockoutSize),
     [standingsForView, knockoutSize]
   );
+  const seededTeams = useMemo(() => buildSeedPreview(teams, 8), [teams]);
 
   const groupMatches = matches.filter((m) => m.phase === "group");
   const knockoutMatches = matches.filter((m) => m.phase === "knockout");
@@ -896,6 +937,34 @@ export default function ZdrijebAdminPage() {
             <div key={team.id} className="card-soft">
               <h3 className="font-bold text-[#d4b06a]">{team.name}</h3>
               <p className="text-sm text-white/60">{team.city || "Grad nije upisan"}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10 card">
+        <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
+          <div>
+            <h2 className="section-title">Nositelji ždrijeba</h2>
+            <p className="muted mt-2">
+              Prikazuje se samo top 8 nositelja. Kod grupa se tih 8 najjačih raspoređuje zmijskim redom po grupama, da najjače ekipe ne završe sve zajedno.
+            </p>
+          </div>
+          <span className="badge">Top {seededTeams.length}/8</span>
+        </div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          {seededTeams.map((team) => (
+            <div key={team.id} className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018]/70 p-4">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-[#d4b06a]/70">
+                Nositelj #{team.seed_rank}
+              </p>
+              <h3 className="mt-2 font-black text-[#f3dfad]">{team.name}</h3>
+              <p className="mt-1 text-sm text-white/60">{team.city || "Grad nije upisan"}</p>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs font-black text-white/55">
+                <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1">{Math.round(Number(team.seed_score || 1000))} ELO</span>
+                <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1">{team.seed_wins || 0} pobjeda</span>
+              </div>
             </div>
           ))}
         </div>

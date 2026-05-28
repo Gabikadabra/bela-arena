@@ -27,10 +27,6 @@ function statusInfo(match: any) {
     return { label: "ZAVRŠENO", className: "border-green-400/40 bg-green-500/15 text-green-300" };
   }
 
-  if (resultStatus === "disputed") {
-    return { label: "SPORNO", className: "border-red-400/40 bg-red-500/15 text-red-300" };
-  }
-
   if (resultStatus === "submitted") {
     return { label: "ČEKA POTVRDU", className: "border-yellow-300/40 bg-yellow-400/15 text-yellow-200" };
   }
@@ -161,7 +157,6 @@ export default function TournamentDashboardPage({ params }: PageProps) {
   const finishedMatches = matches.filter((match) => match.status === "finished");
   const activeMatches = matches.filter((match) => ["active", "live", "scheduled"].includes(String(match.status || "")));
   const waitingMatches = matches.filter((match) => ["waiting", "bye"].includes(String(match.status || "")));
-  const disputedMatches = matches.filter((match) => match.result_status === "disputed");
   const submittedMatches = matches.filter((match) => match.result_status === "submitted" && match.status !== "finished");
 
   const progress = matches.length > 0 ? Math.round((finishedMatches.length / matches.length) * 100) : 0;
@@ -229,7 +224,6 @@ export default function TournamentDashboardPage({ params }: PageProps) {
         <Stat title="Završeno" value={finishedMatches.length} />
         <Stat title="Napredak" value={`${progress}%`} />
         <Stat title="Čeka potvrdu" value={submittedMatches.length} warning />
-        <Stat title="Sporno" value={disputedMatches.length} danger />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
