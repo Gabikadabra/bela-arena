@@ -298,6 +298,16 @@ export default function RangListaPage() {
   );
 }
 
+function calculateBaseElo(team: any) {
+  return (
+    1000 +
+    Number(team.wins || 0) * 35 -
+    Number(team.losses || 0) * 15 +
+    Math.floor(Number(team.total_points || 0) / 100) +
+    Math.floor(Number(team.total_declarations || 0) / 50)
+  );
+}
+
 function mergeGlobalStats(stats: any[]) {
   const map = new Map();
 
