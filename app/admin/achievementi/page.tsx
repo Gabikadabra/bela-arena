@@ -80,6 +80,7 @@ export default function AdminAchievementiPage() {
   const [selectedAchievementKey, setSelectedAchievementKey] = useState(MANUAL_ACHIEVEMENTS[0].key);
   const [note, setNote] = useState("");
   const [message, setMessage] = useState("");
+  const [loadError, setLoadError] = useState("");
   const [loading, setLoading] = useState(true);
 
   function loginAdmin(e: React.FormEvent) {
@@ -100,25 +101,44 @@ export default function AdminAchievementiPage() {
 
   async function loadData() {
     setLoading(true);
+    setLoadError("");
 
-    const { data: teamData } = await supabase
+    const { data: teamData, error: teamError } = await supabase
       .from("teams")
-      .select("id,name,team_name,city,player_one,player_two,captain_name,status,created_at")
-      .order("created_at", { ascending: false });
+      .select("*");
 
-    const safeTeams = teamData || [];
-    setTeams(safeTeams);
+    if (teamError) {
+      setLoadError(`Ne mogu učitati ekipe iz teams: ${teamError.message}`);
+      setTeams([]);
+    } else {
+      const safeTeams = [...(teamData || [])].sort((a: any, b: any) => {
+        const aTime = new Date(a.created_at || 0).getTime();
+        const bTime = new Date(b.created_at || 0).getTime();
+        return bTime - aTime;
+      });
+      setTeams(safeTeams);
 
-    if (!selectedTeamId && safeTeams.length > 0) {
-      setSelectedTeamId(safeTeams[0].id);
+      if ((!selectedTeamId || !safeTeams.some((team: any) => team.id === selectedTeamId)) && safeTeams.length > 0) {
+        setSelectedTeamId(safeTeams[0].id);
+      }
     }
 
-    const { data: awardData } = await supabase
+    const { data: awardData, error: awardError } = await supabase
       .from("team_manual_achievements")
       .select("*")
       .order("created_at", { ascending: false });
 
-    setAwards(awardData || []);
+    if (awardError) {
+      setLoadError((current) =>
+        current
+          ? `${current} | Achievement tablica: ${awardError.message}`
+          : `Ne mogu učitati achievemente: ${awardError.message}`
+      );
+      setAwards([]);
+    } else {
+      setAwards(awardData || []);
+    }
+
     setLoading(false);
   }
 
@@ -199,7 +219,21 @@ export default function AdminAchievementiPage() {
     const search = teamSearch.trim().toLowerCase();
     if (!search) return teams;
     return teams.filter((team) => {
-      const haystack = [team.name, team.team_name, team.city, team.player_one, team.player_two, team.captain_name, team.status]
+      const haystack = [
+        team.name,
+        team.team_name,
+        team.teamName,
+        team.city,
+        team.player_one,
+        team.player_two,
+        team.playerOne,
+        team.playerTwo,
+        team.captain_name,
+        team.captain,
+        team.email,
+        team.phone,
+        team.status,
+      ]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
@@ -207,6 +241,16 @@ export default function AdminAchievementiPage() {
     });
   }, [teams, teamSearch]);
   const selectedTemplate = MANUAL_ACHIEVEMENTS.find((item) => item.key === selectedAchievementKey) || MANUAL_ACHIEVEMENTS[0];
+
+  function getTeamName(team: any) {
+    return team?.name || team?.team_name || team?.teamName || "Ekipa bez imena";
+  }
+
+  function getPlayerNames(team: any) {
+    return [team?.player_one, team?.player_two, team?.playerOne, team?.playerTwo, team?.captain_name, team?.captain]
+      .filter(Boolean)
+      .join(" / ");
+  }
 
   if (!isAdmin) {
     return (
@@ -279,6 +323,12 @@ export default function AdminAchievementiPage() {
           <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">Dodijeli posebnu medalju</h2>
           <p className="mt-2 text-zinc-400">Ovo je za titule koje app ne može sama fer izračunati.</p>
 
+          {loadError && (
+            <div className="mt-5 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm font-bold text-red-200">
+              {loadError}
+            </div>
+          )}
+
           <form onSubmit={awardAchievement} className="mt-6 space-y-5">
             <div>
               <label className="mb-2 block text-sm font-bold text-[#d4b06a]">Ekipa</label>
@@ -288,12 +338,16 @@ export default function AdminAchievementiPage() {
                 className="input mb-3"
                 placeholder="Pretraži ekipu, igrača, grad ili status..."
               />
-              <select value={selectedTeamId} onChange={(e) => setSelectedTeamId(e.target.value)} className="input" required>
-                {filteredTeams.map((team) => (
-                  <option key={team.id} value={team.id}>
-                    {team.name || team.team_name || "Ekipa bez imena"} {team.city ? `— ${team.city}` : ""} {team.player_one || team.player_two ? `(${[team.player_one, team.player_two].filter(Boolean).join(" / ")})` : ""}
-                  </option>
-                ))}
+              <select value={selectedTeamId} onChange={(e) => setSelectedTeamId(e.target.value)} className="input" required disabled={filteredTeams.length === 0}>
+                {filteredTeams.length === 0 && <option value="">Nema učitanih ekipa</option>}
+                {filteredTeams.map((team) => {
+                  const players = getPlayerNames(team);
+                  return (
+                    <option key={team.id} value={team.id}>
+                      {getTeamName(team)} {team.city ? `— ${team.city}` : ""} {players ? `(${players})` : ""}
+                    </option>
+                  );
+                })}
               </select>
               <p className="mt-2 text-xs text-zinc-500">
                 Učitava direktno sve ekipe iz Supabase tablice <b>teams</b>. Prikazano: {filteredTeams.length}/{teams.length}
@@ -327,7 +381,7 @@ export default function AdminAchievementiPage() {
               />
             </div>
 
-            <button className="btn-primary w-full justify-center">Dodijeli medalju</button>
+            <button className="btn-primary w-full justify-center" disabled={filteredTeams.length === 0}>Dodijeli medalju</button>
           </form>
 
           {message && (
@@ -373,7 +427,7 @@ export default function AdminAchievementiPage() {
               <div key={award.id} className="rounded-3xl border border-[#d4b06a]/15 bg-[#12392b] p-5">
                 <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
                   <div>
-                    <p className="text-sm text-zinc-500">{team?.name || team?.team_name || "Nepoznata ekipa"}</p>
+                    <p className="text-sm text-zinc-500">{team ? getTeamName(team) : "Nepoznata ekipa"}</p>
                     <h3 className="mt-1 text-2xl font-black text-[#f3dfad]">{award.emoji} {award.title}</h3>
                     <p className="mt-1 text-zinc-400">{award.note || award.description}</p>
                   </div>
