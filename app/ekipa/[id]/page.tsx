@@ -129,18 +129,50 @@ export default function EkipaProfilePage({ params }: { params: TeamProfileParams
     const wins = finishedMatches.filter((match) => match.winner_id === id).length;
     const losses = finishedMatches.length - wins;
     const activeMatches = matches.filter((match) => match.status !== "finished").length;
-    const totalPoints = statsRows.reduce((sum, row) => sum + Number(row.total_points || 0), 0);
+    const fallbackPoints = finishedMatches.reduce((sum, match) => {
+      const isTeamA = match.team_a_id === id;
+      return sum + Number(getScore(match, isTeamA ? "a" : "b") || 0);
+    }, 0);
+    const totalPointsFromStats = statsRows.reduce((sum, row) => sum + Number(row.total_points || 0), 0);
+    const totalPoints = totalPointsFromStats > 0 ? totalPointsFromStats : fallbackPoints;
     const totalDeclarations = statsRows.reduce((sum, row) => sum + Number(row.total_declarations || 0), 0);
     const bestSingleDeal = statsRows.reduce((best, row) => Math.max(best, Number(row.best_single_deal || 0)), 0);
     const bestSingleGameDeclarations = calculateBestSingleGameDeclarations(id, matches, games);
     const winrate = finishedMatches.length > 0 ? Math.round((wins / finishedMatches.length) * 100) : 0;
     const currentElo = calculateChessElo(id, finishedMatches);
     const lastFive = finishedMatches.slice(0, 5).map((match) => (match.winner_id === id ? "W" : "L"));
+    const matchPointRows = finishedMatches.map((match) => {
+      const isTeamA = match.team_a_id === id;
+      const scoreFor = Number(getScore(match, isTeamA ? "a" : "b") || 0);
+      const scoreAgainst = Number(getScore(match, isTeamA ? "b" : "a") || 0);
+      return {
+        scoreFor,
+        scoreAgainst,
+        won: match.winner_id === id,
+        diff: scoreFor - scoreAgainst,
+      };
+    });
+    const bestMatchPoints = matchPointRows.reduce((best, row) => Math.max(best, row.scoreFor), 0);
+    const averagePoints = finishedMatches.length > 0 ? Math.round(totalPoints / finishedMatches.length) : 0;
+    const bestWinMargin = matchPointRows.reduce((best, row) => Math.max(best, row.won ? row.diff : 0), 0);
+    const averagePointsAgainst = finishedMatches.length > 0
+      ? Math.round(matchPointRows.reduce((sum, row) => sum + row.scoreAgainst, 0) / finishedMatches.length)
+      : 0;
+    const bestTournamentDeclarations = calculateBestTournamentDeclarations(id, matches, games, statsRows);
+    const bigWins = matchPointRows.filter((row) => row.won && row.scoreFor >= 1001 && row.scoreAgainst <= 800).length;
+    const closeWins = matchPointRows.filter((row) => row.won && row.scoreFor >= 1001 && row.scoreAgainst >= 900).length;
 
     return {
       activeMatches,
+      averagePoints,
+      averagePointsAgainst,
+      bestMatchPoints,
       bestSingleDeal,
       bestSingleGameDeclarations,
+      bestTournamentDeclarations,
+      bestWinMargin,
+      bigWins,
+      closeWins,
       currentElo,
       finishedMatches: finishedMatches.length,
       lastFive,
@@ -385,34 +417,45 @@ function calculateAchievements(profileStats: any, headToHeadStats: HeadToHeadRow
   const lastFiveWins = (profileStats.lastFive || []).filter((item: string) => item === "W").length;
   const positiveHeadToHead = headToHeadStats.filter((row) => row.totalMatches >= 2 && row.wins > row.losses).length;
   const unbeatenRival = headToHeadStats.find((row) => row.totalMatches >= 3 && row.losses === 0);
-  const dominantRival = headToHeadStats.find((row) => row.totalMatches >= 3 && row.averageDiff >= 30);
-  const avgPoints = profileStats.finishedMatches > 0 ? Math.round(profileStats.totalPoints / profileStats.finishedMatches) : 0;
+  const dominantRival = headToHeadStats.find((row) => row.totalMatches >= 3 && row.averageDiff >= 180);
+  const belaFinishedMatches = Math.max(0, Number(profileStats.finishedMatches || 0));
+  const averagePoints = Number(profileStats.averagePoints || 0);
+  const bestMatchPoints = Number(profileStats.bestMatchPoints || 0);
+  const bestWinMargin = Number(profileStats.bestWinMargin || 0);
+  const averagePointsAgainst = Number(profileStats.averagePointsAgainst || 0);
 
-  addAuto(profileStats.totalMatches >= 1, { emoji: "🪙", title: "Prvi meč", description: "Ekipa je upisala prvi nastup u Bela Areni.", tone: "blue" });
-  addAuto(profileStats.wins > 0, { emoji: "🏆", title: "Prva pobjeda", description: `Ekipa ima ${profileStats.wins} pobjeda ukupno.`, tone: "gold" });
-  addAuto(profileStats.finishedMatches >= 3 && profileStats.losses === 0, { emoji: "🔥", title: "Neporaženi", description: `Bez poraza kroz ${profileStats.finishedMatches} završenih mečeva.`, tone: "green" });
-  addAuto(profileStats.currentElo >= 1100, { emoji: "♟️", title: "ELO majstor", description: `Prešli su ${profileStats.currentElo} ELO po šahovskom obračunu.`, tone: "blue" });
-  addAuto(profileStats.currentElo >= 1200, { emoji: "💎", title: "Elitni ELO", description: `ELO od ${profileStats.currentElo} znači da su među najopasnijim ekipama.`, tone: "purple" });
-  addAuto(profileStats.currentElo >= 1300, { emoji: "👑", title: "ELO kraljevi", description: `S ${profileStats.currentElo} ELO ulaze u elitni rang Bele Arene.`, tone: "gold" });
-  addAuto(profileStats.bestSingleGameDeclarations >= 50, { emoji: "🗣️", title: "Kraljevi zvanja", description: `Rekord im je ${profileStats.bestSingleGameDeclarations} zvanja u jednoj partiji.`, tone: "purple" });
-  addAuto(profileStats.bestSingleGameDeclarations >= 90, { emoji: "💥", title: "Zvanje bomba", description: `U jednoj partiji su došli do ${profileStats.bestSingleGameDeclarations} zvanja.`, tone: "red" });
-  addAuto(profileStats.totalDeclarations >= 200, { emoji: "📢", title: "Glasni za stolom", description: `Ukupno imaju ${profileStats.totalDeclarations} zvanja.`, tone: "gold" });
-  addAuto(profileStats.totalDeclarations >= 500, { emoji: "🎺", title: "Orkestar zvanja", description: `Prešli su ${profileStats.totalDeclarations} ukupnih zvanja.`, tone: "purple" });
-  addAuto(profileStats.totalMatches >= 5, { emoji: "🧱", title: "Stalni sudionici", description: `Već imaju ${profileStats.totalMatches} mečeva u Bela Areni.`, tone: "blue" });
-  addAuto(profileStats.totalMatches >= 10, { emoji: "🎖️", title: "Iskusna ekipa", description: `Odigrali su ${profileStats.totalMatches} mečeva kroz turnire.`, tone: "gold" });
-  addAuto(profileStats.totalMatches >= 25, { emoji: "🛡️", title: "Veterani arene", description: `S ${profileStats.totalMatches} mečeva spadaju među najiskusnije ekipe.`, tone: "purple" });
-  addAuto(profileStats.totalMatches >= 50, { emoji: "🏟️", title: "Legende sezone", description: `Nevjerojatnih ${profileStats.totalMatches} mečeva u sustavu.`, tone: "gold" });
-  addAuto(profileStats.finishedMatches >= 5 && profileStats.winrate >= 60, { emoji: "🥉", title: "Pozitivan omjer", description: `${profileStats.winrate}% pobjeda kroz ${profileStats.finishedMatches} završenih mečeva.`, tone: "green" });
-  addAuto(profileStats.finishedMatches >= 5 && profileStats.winrate >= 70, { emoji: "🥈", title: "Jaka pobjednička stopa", description: `${profileStats.winrate}% pobjeda pokazuje ozbiljnu konstantu.`, tone: "green" });
-  addAuto(profileStats.finishedMatches >= 8 && profileStats.winrate >= 85, { emoji: "🥇", title: "Elitna pobjednička stopa", description: `${profileStats.winrate}% pobjeda protiv konkurencije.`, tone: "gold" });
-  addAuto(lastFiveWins >= 3, { emoji: "🌪️", title: "Opasna forma", description: `${lastFiveWins} pobjeda u zadnjih 5 završenih mečeva.`, tone: "green" });
-  addAuto(lastFiveWins >= 4, { emoji: "⚡", title: "Forma u naletu", description: `${lastFiveWins} pobjeda u zadnjih 5 završenih mečeva.`, tone: "green" });
-  addAuto((profileStats.lastFive || []).length >= 5 && lastFiveWins === 5, { emoji: "🚀", title: "Serija bez kočnica", description: "Pet pobjeda u zadnjih pet završenih mečeva.", tone: "red" });
-  addAuto(avgPoints >= 140, { emoji: "🧮", title: "Bod mašina", description: `Prosječno oko ${avgPoints} bodova po završenom meču.`, tone: "blue" });
-  addAuto(profileStats.totalPoints >= 1000, { emoji: "🧨", title: "Napadačka ekipa", description: `Ukupno su skupili ${profileStats.totalPoints} bodova.`, tone: "red" });
-  addAuto(positiveHeadToHead >= 2, { emoji: "🔒", title: "Stabilna ekipa", description: `Imaju pozitivan međusobni omjer protiv ${positiveHeadToHead} ekipa.`, tone: "blue" });
+  addAuto(profileStats.totalMatches >= 1, { emoji: "🪙", title: "Ulazak u arenu", description: "Ekipa ima prvi nastup u Bela Areni.", tone: "blue" });
+  addAuto(profileStats.wins >= 1, { emoji: "🏆", title: "Prva bela pobjeda", description: `Upisana je prva pobjeda u partiji do 1001. Ukupno pobjeda: ${profileStats.wins}.`, tone: "gold" });
+  addAuto(belaFinishedMatches >= 7, { emoji: "🎖️", title: "Stalna postava", description: `Ekipa ima ${belaFinishedMatches} završenih partija u sustavu.`, tone: "gold" });
+  addAuto(belaFinishedMatches >= 15, { emoji: "🛡️", title: "Veterani stola", description: `S ${belaFinishedMatches} partija ekipa već ima ozbiljno iskustvo.`, tone: "purple" });
+  addAuto(belaFinishedMatches >= 30, { emoji: "🏟️", title: "Inventar arene", description: `Odigrali su ${belaFinishedMatches} partija do 1001 kroz turnire.`, tone: "gold" });
+
+  addAuto(profileStats.currentElo >= 1100, { emoji: "🧠", title: "Šahovski mirni", description: `Prešli su 1100 ELO po obračunu snage protivnika. Trenutno: ${profileStats.currentElo}.`, tone: "purple" });
+  addAuto(profileStats.currentElo >= 1200, { emoji: "💎", title: "Elitni ELO", description: `ELO ${profileStats.currentElo} ih stavlja među najopasnije ekipe.`, tone: "purple" });
+  addAuto(profileStats.currentElo >= 1300, { emoji: "👑", title: "ELO kraljevi", description: `S ${profileStats.currentElo} ELO ulaze u kremu Bele Arene.`, tone: "gold" });
+
+  addAuto(belaFinishedMatches >= 5 && profileStats.winrate >= 60, { emoji: "🥉", title: "Pozitivan skor", description: `${profileStats.winrate}% pobjeda kroz ${belaFinishedMatches} završenih partija.`, tone: "green" });
+  addAuto(belaFinishedMatches >= 8 && profileStats.winrate >= 70, { emoji: "🥈", title: "Opasna konstanta", description: `${profileStats.winrate}% pobjeda protiv konkurencije.`, tone: "green" });
+  addAuto(belaFinishedMatches >= 10 && profileStats.winrate >= 85, { emoji: "🥇", title: "Elitna pobjednička stopa", description: `${profileStats.winrate}% pobjeda u partijama do 1001.`, tone: "gold" });
+  addAuto(belaFinishedMatches >= 3 && profileStats.losses === 0, { emoji: "🔥", title: "Bez poraza", description: `Nisu izgubili kroz ${belaFinishedMatches} završene partije.`, tone: "green" });
+
+  addAuto((profileStats.lastFive || []).length >= 5 && lastFiveWins >= 3, { emoji: "🌪️", title: "Dobra forma", description: `${lastFiveWins} pobjeda u zadnjih 5 partija.`, tone: "green" });
+  addAuto((profileStats.lastFive || []).length >= 5 && lastFiveWins >= 4, { emoji: "⚡", title: "Forma u naletu", description: `${lastFiveWins} pobjeda u zadnjih 5 partija.`, tone: "green" });
+  addAuto((profileStats.lastFive || []).length >= 5 && lastFiveWins === 5, { emoji: "🚀", title: "Petarda forma", description: "Pet pobjeda u zadnjih pet završenih partija.", tone: "red" });
+
+  addAuto(profileStats.totalPoints >= 3000, { emoji: "🧮", title: "Tri tisuće bodova", description: `Ukupno su skupili ${profileStats.totalPoints} bodova u partijama do 1001.`, tone: "blue" });
+  addAuto(profileStats.totalPoints >= 10010, { emoji: "🧨", title: "Deset belih zidova", description: `Prešli su ${profileStats.totalPoints} ukupnih bodova, kao deset punih partija do 1001.`, tone: "red" });
+  addAuto(belaFinishedMatches >= 5 && averagePointsAgainst > 0 && averagePointsAgainst <= 750, { emoji: "🧱", title: "Zid obrane", description: `Protivnici protiv njih prosječno osvajaju samo ${averagePointsAgainst} bodova po partiji.`, tone: "blue" });
+  addAuto(belaFinishedMatches >= 5 && averagePoints >= 950, { emoji: "☠️", title: "Skoro uvijek do kraja", description: `Prosjek ${averagePoints} bodova znači da stalno guraju blizu 1001.`, tone: "red" });
+  addAuto(bestWinMargin >= 700, { emoji: "🔨", title: "Velika pobjeda", description: `Imaju pobjedu s razlikom od +${bestWinMargin} bodova.`, tone: "red" });
+
+  addAuto(profileStats.bestSingleGameDeclarations >= 150, { emoji: "💥", title: "Zvanje bomba", description: `U jednoj partiji došli su do ${profileStats.bestSingleGameDeclarations} zvanja.`, tone: "red" });
+  addAuto(profileStats.bestSingleGameDeclarations > 300, { emoji: "🗣️", title: "Glasni za stolom", description: `U jednoj partiji imaju više od 300 zvanja. Rekord: ${profileStats.bestSingleGameDeclarations}.`, tone: "purple" });
+  addAuto(Number(profileStats.bestTournamentDeclarations || 0) > 1500, { emoji: "🎺", title: "Orkestar zvanja", description: `U jednom turniru imaju preko 1500 zvanja. Najbolji turnir: ${profileStats.bestTournamentDeclarations}.`, tone: "purple" });
+
+  addAuto(positiveHeadToHead >= 2, { emoji: "🔒", title: "Dobar protiv više ekipa", description: `Imaju pozitivan međusobni omjer protiv ${positiveHeadToHead} različite ekipe.`, tone: "blue" });
   addAuto(Boolean(unbeatenRival), { emoji: "🧊", title: "Noćna mora protivnika", description: unbeatenRival ? `${unbeatenRival.wins}-0 protiv ekipe ${unbeatenRival.opponentName}.` : "Dominantan međusobni omjer.", tone: "red" });
-  addAuto(Boolean(dominantRival), { emoji: "🪓", title: "Dominator", description: dominantRival ? `Protiv ${dominantRival.opponentName} imaju prosječnu razliku +${dominantRival.averageDiff}.` : "Dominantni međusobni susreti.", tone: "purple" });
+  addAuto(Boolean(dominantRival), { emoji: "🪓", title: "Razbijanje rivala", description: dominantRival ? `Protiv ${dominantRival.opponentName} imaju prosječnu razliku +${dominantRival.averageDiff} bodova.` : "Dominantni međusobni susreti.", tone: "purple" });
 
   return achievements;
 }
@@ -488,6 +531,32 @@ function calculateBestSingleGameDeclarations(teamId: string, matches: any[], gam
   }
 
   return best;
+}
+
+function calculateBestTournamentDeclarations(teamId: string, matches: any[], games: any[], statsRows: any[]) {
+  const matchById = new Map(matches.map((match) => [match.id, match]));
+  const declarationsByTournament = new Map<string, number>();
+
+  for (const game of games) {
+    const match = matchById.get(game.match_id);
+    if (!match?.tournament_id) continue;
+
+    const current = declarationsByTournament.get(match.tournament_id) || 0;
+
+    if (match.team_a_id === teamId) {
+      declarationsByTournament.set(match.tournament_id, current + Number(game.team_a_declarations || 0));
+    } else if (match.team_b_id === teamId) {
+      declarationsByTournament.set(match.tournament_id, current + Number(game.team_b_declarations || 0));
+    }
+  }
+
+  for (const row of statsRows || []) {
+    if (!row.tournament_id) continue;
+    const current = declarationsByTournament.get(row.tournament_id) || 0;
+    declarationsByTournament.set(row.tournament_id, Math.max(current, Number(row.total_declarations || 0)));
+  }
+
+  return Math.max(0, ...Array.from(declarationsByTournament.values()));
 }
 
 function calculateChessElo(teamId: string, finishedMatches: any[]) {
