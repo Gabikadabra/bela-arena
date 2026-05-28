@@ -234,11 +234,18 @@ function normalizeTeamName(name: string) {
     .trim();
 }
 
+function getRegistrationTime(team: any) {
+  const rawDate = team.created_at || team.registered_at || "";
+  const time = new Date(rawDate).getTime();
+  return Number.isFinite(time) ? time : Number.MAX_SAFE_INTEGER;
+}
+
 function buildSeedPreview(teams: any[], seedCount = 8) {
   return [...teams]
     .sort((a, b) => {
       return (
         Number(b.seed_score || 1000) - Number(a.seed_score || 1000) ||
+        getRegistrationTime(a) - getRegistrationTime(b) ||
         String(a.name || "").localeCompare(String(b.name || ""), "hr")
       );
     })
@@ -410,7 +417,8 @@ export default function ZdrijebAdminPage() {
         ...team,
         seed_score: Number((ranking as any)?.elo || 1000),
         seed_wins: Number((ranking as any)?.wins || 0),
-        seed_matches: Number((ranking as any)?.total_matches || 0)
+        seed_matches: Number((ranking as any)?.total_matches || 0),
+        registered_at: team.created_at
       };
     });
 
@@ -947,7 +955,7 @@ export default function ZdrijebAdminPage() {
           <div>
             <h2 className="section-title">Nositelji ždrijeba</h2>
             <p className="muted mt-2">
-              Prikazuje se samo top 8 nositelja. Kod grupa se tih 8 najjačih raspoređuje zmijskim redom po grupama, da najjače ekipe ne završe sve zajedno.
+              Prikazuje se samo top 8 nositelja. Prvo se gleda ELO, a ako ekipe imaju isti ELO prednost ima ekipa koja se ranije prijavila. Kod grupa se tih 8 najjačih raspoređuje zmijskim redom po grupama, da najjače ekipe ne završe sve zajedno.
             </p>
           </div>
           <span className="badge">Top {seededTeams.length}/8</span>
@@ -964,6 +972,7 @@ export default function ZdrijebAdminPage() {
               <div className="mt-3 flex flex-wrap gap-2 text-xs font-black text-white/55">
                 <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1">{Math.round(Number(team.seed_score || 1000))} ELO</span>
                 <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1">{team.seed_wins || 0} pobjeda</span>
+                <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1">Prijava #{team.created_at ? new Date(team.created_at).toLocaleDateString("hr-HR") : "-"}</span>
               </div>
             </div>
           ))}

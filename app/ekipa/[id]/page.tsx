@@ -143,6 +143,10 @@ export default function EkipaProfilePage({ params }: { params: TeamProfileParams
     };
   }, [id, matches, statsRows, games]);
 
+  const achievements = useMemo(() => {
+    return calculateAchievements(profileStats, headToHeadStats);
+  }, [profileStats, headToHeadStats]);
+
   if (loading) {
     return (
       <main className="page">
@@ -245,6 +249,28 @@ export default function EkipaProfilePage({ params }: { params: TeamProfileParams
       </section>
 
       <section className="mt-8 card">
+        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+          <div>
+            <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">Medalje i achievementi</h2>
+            <p className="mt-2 text-zinc-400">Automatske značke prema rezultatima, ELO-u, zvanjima i formi ekipe.</p>
+          </div>
+          <span className="rounded-full border border-[#d4b06a]/20 bg-[#d4b06a]/10 px-4 py-2 text-sm font-bold text-[#d4b06a]">
+            {achievements.length} osvojeno
+          </span>
+        </div>
+
+        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {achievements.length === 0 && (
+            <div className="card-soft text-zinc-300">Još nema medalja. Prve dolaze nakon pobjeda, zvanja ili boljeg ELO-a.</div>
+          )}
+
+          {achievements.map((achievement) => (
+            <AchievementCard key={achievement.title} achievement={achievement} />
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-8 card">
         <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">Zadnji mečevi</h2>
         <p className="mt-2 text-zinc-400">Zadnji rezultati ove ekipe, s linkom na live prikaz ili unos rezultata.</p>
 
@@ -281,6 +307,84 @@ type HeadToHeadRow = {
   lastMatch?: any;
   lastResult: string;
 };
+
+type Achievement = {
+  emoji: string;
+  title: string;
+  description: string;
+  tone: "gold" | "green" | "blue" | "purple" | "red";
+};
+
+function calculateAchievements(profileStats: any, headToHeadStats: HeadToHeadRow[]): Achievement[] {
+  const achievements: Achievement[] = [];
+
+  if (profileStats.wins > 0) {
+    achievements.push({
+      emoji: "🏆",
+      title: "Prva pobjeda",
+      description: `Ekipa ima ${profileStats.wins} pobjeda ukupno.`,
+      tone: "gold",
+    });
+  }
+
+  if (profileStats.finishedMatches >= 3 && profileStats.losses === 0) {
+    achievements.push({
+      emoji: "🔥",
+      title: "Neporaženi",
+      description: `Bez poraza kroz ${profileStats.finishedMatches} završenih mečeva.`,
+      tone: "green",
+    });
+  }
+
+  if (profileStats.currentElo >= 1100) {
+    achievements.push({
+      emoji: "♟️",
+      title: "ELO majstor",
+      description: `Prešli su ${profileStats.currentElo} ELO po šahovskom obračunu.`,
+      tone: "blue",
+    });
+  }
+
+  if (profileStats.bestSingleGameDeclarations >= 50) {
+    achievements.push({
+      emoji: "👑",
+      title: "Kraljevi zvanja",
+      description: `Rekord im je ${profileStats.bestSingleGameDeclarations} zvanja u jednoj partiji.`,
+      tone: "purple",
+    });
+  }
+
+  if (profileStats.totalMatches >= 10) {
+    achievements.push({
+      emoji: "🎖️",
+      title: "Iskusna ekipa",
+      description: `Odigrali su ${profileStats.totalMatches} mečeva kroz turnire.`,
+      tone: "gold",
+    });
+  }
+
+  const lastFiveWins = (profileStats.lastFive || []).filter((item: string) => item === "W").length;
+  if (lastFiveWins >= 4) {
+    achievements.push({
+      emoji: "⚡",
+      title: "Forma u naletu",
+      description: `${lastFiveWins} pobjeda u zadnjih 5 završenih mečeva.`,
+      tone: "green",
+    });
+  }
+
+  const bestRivalScore = headToHeadStats.find((row) => row.totalMatches >= 3 && row.losses === 0);
+  if (bestRivalScore) {
+    achievements.push({
+      emoji: "🧊",
+      title: "Noćna mora protivnika",
+      description: `${bestRivalScore.wins}-0 protiv ekipe ${bestRivalScore.opponentName}.`,
+      tone: "red",
+    });
+  }
+
+  return achievements;
+}
 
 function calculateHeadToHeadStats(teamId: string, matches: any[], teamById: Map<string, any>): HeadToHeadRow[] {
   const grouped = new Map<string, HeadToHeadRow>();
@@ -448,6 +552,24 @@ function HeadToHeadCard({ row }: { row: HeadToHeadRow }) {
         Zadnji susret: <span className="font-bold text-[#f3dfad]">{row.lastResult}</span>
         {row.lastMatch && <span className="text-zinc-500"> • {lastScoreFor}:{lastScoreAgainst}</span>}
       </div>
+    </div>
+  );
+}
+
+function AchievementCard({ achievement }: { achievement: Achievement }) {
+  const toneClass = {
+    gold: "border-[#d4b06a]/30 bg-[#d4b06a]/10 text-[#f3dfad]",
+    green: "border-green-500/30 bg-green-500/10 text-green-300",
+    blue: "border-blue-500/30 bg-blue-500/10 text-blue-300",
+    purple: "border-purple-500/30 bg-purple-500/10 text-purple-300",
+    red: "border-red-500/30 bg-red-500/10 text-red-300",
+  }[achievement.tone];
+
+  return (
+    <div className={`rounded-3xl border p-5 ${toneClass}`}>
+      <div className="text-4xl">{achievement.emoji}</div>
+      <h3 className="mt-4 text-xl font-black">{achievement.title}</h3>
+      <p className="mt-2 text-sm opacity-80">{achievement.description}</p>
     </div>
   );
 }

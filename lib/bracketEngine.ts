@@ -4,6 +4,8 @@ export type Team = {
   city?: string;
   seed_score?: number;
   seed_rank?: number;
+  created_at?: string;
+  registered_at?: string;
 };
 
 export type MatchInsert = {
@@ -42,6 +44,12 @@ function getSeedScore(team: Team) {
   return Number.isFinite(Number(team.seed_score)) ? Number(team.seed_score) : 1000;
 }
 
+function getRegistrationTime(team: Team) {
+  const rawDate = team.created_at || team.registered_at || "";
+  const time = new Date(rawDate).getTime();
+  return Number.isFinite(time) ? time : Number.MAX_SAFE_INTEGER;
+}
+
 function buildSeededGroups(teams: Team[], groupSize: number, seedCount = 8) {
   const groupCount = Math.ceil(teams.length / groupSize);
   const groups: Team[][] = Array.from({ length: groupCount }, () => []);
@@ -49,6 +57,7 @@ function buildSeededGroups(teams: Team[], groupSize: number, seedCount = 8) {
   const orderedByStrength = [...teams].sort((a, b) => {
     return (
       getSeedScore(b) - getSeedScore(a) ||
+      getRegistrationTime(a) - getRegistrationTime(b) ||
       String(a.name || "").localeCompare(String(b.name || ""), "hr")
     );
   });

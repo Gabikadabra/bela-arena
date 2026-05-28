@@ -213,6 +213,11 @@ export default function RangListaPage() {
         </p>
       </section>
 
+      <section className="mb-6 rounded-3xl border border-[#d4b06a]/15 bg-[#0a2018] p-6">
+        <h2 className="text-2xl font-black text-[#f3dfad]">Achievementi</h2>
+        <p className="mt-2 text-zinc-400">Na profilima ekipa sada se automatski prikazuju medalje kao Prva pobjeda, Neporaženi, ELO majstor, Kraljevi zvanja, Iskusna ekipa i Forma u naletu.</p>
+      </section>
+
       <section className="mb-10 grid gap-4 md:grid-cols-4">
         <Highlight
           title="Najveći ELO"
