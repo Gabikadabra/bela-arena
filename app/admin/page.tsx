@@ -236,16 +236,6 @@ export default function AdminPage() {
           Bracket
         </a>
 
-
-        <a
-          href="/admin/achievementi"
-          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
-        >
-          <span className="block text-2xl text-[#d4b06a]">🏅</span>
-          Achievementi
-        </a>
-
-
         <a
           href={selectedTournament ? `/dashboard/${selectedTournament}` : "/admin"}
           target={selectedTournament ? "_blank" : undefined}
@@ -254,6 +244,14 @@ export default function AdminPage() {
         >
           <span className="block text-2xl text-[#d4b06a]">📺</span>
           TV dashboard
+        </a>
+
+        <a
+          href={selectedTournament ? `/liga/${selectedTournament}` : "/admin"}
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
+        >
+          <span className="block text-2xl text-[#d4b06a]">📊</span>
+          Liga prikaz
         </a>
       </div>
 
@@ -312,6 +310,13 @@ export default function AdminPage() {
                 className="rounded-xl bg-[#d4b06a] px-5 py-2 font-black text-black transition hover:bg-[#f3dfad]"
               >
                 Otvori TV dashboard
+              </a>
+
+              <a
+                href={`/liga/${selectedTournamentData.id}`}
+                className="rounded-xl border border-[#d4b06a]/30 px-5 py-2 font-bold text-[#f3dfad] transition hover:bg-[#d4b06a]/10"
+              >
+                Otvori liga prikaz
               </a>
             </div>
           </div>

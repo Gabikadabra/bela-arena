@@ -197,7 +197,7 @@ export default function NoviTurnirPage() {
             >
               <option value="knockout">Samo knockout</option>
               <option value="groups_knockout">Grupe pa knockout</option>
-              <option value="round_robin">Round robin / svatko sa svakim</option>
+              <option value="round_robin">Liga / svatko sa svakim</option>
             </select>
           </Field>
 

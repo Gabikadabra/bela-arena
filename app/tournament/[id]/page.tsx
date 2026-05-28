@@ -278,6 +278,10 @@ export default function TournamentPage({
               TV dashboard
             </a>
 
+            <a href={`/liga/${id}`} className="btn-outline">
+              Liga prikaz
+            </a>
+
             <a href="/turniri" className="btn-outline">
               Svi turniri
             </a>
