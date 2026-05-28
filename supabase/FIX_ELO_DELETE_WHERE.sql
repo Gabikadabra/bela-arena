@@ -1,50 +1,7 @@
--- Bela Arena ELO povijest po meču
--- Šahovski ELO: svaka ekipa kreće od 1000 ELO.
--- Promjena ovisi o tvojoj snazi u odnosu na protivnikovu snagu prije tog meča.
--- Formula: expected = 1 / (1 + 10^((opponent_elo - team_elo) / 400))
--- Promjena: round(32 * (result - expected))
-
-create table if not exists public.team_elo_history (
-  id uuid primary key default gen_random_uuid(),
-  tournament_id uuid references public.tournaments(id) on delete cascade,
-  match_id uuid references public.matches(id) on delete cascade,
-  team_id uuid references public.teams(id) on delete cascade,
-  opponent_team_id uuid references public.teams(id) on delete cascade,
-  team_elo_before integer not null default 1000,
-  opponent_elo_before integer not null default 1000,
-  expected_score numeric not null default 0,
-  result numeric not null default 0,
-  score_for integer not null default 0,
-  score_against integer not null default 0,
-  elo_change integer not null default 0,
-  team_elo_after integer not null default 1000,
-  played_at timestamptz not null default now(),
-  created_at timestamptz not null default now(),
-  unique (match_id, team_id)
-);
-
-create index if not exists team_elo_history_team_id_idx
-  on public.team_elo_history(team_id);
-
-create index if not exists team_elo_history_tournament_id_idx
-  on public.team_elo_history(tournament_id);
-
-create index if not exists team_elo_history_match_id_idx
-  on public.team_elo_history(match_id);
-
-create index if not exists team_elo_history_played_at_idx
-  on public.team_elo_history(played_at);
-
-create or replace function public.bela_expected_score(
-  team_elo numeric,
-  opponent_elo numeric
-)
-returns numeric
-language sql
-immutable
-as $$
-  select 1 / (1 + power(10, (opponent_elo - team_elo) / 400));
-$$;
+-- Bela Arena fix: DELETE requires a WHERE clause
+-- Pokreni ovo jednom u Supabase SQL Editoru ako ti ždrijeb javlja:
+-- Greška: DELETE requires a WHERE clause
+-- Uzrok je bio rebuild_team_elo_history() koji je radio DELETE bez WHERE uvjeta.
 
 create or replace function public.rebuild_team_elo_history()
 returns void
@@ -61,7 +18,7 @@ declare
   change_a integer;
   change_b integer;
 begin
-  -- Supabase/pg-safeupdate traži WHERE uvjet za DELETE, zato ne smije biti običan DELETE bez filtera.
+  -- Supabase/pg-safeupdate traži WHERE uvjet za DELETE.
   delete from public.team_elo_history
   where id is not null;
 
@@ -169,36 +126,4 @@ begin
 end;
 $$;
 
-create or replace function public.rebuild_team_elo_history_trigger()
-returns trigger
-language plpgsql
-as $$
-begin
-  perform public.rebuild_team_elo_history();
-  return null;
-end;
-$$;
-
-drop trigger if exists trg_rebuild_team_elo_history_on_matches on public.matches;
-
-create trigger trg_rebuild_team_elo_history_on_matches
-after insert or update or delete on public.matches
-for each statement
-execute function public.rebuild_team_elo_history_trigger();
-
 select public.rebuild_team_elo_history();
-
-alter table public.team_elo_history replica identity full;
-
-do $$
-begin
-  if not exists (
-    select 1
-    from pg_publication_tables
-    where pubname = 'supabase_realtime'
-      and schemaname = 'public'
-      and tablename = 'team_elo_history'
-  ) then
-    alter publication supabase_realtime add table public.team_elo_history;
-  end if;
-end $$;

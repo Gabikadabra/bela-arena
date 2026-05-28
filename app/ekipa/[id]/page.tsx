@@ -14,6 +14,7 @@ export default function EkipaProfilePage({ params }: { params: TeamProfileParams
   const [games, setGames] = useState<any[]>([]);
   const [tournaments, setTournaments] = useState<any[]>([]);
   const [opponentTeams, setOpponentTeams] = useState<any[]>([]);
+  const [manualAchievements, setManualAchievements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,6 +27,7 @@ export default function EkipaProfilePage({ params }: { params: TeamProfileParams
       .on("postgres_changes", { event: "*", schema: "public", table: "match_games" }, () => loadTeamProfile(false))
       .on("postgres_changes", { event: "*", schema: "public", table: "team_ranking_stats" }, () => loadTeamProfile(false))
       .on("postgres_changes", { event: "*", schema: "public", table: "team_elo_history" }, () => loadTeamProfile(false))
+      .on("postgres_changes", { event: "*", schema: "public", table: "team_manual_achievements", filter: `team_id=eq.${id}` }, () => loadTeamProfile(false))
       .subscribe();
 
     return () => {
@@ -57,6 +59,14 @@ export default function EkipaProfilePage({ params }: { params: TeamProfileParams
       .eq("team_id", id);
 
     setStatsRows(statData || []);
+
+    const { data: manualAchievementData } = await supabase
+      .from("team_manual_achievements")
+      .select("*")
+      .eq("team_id", id)
+      .order("created_at", { ascending: false });
+
+    setManualAchievements(manualAchievementData || []);
 
     const { data: matchData } = await supabase
       .from("matches")
@@ -144,8 +154,8 @@ export default function EkipaProfilePage({ params }: { params: TeamProfileParams
   }, [id, matches, statsRows, games]);
 
   const achievements = useMemo(() => {
-    return calculateAchievements(profileStats, headToHeadStats);
-  }, [profileStats, headToHeadStats]);
+    return calculateAchievements(profileStats, headToHeadStats, manualAchievements);
+  }, [profileStats, headToHeadStats, manualAchievements]);
 
   if (loading) {
     return (
@@ -252,7 +262,7 @@ export default function EkipaProfilePage({ params }: { params: TeamProfileParams
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
             <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">Medalje i achievementi</h2>
-            <p className="mt-2 text-zinc-400">Automatske značke prema rezultatima, ELO-u, zvanjima i formi ekipe.</p>
+            <p className="mt-2 text-zinc-400">Automatske značke prema statistici i posebne medalje koje admin ručno dodjeljuje ekipama.</p>
           </div>
           <span className="rounded-full border border-[#d4b06a]/20 bg-[#d4b06a]/10 px-4 py-2 text-sm font-bold text-[#d4b06a]">
             {achievements.length} osvojeno
@@ -313,10 +323,91 @@ type Achievement = {
   title: string;
   description: string;
   tone: "gold" | "green" | "blue" | "purple" | "red";
+  source?: "auto" | "admin";
+  note?: string;
 };
 
-function calculateAchievements(profileStats: any, headToHeadStats: HeadToHeadRow[]): Achievement[] {
+const ADMIN_ACHIEVEMENT_CATALOG: Record<string, Achievement> = {
+  bela_arena_legend: {
+    emoji: "👑",
+    title: "Legenda Bele Arene",
+    description: "Posebna titula za ekipu koja je obilježila turnire i ostavila trag u zajednici.",
+    tone: "gold",
+    source: "admin",
+  },
+  fair_play: {
+    emoji: "🤝",
+    title: "Fair Play ekipa",
+    description: "Ekipa poznata po poštenoj igri, normalnom ponašanju i sportskom duhu.",
+    tone: "green",
+    source: "admin",
+  },
+  best_duo: {
+    emoji: "🧬",
+    title: "Najbolji dvojac",
+    description: "Admin priznanje za ekipu koja najbolje djeluje kao pravi par za belu.",
+    tone: "purple",
+    source: "admin",
+  },
+  tournament_hero: {
+    emoji: "🦸",
+    title: "Heroji turnira",
+    description: "Posebna medalja za ekipu koja je izvukla nemoguće ili nosila atmosferu turnira.",
+    tone: "blue",
+    source: "admin",
+  },
+  crowd_favorite: {
+    emoji: "📣",
+    title: "Miljenici publike",
+    description: "Ekipa koju je publika najviše pratila, komentirala ili bodrila.",
+    tone: "gold",
+    source: "admin",
+  },
+  comeback_kings_manual: {
+    emoji: "🔁",
+    title: "Kraljevi comebacka",
+    description: "Ručna titula za najveći povratak dok se ne uvede detaljno praćenje dijeljenja.",
+    tone: "red",
+    source: "admin",
+  },
+  captain_of_the_night: {
+    emoji: "🧢",
+    title: "Kapetan večeri",
+    description: "Admin priznanje za vođu ekipe koji je držao igru, ritam i atmosferu.",
+    tone: "blue",
+    source: "admin",
+  },
+  clutch_team: {
+    emoji: "⏱️",
+    title: "Clutch ekipa",
+    description: "Za ekipu koja najbolje odigra kada je najnapetije.",
+    tone: "red",
+    source: "admin",
+  },
+};
+
+function calculateAchievements(profileStats: any, headToHeadStats: HeadToHeadRow[], manualRows: any[]): Achievement[] {
   const achievements: Achievement[] = [];
+
+  for (const row of manualRows || []) {
+    const catalog = ADMIN_ACHIEVEMENT_CATALOG[row.achievement_key] || {
+      emoji: row.emoji || "🏅",
+      title: row.title || "Posebna medalja",
+      description: row.description || "Ručno dodijeljena admin medalja.",
+      tone: row.tone || "gold",
+      source: "admin",
+    };
+
+    achievements.push({
+      ...catalog,
+      emoji: row.emoji || catalog.emoji,
+      title: row.title || catalog.title,
+      description: row.description || catalog.description,
+      tone: row.tone || catalog.tone,
+      source: "admin",
+      note: row.note,
+    });
+  }
 
   if (profileStats.wins > 0) {
     achievements.push({
@@ -324,6 +415,7 @@ function calculateAchievements(profileStats: any, headToHeadStats: HeadToHeadRow
       title: "Prva pobjeda",
       description: `Ekipa ima ${profileStats.wins} pobjeda ukupno.`,
       tone: "gold",
+      source: "auto",
     });
   }
 
@@ -333,6 +425,7 @@ function calculateAchievements(profileStats: any, headToHeadStats: HeadToHeadRow
       title: "Neporaženi",
       description: `Bez poraza kroz ${profileStats.finishedMatches} završenih mečeva.`,
       tone: "green",
+      source: "auto",
     });
   }
 
@@ -342,6 +435,17 @@ function calculateAchievements(profileStats: any, headToHeadStats: HeadToHeadRow
       title: "ELO majstor",
       description: `Prešli su ${profileStats.currentElo} ELO po šahovskom obračunu.`,
       tone: "blue",
+      source: "auto",
+    });
+  }
+
+  if (profileStats.currentElo >= 1200) {
+    achievements.push({
+      emoji: "💎",
+      title: "Elitni ELO",
+      description: `ELO od ${profileStats.currentElo} znači da su među najopasnijim ekipama.`,
+      tone: "purple",
+      source: "auto",
     });
   }
 
@@ -351,6 +455,18 @@ function calculateAchievements(profileStats: any, headToHeadStats: HeadToHeadRow
       title: "Kraljevi zvanja",
       description: `Rekord im je ${profileStats.bestSingleGameDeclarations} zvanja u jednoj partiji.`,
       tone: "purple",
+      source: "auto",
+    });
+  }
+
+
+  if (profileStats.totalMatches >= 5) {
+    achievements.push({
+      emoji: "🧱",
+      title: "Stalni sudionici",
+      description: `Već imaju ${profileStats.totalMatches} mečeva u Bela Areni.`,
+      tone: "blue",
+      source: "auto",
     });
   }
 
@@ -360,6 +476,27 @@ function calculateAchievements(profileStats: any, headToHeadStats: HeadToHeadRow
       title: "Iskusna ekipa",
       description: `Odigrali su ${profileStats.totalMatches} mečeva kroz turnire.`,
       tone: "gold",
+      source: "auto",
+    });
+  }
+
+  if (profileStats.totalMatches >= 25) {
+    achievements.push({
+      emoji: "🛡️",
+      title: "Veterani arene",
+      description: `S ${profileStats.totalMatches} mečeva spadaju među najiskusnije ekipe.`,
+      tone: "purple",
+      source: "auto",
+    });
+  }
+
+  if (profileStats.finishedMatches >= 5 && profileStats.winrate >= 70) {
+    achievements.push({
+      emoji: "🎯",
+      title: "Precizni završivači",
+      description: `${profileStats.winrate}% pobjeda kroz ${profileStats.finishedMatches} završenih mečeva.`,
+      tone: "green",
+      source: "auto",
     });
   }
 
@@ -370,8 +507,20 @@ function calculateAchievements(profileStats: any, headToHeadStats: HeadToHeadRow
       title: "Forma u naletu",
       description: `${lastFiveWins} pobjeda u zadnjih 5 završenih mečeva.`,
       tone: "green",
+      source: "auto",
     });
   }
+
+  if ((profileStats.lastFive || []).length >= 5 && lastFiveWins === 5) {
+    achievements.push({
+      emoji: "🚀",
+      title: "Serija bez kočnica",
+      description: "Pet pobjeda u zadnjih pet završenih mečeva.",
+      tone: "red",
+      source: "auto",
+    });
+  }
+
 
   const bestRivalScore = headToHeadStats.find((row) => row.totalMatches >= 3 && row.losses === 0);
   if (bestRivalScore) {
@@ -380,6 +529,7 @@ function calculateAchievements(profileStats: any, headToHeadStats: HeadToHeadRow
       title: "Noćna mora protivnika",
       description: `${bestRivalScore.wins}-0 protiv ekipe ${bestRivalScore.opponentName}.`,
       tone: "red",
+      source: "auto",
     });
   }
 
@@ -567,9 +717,15 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
 
   return (
     <div className={`rounded-3xl border p-5 ${toneClass}`}>
-      <div className="text-4xl">{achievement.emoji}</div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="text-4xl">{achievement.emoji}</div>
+        <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-[11px] font-black uppercase tracking-[0.2em] opacity-80">
+          {achievement.source === "admin" ? "Admin" : "Auto"}
+        </span>
+      </div>
       <h3 className="mt-4 text-xl font-black">{achievement.title}</h3>
       <p className="mt-2 text-sm opacity-80">{achievement.description}</p>
+      {achievement.note && <p className="mt-3 rounded-2xl border border-white/10 bg-black/20 p-3 text-xs opacity-90">Napomena: {achievement.note}</p>}
     </div>
   );
 }
