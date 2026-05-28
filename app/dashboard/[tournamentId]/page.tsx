@@ -140,7 +140,7 @@ export default function TournamentDashboardPage({ params }: PageProps) {
         .select("*")
         .in("match_id", matchIds)
         .order("created_at", { ascending: false })
-        .limit(12);
+        .limit(1000);
 
       gameData = data || [];
     }
@@ -158,6 +158,7 @@ export default function TournamentDashboardPage({ params }: PageProps) {
   const activeMatches = matches.filter((match) => ["active", "live", "scheduled"].includes(String(match.status || "")));
   const waitingMatches = matches.filter((match) => ["waiting", "bye"].includes(String(match.status || "")));
   const submittedMatches = matches.filter((match) => match.result_status === "submitted" && match.status !== "finished");
+  const comebackHighlights = useMemo(() => calculateComebackHighlights(matches, games), [matches, games]);
 
   const progress = matches.length > 0 ? Math.round((finishedMatches.length / matches.length) * 100) : 0;
 
@@ -264,10 +265,26 @@ export default function TournamentDashboardPage({ params }: PageProps) {
             </div>
           </Panel>
 
+          <Panel title="Najveći comebackovi" subtitle="Računa se iz unosa po dijeljenjima: najveći minus iz kojeg je ekipa pobijedila.">
+            <div className="space-y-3">
+              {comebackHighlights.slice(0, 5).map((row) => (
+                <a key={row.matchId} href={`/live/${row.matchId}`} className="block rounded-2xl border border-green-400/20 bg-green-500/10 p-4 hover:border-green-300/50">
+                  <p className="text-sm font-black uppercase tracking-[0.2em] text-green-300">+{row.comeback} comeback</p>
+                  <p className="mt-2 text-lg font-black text-[#f3dfad]">{row.winnerName}</p>
+                  <p className="text-sm text-white/60">protiv {row.opponentName} · konačno {row.finalScore}</p>
+                </a>
+              ))}
+
+              {comebackHighlights.length === 0 && (
+                <p className="rounded-2xl bg-[#12392b] p-5 text-white/60">Još nema dovoljno unosa po dijeljenjima za comeback statistiku.</p>
+              )}
+            </div>
+          </Panel>
+
           {games.length > 0 && (
             <Panel title="Zadnja dijeljenja" subtitle="Uživo iz unosa rezultata.">
               <div className="space-y-3">
-                {games.map((game) => {
+                {games.slice(0, 12).map((game) => {
                   const match = matches.find((item) => item.id === game.match_id);
 
                   return (
@@ -398,4 +415,74 @@ function GroupMiniTable({ groupName, rows }: { groupName: string; rows: any[] })
       </div>
     </div>
   );
+}
+
+function calculateComebackHighlights(matches: any[], games: any[]) {
+  const gamesByMatch = groupGamesByMatch(games);
+  const highlights: any[] = [];
+
+  for (const match of matches) {
+    if (match.status !== "finished" || !match.winner_id) continue;
+
+    const matchGames = gamesByMatch.get(match.id) || [];
+    if (matchGames.length === 0) continue;
+
+    const winnerIsA = match.winner_id === match.team_a_id;
+    const winnerName = winnerIsA ? match.team_a_name : match.team_b_name;
+    const opponentName = winnerIsA ? match.team_b_name : match.team_a_name;
+    let scoreA = 0;
+    let scoreB = 0;
+    let comeback = 0;
+
+    for (const game of sortMatchGames(matchGames)) {
+      scoreA += getGameTotal(game, "a");
+      scoreB += getGameTotal(game, "b");
+
+      const deficit = winnerIsA ? scoreB - scoreA : scoreA - scoreB;
+      comeback = Math.max(comeback, deficit);
+    }
+
+    if (comeback > 0) {
+      highlights.push({
+        matchId: match.id,
+        comeback,
+        winnerName: winnerName || "Pobjednička ekipa",
+        opponentName: opponentName || "protivnik",
+        finalScore: `${scoreA}:${scoreB}`,
+      });
+    }
+  }
+
+  return highlights.sort((a, b) => b.comeback - a.comeback);
+}
+
+function groupGamesByMatch(games: any[]) {
+  const grouped = new Map<string, any[]>();
+
+  for (const game of games || []) {
+    if (!game.match_id) continue;
+    const rows = grouped.get(game.match_id) || [];
+    rows.push(game);
+    grouped.set(game.match_id, rows);
+  }
+
+  return grouped;
+}
+
+function sortMatchGames(games: any[]) {
+  return [...games].sort((a, b) => {
+    return (
+      Number(a.set_number || 0) - Number(b.set_number || 0) ||
+      Number(a.game_number || 0) - Number(b.game_number || 0) ||
+      new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()
+    );
+  });
+}
+
+function getGameTotal(game: any, side: "a" | "b") {
+  if (side === "a") {
+    return Number(game.team_a_total ?? game.team_a_points ?? game.score_a ?? 0);
+  }
+
+  return Number(game.team_b_total ?? game.team_b_points ?? game.score_b ?? 0);
 }

@@ -159,6 +159,7 @@ export default function EkipaProfilePage({ params }: { params: TeamProfileParams
       ? Math.round(matchPointRows.reduce((sum, row) => sum + row.scoreAgainst, 0) / finishedMatches.length)
       : 0;
     const bestTournamentDeclarations = calculateBestTournamentDeclarations(id, matches, games, statsRows);
+    const comebackStats = calculateTeamComebackStats(id, matches, games, teamById);
     const bigWins = matchPointRows.filter((row) => row.won && row.scoreFor >= 1001 && row.scoreAgainst <= 800).length;
     const closeWins = matchPointRows.filter((row) => row.won && row.scoreFor >= 1001 && row.scoreAgainst >= 900).length;
 
@@ -174,6 +175,9 @@ export default function EkipaProfilePage({ params }: { params: TeamProfileParams
       bigWins,
       closeWins,
       currentElo,
+      bestComeback: comebackStats.bestComeback,
+      bestComebackMatch: comebackStats.match,
+      bestComebackOpponent: comebackStats.opponentName,
       finishedMatches: finishedMatches.length,
       lastFive,
       losses,
@@ -183,7 +187,7 @@ export default function EkipaProfilePage({ params }: { params: TeamProfileParams
       wins,
       winrate,
     };
-  }, [id, matches, statsRows, games]);
+  }, [id, matches, statsRows, games, teamById]);
 
   const achievements = useMemo(() => {
     return calculateAchievements(profileStats, headToHeadStats, manualAchievements);
@@ -232,11 +236,12 @@ export default function EkipaProfilePage({ params }: { params: TeamProfileParams
         </div>
       </div>
 
-      <section className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <ProfileStat title="ELO" value={profileStats.currentElo} sub="šahovski obračun po meču" />
         <ProfileStat title="Omjer" value={`${profileStats.wins}-${profileStats.losses}`} sub={`${profileStats.winrate}% pobjeda`} />
         <ProfileStat title="Mečevi" value={profileStats.totalMatches} sub={`${profileStats.activeMatches} aktivnih`} />
         <ProfileStat title="Zvanja / partija" value={profileStats.bestSingleGameDeclarations} sub="rekord u jednoj partiji" />
+        <ProfileStat title="Najveći comeback" value={profileStats.bestComeback ? `+${profileStats.bestComeback}` : 0} sub="iz minusa do pobjede" />
       </section>
 
       <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
@@ -267,6 +272,26 @@ export default function EkipaProfilePage({ params }: { params: TeamProfileParams
           </div>
         </section>
       </div>
+
+      <section className="mt-8 card">
+        <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">Najveći comeback</h2>
+        {profileStats.bestComeback > 0 ? (
+          <div className="mt-5 rounded-3xl border border-green-400/25 bg-green-500/10 p-5">
+            <p className="text-sm font-black uppercase tracking-[0.2em] text-green-300">Povratak iz minusa</p>
+            <p className="mt-2 text-4xl font-black text-[#f3dfad]">+{profileStats.bestComeback} bodova</p>
+            <p className="mt-2 text-zinc-300">
+              Najveći zabilježeni povratak ove ekipe je protiv ekipe <b>{profileStats.bestComebackOpponent || "nepoznat protivnik"}</b>.
+            </p>
+            {profileStats.bestComebackMatch && (
+              <a href={`/live/${profileStats.bestComebackMatch.id}`} className="mt-4 inline-flex btn-outline">Otvori taj meč</a>
+            )}
+          </div>
+        ) : (
+          <div className="mt-5 rounded-3xl border border-[#d4b06a]/15 bg-[#0a2018] p-5 text-zinc-300">
+            Comeback se računa automatski kad postoje unosi po dijeljenjima. App gleda najveći minus iz kojeg je ekipa kasnije pobijedila.
+          </div>
+        )}
+      </section>
 
       <section className="mt-8 card">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
@@ -557,6 +582,74 @@ function calculateBestTournamentDeclarations(teamId: string, matches: any[], gam
   }
 
   return Math.max(0, ...Array.from(declarationsByTournament.values()));
+}
+
+function calculateTeamComebackStats(teamId: string, matches: any[], games: any[], teamById: Map<string, any>) {
+  let bestComeback = 0;
+  let bestMatch: any = null;
+  let bestOpponentName = "";
+
+  const gamesByMatch = groupGamesByMatch(games);
+  const finishedWins = matches.filter((match) => match.status === "finished" && match.winner_id === teamId);
+
+  for (const match of finishedWins) {
+    const matchGames = gamesByMatch.get(match.id) || [];
+    if (matchGames.length === 0) continue;
+
+    const isTeamA = match.team_a_id === teamId;
+    let scoreA = 0;
+    let scoreB = 0;
+    let biggestDeficit = 0;
+
+    for (const game of sortMatchGames(matchGames)) {
+      scoreA += getGameTotal(game, "a");
+      scoreB += getGameTotal(game, "b");
+
+      const deficit = isTeamA ? scoreB - scoreA : scoreA - scoreB;
+      biggestDeficit = Math.max(biggestDeficit, deficit);
+    }
+
+    if (biggestDeficit > bestComeback) {
+      const opponentId = isTeamA ? match.team_b_id : match.team_a_id;
+      const opponent = teamById.get(opponentId);
+      bestComeback = biggestDeficit;
+      bestMatch = match;
+      bestOpponentName = opponent?.name || opponent?.team_name || (isTeamA ? match.team_b_name : match.team_a_name) || "nepoznat protivnik";
+    }
+  }
+
+  return { bestComeback, match: bestMatch, opponentName: bestOpponentName };
+}
+
+function groupGamesByMatch(games: any[]) {
+  const grouped = new Map<string, any[]>();
+
+  for (const game of games || []) {
+    if (!game.match_id) continue;
+    const rows = grouped.get(game.match_id) || [];
+    rows.push(game);
+    grouped.set(game.match_id, rows);
+  }
+
+  return grouped;
+}
+
+function sortMatchGames(games: any[]) {
+  return [...games].sort((a, b) => {
+    return (
+      Number(a.set_number || 0) - Number(b.set_number || 0) ||
+      Number(a.game_number || 0) - Number(b.game_number || 0) ||
+      new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()
+    );
+  });
+}
+
+function getGameTotal(game: any, side: "a" | "b") {
+  if (side === "a") {
+    return Number(game.team_a_total ?? game.team_a_points ?? game.score_a ?? 0);
+  }
+
+  return Number(game.team_b_total ?? game.team_b_points ?? game.score_b ?? 0);
 }
 
 function calculateChessElo(teamId: string, finishedMatches: any[]) {
