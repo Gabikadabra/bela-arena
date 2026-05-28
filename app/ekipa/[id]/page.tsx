@@ -13,6 +13,7 @@ export default function EkipaProfilePage({ params }: { params: TeamProfileParams
   const [matches, setMatches] = useState<any[]>([]);
   const [games, setGames] = useState<any[]>([]);
   const [tournaments, setTournaments] = useState<any[]>([]);
+  const [opponentTeams, setOpponentTeams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,6 +25,7 @@ export default function EkipaProfilePage({ params }: { params: TeamProfileParams
       .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, () => loadTeamProfile(false))
       .on("postgres_changes", { event: "*", schema: "public", table: "match_games" }, () => loadTeamProfile(false))
       .on("postgres_changes", { event: "*", schema: "public", table: "team_ranking_stats" }, () => loadTeamProfile(false))
+      .on("postgres_changes", { event: "*", schema: "public", table: "team_elo_history" }, () => loadTeamProfile(false))
       .subscribe();
 
     return () => {
@@ -64,7 +66,26 @@ export default function EkipaProfilePage({ params }: { params: TeamProfileParams
 
     setMatches(matchData || []);
 
-    const matchIds = (matchData || []).map((match) => match.id);
+    const safeMatches = matchData || [];
+    const matchIds = safeMatches.map((match) => match.id);
+    const opponentIds = Array.from(
+      new Set(
+        safeMatches
+          .map((match) => (match.team_a_id === id ? match.team_b_id : match.team_a_id))
+          .filter(Boolean)
+      )
+    );
+
+    if (opponentIds.length > 0) {
+      const { data: opponentData } = await supabase
+        .from("teams")
+        .select("id,name,team_name,city,player_one,player_two,captain_name")
+        .in("id", opponentIds);
+
+      setOpponentTeams(opponentData || []);
+    } else {
+      setOpponentTeams([]);
+    }
 
     if (matchIds.length > 0) {
       const { data: gameData } = await supabase
@@ -84,6 +105,14 @@ export default function EkipaProfilePage({ params }: { params: TeamProfileParams
   const tournamentById = useMemo(() => {
     return new Map(tournaments.map((tournament) => [tournament.id, tournament]));
   }, [tournaments]);
+
+  const teamById = useMemo(() => {
+    return new Map(opponentTeams.map((opponent) => [opponent.id, opponent]));
+  }, [opponentTeams]);
+
+  const headToHeadStats = useMemo(() => {
+    return calculateHeadToHeadStats(id, matches, teamById);
+  }, [id, matches, teamById]);
 
   const profileStats = useMemo(() => {
     const finishedMatches = matches.filter((match) => match.status === "finished");
@@ -194,6 +223,28 @@ export default function EkipaProfilePage({ params }: { params: TeamProfileParams
       </div>
 
       <section className="mt-8 card">
+        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+          <div>
+            <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">Međusobni susreti</h2>
+            <p className="mt-2 text-zinc-400">Omjer ove ekipe protiv svih protivnika koje je već srela.</p>
+          </div>
+          <span className="rounded-full border border-[#d4b06a]/20 bg-[#d4b06a]/10 px-4 py-2 text-sm font-bold text-[#d4b06a]">
+            {headToHeadStats.length} protivnika
+          </span>
+        </div>
+
+        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          {headToHeadStats.length === 0 && (
+            <div className="card-soft text-zinc-300">Još nema završenih međusobnih susreta.</div>
+          )}
+
+          {headToHeadStats.slice(0, 8).map((row) => (
+            <HeadToHeadCard key={row.opponentId} row={row} />
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-8 card">
         <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">Zadnji mečevi</h2>
         <p className="mt-2 text-zinc-400">Zadnji rezultati ove ekipe, s linkom na live prikaz ili unos rezultata.</p>
 
@@ -208,12 +259,80 @@ export default function EkipaProfilePage({ params }: { params: TeamProfileParams
               match={match}
               teamId={id}
               tournament={tournamentById.get(match.tournament_id)}
+              opponent={teamById.get(match.team_a_id === id ? match.team_b_id : match.team_a_id)}
             />
           ))}
         </div>
       </section>
     </main>
   );
+}
+
+type HeadToHeadRow = {
+  opponentId: string;
+  opponentName: string;
+  opponentCity?: string;
+  totalMatches: number;
+  wins: number;
+  losses: number;
+  pointsFor: number;
+  pointsAgainst: number;
+  averageDiff: number;
+  lastMatch?: any;
+  lastResult: string;
+};
+
+function calculateHeadToHeadStats(teamId: string, matches: any[], teamById: Map<string, any>): HeadToHeadRow[] {
+  const grouped = new Map<string, HeadToHeadRow>();
+  const finishedMatches = matches
+    .filter((match) => match.status === "finished" && match.winner_id)
+    .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+
+  for (const match of finishedMatches) {
+    const isTeamA = match.team_a_id === teamId;
+    const opponentId = isTeamA ? match.team_b_id : match.team_a_id;
+    if (!opponentId) continue;
+
+    const opponent = teamById.get(opponentId);
+    const opponentName = opponent?.name || opponent?.team_name || (isTeamA ? match.team_b_name : match.team_a_name) || "Nepoznat protivnik";
+    const scoreFor = getScore(match, isTeamA ? "a" : "b");
+    const scoreAgainst = getScore(match, isTeamA ? "b" : "a");
+    const won = match.winner_id === teamId;
+
+    const current = grouped.get(opponentId) || {
+      opponentId,
+      opponentName,
+      opponentCity: opponent?.city,
+      totalMatches: 0,
+      wins: 0,
+      losses: 0,
+      pointsFor: 0,
+      pointsAgainst: 0,
+      averageDiff: 0,
+      lastMatch: match,
+      lastResult: won ? "Pobjeda" : "Poraz",
+    };
+
+    current.totalMatches += 1;
+    current.wins += won ? 1 : 0;
+    current.losses += won ? 0 : 1;
+    current.pointsFor += Number(scoreFor || 0);
+    current.pointsAgainst += Number(scoreAgainst || 0);
+    current.averageDiff = Math.round((current.pointsFor - current.pointsAgainst) / current.totalMatches);
+
+    if (!current.lastMatch || new Date(match.created_at || 0).getTime() > new Date(current.lastMatch.created_at || 0).getTime()) {
+      current.lastMatch = match;
+      current.lastResult = won ? "Pobjeda" : "Poraz";
+    }
+
+    grouped.set(opponentId, current);
+  }
+
+  return Array.from(grouped.values()).sort((a, b) => {
+    if (b.totalMatches !== a.totalMatches) return b.totalMatches - a.totalMatches;
+    if (b.wins !== a.wins) return b.wins - a.wins;
+    return a.opponentName.localeCompare(b.opponentName);
+  });
 }
 
 function calculateBestSingleGameDeclarations(teamId: string, matches: any[], games: any[]) {
@@ -294,9 +413,58 @@ function TeamInfo({ label, value }: { label: string; value: any }) {
   );
 }
 
-function MatchRow({ match, teamId, tournament }: { match: any; teamId: string; tournament?: any }) {
+function HeadToHeadCard({ row }: { row: HeadToHeadRow }) {
+  const winrate = row.totalMatches > 0 ? Math.round((row.wins / row.totalMatches) * 100) : 0;
+  const positiveDiff = row.averageDiff > 0;
+  const lastScoreFor = row.lastMatch
+    ? getScore(row.lastMatch, row.lastMatch.team_a_id === row.opponentId ? "b" : "a")
+    : 0;
+  const lastScoreAgainst = row.lastMatch
+    ? getScore(row.lastMatch, row.lastMatch.team_a_id === row.opponentId ? "a" : "b")
+    : 0;
+
+  return (
+    <div className="rounded-3xl border border-[#d4b06a]/15 bg-[#0a2018] p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <a href={`/ekipa/${row.opponentId}`} className="text-xl font-black text-[#f3dfad] hover:text-[#d4b06a]">
+            {row.opponentName}
+          </a>
+          <p className="mt-1 text-sm text-zinc-500">{row.opponentCity || "Bez grada"}</p>
+        </div>
+        <span className={`rounded-full border px-3 py-1 text-xs font-bold ${row.wins >= row.losses ? "border-green-500/30 bg-green-500/10 text-green-300" : "border-red-500/30 bg-red-500/10 text-red-300"}`}>
+          {row.wins}-{row.losses}
+        </span>
+      </div>
+
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <MiniStat label="Susreti" value={row.totalMatches} />
+        <MiniStat label="Winrate" value={`${winrate}%`} />
+        <MiniStat label="Bodovi" value={`${row.pointsFor}:${row.pointsAgainst}`} />
+        <MiniStat label="Prosjek" value={`${positiveDiff ? "+" : ""}${row.averageDiff}`} />
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-zinc-300">
+        Zadnji susret: <span className="font-bold text-[#f3dfad]">{row.lastResult}</span>
+        {row.lastMatch && <span className="text-zinc-500"> • {lastScoreFor}:{lastScoreAgainst}</span>}
+      </div>
+    </div>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: any }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+      <p className="text-xs text-zinc-500">{label}</p>
+      <p className="mt-1 text-lg font-black text-[#f3dfad]">{value}</p>
+    </div>
+  );
+}
+
+function MatchRow({ match, teamId, tournament, opponent }: { match: any; teamId: string; tournament?: any; opponent?: any }) {
   const isTeamA = match.team_a_id === teamId;
-  const opponentName = isTeamA ? match.team_b_name : match.team_a_name;
+  const opponentId = isTeamA ? match.team_b_id : match.team_a_id;
+  const opponentName = opponent?.name || opponent?.team_name || (isTeamA ? match.team_b_name : match.team_a_name);
   const scoreFor = getScore(match, isTeamA ? "a" : "b");
   const scoreAgainst = getScore(match, isTeamA ? "b" : "a");
   const isFinished = match.status === "finished";
@@ -307,7 +475,7 @@ function MatchRow({ match, teamId, tournament }: { match: any; teamId: string; t
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <p className="text-lg font-black text-[#f3dfad]">
-            vs {opponentName || "Nepoznat protivnik"}
+            vs {opponentId ? <a href={`/ekipa/${opponentId}`} className="hover:text-[#d4b06a]">{opponentName || "Nepoznat protivnik"}</a> : opponentName || "Nepoznat protivnik"}
           </p>
           <p className="mt-1 text-sm text-zinc-500">
             {tournament?.name || "Turnir"} {match.group_name ? `• Grupa ${match.group_name}` : ""}
