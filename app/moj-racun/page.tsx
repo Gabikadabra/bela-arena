@@ -13,9 +13,13 @@ export default function MojRacunPage() {
   });
 
   const [teams, setTeams] = useState<any[]>([]);
+  const [openTournaments, setOpenTournaments] = useState<any[]>([]);
+  const [selectedTournamentByTeam, setSelectedTournamentByTeam] = useState<Record<string, string>>({});
+  const [registeringTeamId, setRegisteringTeamId] = useState<string | null>(null);
   const [myMatches, setMyMatches] = useState<any[]>([]);
   const [invites, setInvites] = useState<any[]>([]);
   const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState<"success" | "error">("success");
 
   useEffect(() => {
     loadAccount();
@@ -39,6 +43,11 @@ export default function MojRacunPage() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "matches" },
+        () => loadAccount()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tournaments" },
         () => loadAccount()
       )
       .subscribe();
@@ -83,6 +92,30 @@ export default function MojRacunPage() {
 
     setTeams(teamData || []);
 
+    const { data: tournamentData } = await supabase
+      .from("tournaments")
+      .select("*")
+      .eq("status", "open")
+      .order("starts_at", { ascending: true });
+
+    setOpenTournaments(tournamentData || []);
+
+    setSelectedTournamentByTeam((prev) => {
+      const next = { ...prev };
+
+      for (const team of teamData || []) {
+        if (!next[team.id]) {
+          next[team.id] = tournamentData?.[0]?.id || "";
+        }
+
+        if (next[team.id] && !tournamentData?.some((tournament) => tournament.id === next[team.id])) {
+          next[team.id] = tournamentData?.[0]?.id || "";
+        }
+      }
+
+      return next;
+    });
+
     const teamIds = (teamData || []).map((team) => team.id);
 
     if (teamIds.length > 0) {
@@ -124,8 +157,10 @@ export default function MojRacunPage() {
     });
 
     if (error) {
+      setMessageType("error");
       setMessage("Greška: " + error.message);
     } else {
+      setMessageType("success");
       setMessage("Profil je uspješno spremljen.");
       loadAccount();
     }
@@ -163,6 +198,97 @@ export default function MojRacunPage() {
       return;
     }
 
+    loadAccount();
+  }
+
+  async function registerSavedTeam(team: any) {
+    if (!user) return;
+
+    const tournamentId = selectedTournamentByTeam[team.id];
+
+    if (!tournamentId) {
+      setMessageType("error");
+      setMessage("Odaberi turnir za prijavu ekipe.");
+      return;
+    }
+
+    setRegisteringTeamId(team.id);
+    setMessage("");
+
+    const { data: existingTeam, error: existingError } = await supabase
+      .from("teams")
+      .select("id")
+      .eq("tournament_id", tournamentId)
+      .or(
+        `captain_user_id.eq.${user.id},partner_user_id.eq.${user.id}`
+      )
+      .maybeSingle();
+
+    if (existingError) {
+      setMessageType("error");
+      setMessage("Greška kod provjere prijave: " + existingError.message);
+      setRegisteringTeamId(null);
+      return;
+    }
+
+    if (existingTeam) {
+      setMessageType("error");
+      setMessage("Već imaš prijavljenu ekipu na taj turnir.");
+      setRegisteringTeamId(null);
+      return;
+    }
+
+    const selectedTournament = openTournaments.find(
+      (tournament) => tournament.id === tournamentId
+    );
+
+    const partnerAlreadyAccepted = Boolean(team.partner_user_id);
+
+    const { error } = await supabase.from("teams").insert({
+      tournament_id: tournamentId,
+      name: team.name || team.team_name || "Moja ekipa",
+      city: team.city || "",
+      captain_name: team.captain_name || team.captain || profile.full_name || user.email,
+      captain_user_id: team.captain_user_id || user.id,
+      player_one: team.player_one || team.playerOne || team.captain_name || "",
+      player_two: team.player_two || team.playerTwo || "",
+      partner_email: team.partner_email || "",
+      partner_user_id: partnerAlreadyAccepted ? team.partner_user_id : null,
+      invite_status: partnerAlreadyAccepted ? "accepted" : "pending",
+      phone: team.phone || profile.phone || "",
+      email: team.email || user.email || "",
+      status: "pending"
+    });
+
+    if (error) {
+      setMessageType("error");
+      setMessage("Greška kod ponovne prijave ekipe: " + error.message);
+      setRegisteringTeamId(null);
+      return;
+    }
+
+    if (team.partner_email && !partnerAlreadyAccepted) {
+      await fetch("/api/send-invite", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          partnerEmail: team.partner_email,
+          captainName: team.captain_name || profile.full_name || "Kapetan",
+          teamName: team.name || team.team_name || "Moja ekipa",
+          tournamentName: selectedTournament?.name || "Bela Arena"
+        })
+      });
+    }
+
+    setMessageType("success");
+    setMessage(
+      `Ekipa ${team.name || team.team_name || "Moja ekipa"} je prijavljena na ${
+        selectedTournament?.name || "odabrani turnir"
+      }.`
+    );
+    setRegisteringTeamId(null);
     loadAccount();
   }
 
@@ -296,7 +422,13 @@ export default function MojRacunPage() {
           </form>
 
           {message && (
-            <div className="mt-6 rounded-2xl border border-green-500/30 bg-green-500/10 p-5 text-green-300">
+            <div
+              className={`mt-6 rounded-2xl border p-5 ${
+                messageType === "success"
+                  ? "border-green-500/30 bg-green-500/10 text-green-300"
+                  : "border-red-500/30 bg-red-500/10 text-red-300"
+              }`}
+            >
               {message}
             </div>
           )}
@@ -318,15 +450,63 @@ export default function MojRacunPage() {
                   key={team.id}
                   className="card-soft"
                 >
-                  <h3 className="text-xl font-bold text-[#d4b06a] sm:text-2xl">
-                    {team.name || team.team_name || "Ekipa bez imena"}
-                  </h3>
+                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                    <div>
+                      <h3 className="text-xl font-bold text-[#d4b06a] sm:text-2xl">
+                        {team.name || team.team_name || "Ekipa bez imena"}
+                      </h3>
 
-                  
+                      <div className="mt-3 grid gap-2 text-sm text-zinc-400 sm:grid-cols-2">
+                        {team.city && <p>Grad: {team.city}</p>}
+                        {team.captain_name && <p>Kapetan: {team.captain_name}</p>}
+                        {team.player_one && <p>Igrač 1: {team.player_one}</p>}
+                        {team.player_two && <p>Igrač 2: {team.player_two}</p>}
+                        {team.partner_email && <p>Partner: {team.partner_email}</p>}
+                        {team.phone && <p>Telefon: {team.phone}</p>}
+                      </div>
+                    </div>
 
-                  {team.partner_email && (
-                    <p className="mt-1 text-zinc-400">
-                      Partner: {team.partner_email}
+                    <span className="w-fit rounded-full border border-[#d4b06a]/20 bg-[#d4b06a]/10 px-4 py-2 text-xs font-bold uppercase tracking-wide text-[#d4b06a]">
+                      Spremljena ekipa
+                    </span>
+                  </div>
+
+                  <div className="mt-5 grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
+                    <Field label="Prijavi ovu ekipu na turnir">
+                      <select
+                        value={selectedTournamentByTeam[team.id] || ""}
+                        onChange={(e) =>
+                          setSelectedTournamentByTeam((prev) => ({
+                            ...prev,
+                            [team.id]: e.target.value
+                          }))
+                        }
+                        className="input"
+                      >
+                        <option value="">Odaberi otvoreni turnir</option>
+                        {openTournaments.map((tournament) => (
+                          <option key={tournament.id} value={tournament.id}>
+                            {tournament.name}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+
+                    <button
+                      type="button"
+                      onClick={() => registerSavedTeam(team)}
+                      disabled={
+                        registeringTeamId === team.id || openTournaments.length === 0
+                      }
+                      className="rounded-xl bg-[#d4b06a] px-6 py-4 font-black text-black disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {registeringTeamId === team.id ? "Prijavljujem..." : "Prijavi opet"}
+                    </button>
+                  </div>
+
+                  {openTournaments.length === 0 && (
+                    <p className="mt-3 text-sm text-zinc-500">
+                      Trenutno nema otvorenih turnira za prijavu.
                     </p>
                   )}
                 </div>

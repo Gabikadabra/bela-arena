@@ -19,17 +19,17 @@ export default function RangListaPage() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "matches" },
-        () => loadData(false)
+        () => loadData(false),
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "tournaments" },
-        () => loadData(false)
+        () => loadData(false),
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "match_games" },
-        () => loadData(false)
+        () => loadData(false),
       )
       .subscribe();
 
@@ -65,7 +65,9 @@ export default function RangListaPage() {
 
     const { data: gameData } = await supabase
       .from("match_games")
-      .select("id, match_id, team_a_declarations, team_b_declarations, created_at")
+      .select(
+        "id, match_id, team_a_declarations, team_b_declarations, created_at",
+      )
       .order("created_at", { ascending: true });
 
     setMatchGames(gameData || []);
@@ -78,31 +80,50 @@ export default function RangListaPage() {
         ? mergeGlobalStats(stats)
         : stats.filter((s) => s.tournament_id === selectedTournament);
 
+    const matchEloMap = calculateMatchByMatchElo(
+      base,
+      matches,
+      selectedTournament,
+    );
+
     return base
-      .map((team) => ({
-        ...team,
-        streak: calculateStreak(team.team_id, matches, selectedTournament),
-        best_single_game_declarations: calculateBestSingleGameDeclarations(
-          team.team_id,
-          matches,
-          matchGames,
-          selectedTournament
-        )
-      }))
+      .map((team) => {
+        const eloData = matchEloMap.get(team.team_id) || {
+          elo: calculateBaseElo(team),
+          opponentStrengthBonus: 0,
+          averageOpponentElo: 1000,
+          lastMatchChange: 0,
+        };
+
+        return {
+          ...team,
+          elo: eloData.elo,
+          opponent_strength_bonus: eloData.opponentStrengthBonus,
+          average_opponent_elo: eloData.averageOpponentElo,
+          last_match_elo_change: eloData.lastMatchChange,
+          streak: calculateStreak(team.team_id, matches, selectedTournament),
+          best_single_game_declarations: calculateBestSingleGameDeclarations(
+            team.team_id,
+            matches,
+            matchGames,
+            selectedTournament,
+          ),
+        };
+      })
       .sort((a, b) => b.elo - a.elo);
   }, [stats, matches, matchGames, selectedTournament]);
 
   const topElo = filteredStats[0];
   const topPoints = [...filteredStats].sort(
-    (a, b) => Number(b.total_points) - Number(a.total_points)
+    (a, b) => Number(b.total_points) - Number(a.total_points),
   )[0];
   const topSingleGameDeclarations = [...filteredStats].sort(
     (a, b) =>
       Number(b.best_single_game_declarations) -
-      Number(a.best_single_game_declarations)
+      Number(a.best_single_game_declarations),
   )[0];
   const topStreak = [...filteredStats].sort(
-    (a, b) => Number(b.streak) - Number(a.streak)
+    (a, b) => Number(b.streak) - Number(a.streak),
   )[0];
 
   if (loading) {
@@ -120,10 +141,13 @@ export default function RangListaPage() {
           Bela Arena statistika
         </p>
 
-        <h1 className="text-4xl font-black text-[#f3dfad] sm:text-5xl">Rang lista</h1>
+        <h1 className="text-4xl font-black text-[#f3dfad] sm:text-5xl">
+          Rang lista
+        </h1>
 
         <p className="mt-4 max-w-2xl text-zinc-300">
-          ELO, pobjede, bodovi, rekord zvanja u jednoj partiji, streakovi i najbolji rezultati.
+          ELO, pobjede, bodovi, rekord zvanja u jednoj partiji, streakovi i
+          najbolji rezultati.
         </p>
       </div>
 
@@ -147,20 +171,46 @@ export default function RangListaPage() {
       </section>
 
       <section className="mb-8 rounded-3xl border border-[#d4b06a]/15 bg-[#0a2018] p-6">
-        <h2 className="text-2xl font-black text-[#f3dfad]">Kako ELO funkcionira?</h2>
+        <h2 className="text-2xl font-black text-[#f3dfad]">
+          Kako ELO funkcionira?
+        </h2>
         <p className="mt-3 max-w-4xl text-zinc-300">
-          ELO je broj koji pokazuje jačinu ekipe na rang-listi. Svaka ekipa kreće od 1000 ELO,
-          pobjede dižu ekipu, porazi ju spuštaju, a dodatni bodovi i zvanja daju mali bonus.
+          ELO je broj koji pokazuje jačinu ekipe na rang-listi. Svaka ekipa
+          kreće od 1000 ELO, ali se ne računa samo zbrajanjem pobjeda. Svaka
+          utakmica se obrađuje posebno: prvo se pogleda koliko je protivnik jak,
+          pa se onda izračuna koliko ta pobjeda ili poraz vrijedi.
         </p>
         <div className="mt-5 grid gap-3 md:grid-cols-4">
           <InfoBox title="Start" text="Svaka ekipa počinje s 1000 ELO." />
-          <InfoBox title="Pobjeda" text="Svaka pobjeda dodaje +35 ELO." />
-          <InfoBox title="Poraz" text="Svaki poraz skida -15 ELO." />
-          <InfoBox title="Bonus" text="Bodovi i ukupna zvanja dodaju mali dodatni bonus." />
+          <InfoBox
+            title="Pobjeda"
+            text="Pobjeda protiv jače ekipe diže puno više nego pobjeda protiv slabije."
+          />
+          <InfoBox
+            title="Poraz"
+            text="Poraz od slabije ekipe skida više, a poraz od jače skida manje."
+          />
+          <InfoBox
+            title="Protivnik"
+            text="Za svaku utakmicu posebno gleda se ELO protivnika prije te utakmice."
+          />
+          <InfoBox
+            title="Bonus"
+            text="Razlika u bodovima u meču dodaje mali bonus na promjenu ELO-a."
+          />
         </div>
         <p className="mt-4 rounded-2xl border border-[#d4b06a]/15 bg-[#184332]/60 p-4 text-sm text-zinc-300">
-          Formula u aplikaciji: <span className="font-bold text-[#f3dfad]">1000 + pobjede × 35 - porazi × 15 + bodovi / 100 + zvanja / 50</span>.
-          Zbog toga najbolja ekipa nije nužno samo ona s najviše bodova, nego ona koja ima najbolju kombinaciju pobjeda, malo poraza i dobrih rezultata kroz partije.
+          Formula u aplikaciji po svakoj utakmici:{" "}
+          <span className="font-bold text-[#f3dfad]">
+            očekivani rezultat = 1 / (1 + 10^((ELO protivnika - moj ELO) /
+            400)), promjena = 32 × (rezultat - očekivani rezultat) + bonus
+            razlike u bodovima
+          </span>
+          . Rezultat je 1 za pobjedu i 0 za poraz. Ako pobijediš jačeg
+          protivnika, očekivani rezultat ti je nizak pa dobiješ puno ELO-a. Ako
+          pobijediš slabijeg protivnika, dobiješ manje. Isto vrijedi obrnuto za
+          poraze. Zato se snaga protivnika sada ne računa kao jedan prosjek,
+          nego se gleda posebno za svaku odigranu utakmicu.
         </p>
       </section>
 
@@ -226,13 +276,19 @@ export default function RangListaPage() {
                 </p>
               </div>
 
-              <Stat label="ELO" value={team.elo} />
+              <Stat
+                label="ELO"
+                value={`${team.elo} (${formatOpponentBonus(team.last_match_elo_change)})`}
+              />
               <Stat label="Mečevi" value={team.matches_played} />
               <Stat label="W" value={team.wins} />
               <Stat label="L" value={team.losses} />
               <Stat label="Win%" value={`${team.winrate}%`} />
               <Stat label="Bodovi" value={team.total_points} />
-              <Stat label="Zvanja / partija" value={team.best_single_game_declarations} />
+              <Stat
+                label="Zvanja / partija"
+                value={team.best_single_game_declarations}
+              />
               <Stat label="Streak" value={team.streak} />
             </div>
           ))}
@@ -255,7 +311,7 @@ function mergeGlobalStats(stats: any[]) {
       losses: 0,
       total_points: 0,
       total_declarations: 0,
-      best_single_deal: 0
+      best_single_deal: 0,
     };
 
     current.matches_played += Number(row.matches_played || 0);
@@ -265,7 +321,7 @@ function mergeGlobalStats(stats: any[]) {
     current.total_declarations += Number(row.total_declarations || 0);
     current.best_single_deal = Math.max(
       Number(current.best_single_deal || 0),
-      Number(row.best_single_deal || 0)
+      Number(row.best_single_deal || 0),
     );
 
     map.set(row.team_id, current);
@@ -287,16 +343,141 @@ function mergeGlobalStats(stats: any[]) {
     return {
       ...team,
       winrate,
-      elo
+      elo,
     };
   });
+}
+
+function calculateMatchByMatchElo(
+  teams: any[],
+  matches: any[],
+  selectedTournament: string,
+) {
+  const teamIds = new Set(teams.map((team) => team.team_id));
+  const eloMap = new Map<string, number>();
+  const opponentEloSums = new Map<string, number>();
+  const opponentCounts = new Map<string, number>();
+  const opponentStrengthBonus = new Map<string, number>();
+  const lastMatchChange = new Map<string, number>();
+
+  for (const team of teams) {
+    eloMap.set(team.team_id, 1000);
+    opponentEloSums.set(team.team_id, 0);
+    opponentCounts.set(team.team_id, 0);
+    opponentStrengthBonus.set(team.team_id, 0);
+    lastMatchChange.set(team.team_id, 0);
+  }
+
+  const finishedMatches = matches
+    .filter((match) => {
+      const inTournament =
+        selectedTournament === "all" ||
+        match.tournament_id === selectedTournament;
+
+      return (
+        inTournament &&
+        match.status === "finished" &&
+        match.winner_id &&
+        teamIds.has(match.team_a_id) &&
+        teamIds.has(match.team_b_id)
+      );
+    })
+    .sort((a, b) => {
+      const dateA = new Date(
+        a.finished_at || a.updated_at || a.created_at || 0,
+      ).getTime();
+      const dateB = new Date(
+        b.finished_at || b.updated_at || b.created_at || 0,
+      ).getTime();
+      return dateA - dateB;
+    });
+
+  for (const match of finishedMatches) {
+    const teamAId = match.team_a_id;
+    const teamBId = match.team_b_id;
+    const eloA = eloMap.get(teamAId) || 1000;
+    const eloB = eloMap.get(teamBId) || 1000;
+    const resultA = match.winner_id === teamAId ? 1 : 0;
+    const resultB = match.winner_id === teamBId ? 1 : 0;
+
+    const expectedA = calculateExpectedScore(eloA, eloB);
+    const expectedB = calculateExpectedScore(eloB, eloA);
+    const pointsBonusA = calculatePointsBonus(match.score_a, match.score_b);
+    const pointsBonusB = calculatePointsBonus(match.score_b, match.score_a);
+
+    const changeA = Math.round(32 * (resultA - expectedA) + pointsBonusA);
+    const changeB = Math.round(32 * (resultB - expectedB) + pointsBonusB);
+
+    eloMap.set(teamAId, Math.max(100, eloA + changeA));
+    eloMap.set(teamBId, Math.max(100, eloB + changeB));
+
+    opponentEloSums.set(teamAId, (opponentEloSums.get(teamAId) || 0) + eloB);
+    opponentEloSums.set(teamBId, (opponentEloSums.get(teamBId) || 0) + eloA);
+    opponentCounts.set(teamAId, (opponentCounts.get(teamAId) || 0) + 1);
+    opponentCounts.set(teamBId, (opponentCounts.get(teamBId) || 0) + 1);
+    opponentStrengthBonus.set(
+      teamAId,
+      (opponentStrengthBonus.get(teamAId) || 0) + Math.round(changeA),
+    );
+    opponentStrengthBonus.set(
+      teamBId,
+      (opponentStrengthBonus.get(teamBId) || 0) + Math.round(changeB),
+    );
+    lastMatchChange.set(teamAId, changeA);
+    lastMatchChange.set(teamBId, changeB);
+  }
+
+  const result = new Map<
+    string,
+    {
+      elo: number;
+      opponentStrengthBonus: number;
+      averageOpponentElo: number;
+      lastMatchChange: number;
+    }
+  >();
+
+  for (const team of teams) {
+    const count = opponentCounts.get(team.team_id) || 0;
+    const averageOpponentElo =
+      count > 0
+        ? Math.round((opponentEloSums.get(team.team_id) || 0) / count)
+        : 1000;
+
+    result.set(team.team_id, {
+      elo: Math.round(eloMap.get(team.team_id) || 1000),
+      opponentStrengthBonus: Math.round(
+        opponentStrengthBonus.get(team.team_id) || 0,
+      ),
+      averageOpponentElo,
+      lastMatchChange: Math.round(lastMatchChange.get(team.team_id) || 0),
+    });
+  }
+
+  return result;
+}
+
+function calculateExpectedScore(teamElo: number, opponentElo: number) {
+  return 1 / (1 + Math.pow(10, (opponentElo - teamElo) / 400));
+}
+
+function calculatePointsBonus(myScore: number, opponentScore: number) {
+  const difference = Number(myScore || 0) - Number(opponentScore || 0);
+
+  return Math.max(-6, Math.min(6, difference / 50));
+}
+
+function formatOpponentBonus(value: number) {
+  if (!value) return "zadnji meč ±0";
+
+  return value > 0 ? `zadnji meč +${value}` : `zadnji meč ${value}`;
 }
 
 function calculateBestSingleGameDeclarations(
   teamId: string,
   matches: any[],
   matchGames: any[],
-  selectedTournament: string
+  selectedTournament: string,
 ) {
   const matchById = new Map(matches.map((match) => [match.id, match]));
   let best = 0;
@@ -307,7 +488,8 @@ function calculateBestSingleGameDeclarations(
     if (!match) continue;
 
     const inTournament =
-      selectedTournament === "all" || match.tournament_id === selectedTournament;
+      selectedTournament === "all" ||
+      match.tournament_id === selectedTournament;
 
     if (!inTournament) continue;
 
@@ -326,14 +508,14 @@ function calculateBestSingleGameDeclarations(
 function calculateStreak(
   teamId: string,
   matches: any[],
-  selectedTournament: string
+  selectedTournament: string,
 ) {
   const relevant = matches.filter((match) => {
     const inTournament =
-      selectedTournament === "all" || match.tournament_id === selectedTournament;
+      selectedTournament === "all" ||
+      match.tournament_id === selectedTournament;
 
-    const played =
-      match.team_a_id === teamId || match.team_b_id === teamId;
+    const played = match.team_a_id === teamId || match.team_b_id === teamId;
 
     return inTournament && played;
   });
@@ -354,7 +536,7 @@ function calculateStreak(
 function Highlight({
   title,
   value,
-  sub
+  sub,
 }: {
   title: string;
   value: string;
