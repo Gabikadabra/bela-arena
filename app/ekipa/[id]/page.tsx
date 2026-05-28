@@ -328,62 +328,31 @@ type Achievement = {
 };
 
 const ADMIN_ACHIEVEMENT_CATALOG: Record<string, Achievement> = {
-  bela_arena_legend: {
-    emoji: "👑",
-    title: "Legenda Bele Arene",
-    description: "Posebna titula za ekipu koja je obilježila turnire i ostavila trag u zajednici.",
-    tone: "gold",
-    source: "admin",
-  },
-  fair_play: {
-    emoji: "🤝",
-    title: "Fair Play ekipa",
-    description: "Ekipa poznata po poštenoj igri, normalnom ponašanju i sportskom duhu.",
-    tone: "green",
-    source: "admin",
-  },
-  best_duo: {
-    emoji: "🧬",
-    title: "Najbolji dvojac",
-    description: "Admin priznanje za ekipu koja najbolje djeluje kao pravi par za belu.",
-    tone: "purple",
-    source: "admin",
-  },
-  tournament_hero: {
-    emoji: "🦸",
-    title: "Heroji turnira",
-    description: "Posebna medalja za ekipu koja je izvukla nemoguće ili nosila atmosferu turnira.",
-    tone: "blue",
-    source: "admin",
-  },
-  crowd_favorite: {
-    emoji: "📣",
-    title: "Miljenici publike",
-    description: "Ekipa koju je publika najviše pratila, komentirala ili bodrila.",
-    tone: "gold",
-    source: "admin",
-  },
-  comeback_kings_manual: {
-    emoji: "🔁",
-    title: "Kraljevi comebacka",
-    description: "Ručna titula za najveći povratak dok se ne uvede detaljno praćenje dijeljenja.",
-    tone: "red",
-    source: "admin",
-  },
-  captain_of_the_night: {
-    emoji: "🧢",
-    title: "Kapetan večeri",
-    description: "Admin priznanje za vođu ekipe koji je držao igru, ritam i atmosferu.",
-    tone: "blue",
-    source: "admin",
-  },
-  clutch_team: {
-    emoji: "⏱️",
-    title: "Clutch ekipa",
-    description: "Za ekipu koja najbolje odigra kada je najnapetije.",
-    tone: "red",
-    source: "admin",
-  },
+  bela_arena_legend: { emoji: "👑", title: "Legenda Bele Arene", description: "Najveća posebna titula za ekipu koja je obilježila Bela Arenu i ostavila trag kroz turnire.", tone: "gold", source: "admin" },
+  fair_play: { emoji: "🤝", title: "Fair Play ekipa", description: "Ekipa poznata po poštenoj igri i sportskom duhu.", tone: "green", source: "admin" },
+  best_duo: { emoji: "🧬", title: "Najbolji dvojac", description: "Admin priznanje za par koji djeluje kao savršena kombinacija.", tone: "purple", source: "admin" },
+  tournament_hero: { emoji: "🦸", title: "Heroji turnira", description: "Za ekipu koja je izvukla nemoguće ili nosila atmosferu turnira.", tone: "blue", source: "admin" },
+  crowd_favorite: { emoji: "📣", title: "Miljenici publike", description: "Ekipa koju publika najviše prati, komentira i bodri.", tone: "gold", source: "admin" },
+  comeback_kings_manual: { emoji: "🔁", title: "Kraljevi comebacka", description: "Ručna titula za najluđi povratak dok ne postoji detaljan unos tijeka partije.", tone: "red", source: "admin" },
+  captain_of_the_night: { emoji: "🧢", title: "Kapetan večeri", description: "Za vodstvo, komunikaciju i kontrolu ritma igre.", tone: "blue", source: "admin" },
+  clutch_team: { emoji: "⏱️", title: "Clutch ekipa", description: "Ekipa koja najbolje odigra kada je najnapetije.", tone: "red", source: "admin" },
+  showtime_team: { emoji: "🎭", title: "Showtime ekipa", description: "Ekipa koja od svakog meča napravi predstavu.", tone: "purple", source: "admin" },
+  silent_killers: { emoji: "🥷", title: "Tihi ubojice", description: "Mirna ekipa koja ne priča puno, ali stalno radi štetu.", tone: "blue", source: "admin" },
+  table_bosses: { emoji: "🪑", title: "Gazde stola", description: "Ekipa koja djeluje kao da je stol njihov teren.", tone: "gold", source: "admin" },
+  respect_team: { emoji: "🫡", title: "Ekipa za respekt", description: "Ekipa koju svi poštuju bez obzira na rezultat.", tone: "green", source: "admin" },
+  underdog_story: { emoji: "🐺", title: "Underdog priča", description: "Nisu bili favoriti, ali su napravili veliki rezultat.", tone: "red", source: "admin" },
+  golden_pair: { emoji: "🥇", title: "Zlatni par", description: "Posebno dobra kombinacija igrača.", tone: "gold", source: "admin" },
+  iron_mentality: { emoji: "🧠", title: "Čelična glava", description: "Ekipa koja se ne raspada pod pritiskom.", tone: "blue", source: "admin" },
+  arena_icon: { emoji: "🏟️", title: "Ikone arene", description: "Ekipa koja je postala prepoznatljiv dio turnira.", tone: "purple", source: "admin" },
+  most_fun_team: { emoji: "😂", title: "Najzabavnija ekipa", description: "Najbolja atmosfera, fore i energija.", tone: "green", source: "admin" },
+  ice_in_veins: { emoji: "🧊", title: "Led u venama", description: "Hladnokrvne završnice i mirna ruka.", tone: "blue", source: "admin" },
+  card_wizards: { emoji: "🪄", title: "Majstori karata", description: "Ekipa s potezima za pamćenje.", tone: "purple", source: "admin" },
+  honorary_champions: { emoji: "🏅", title: "Počasni prvaci", description: "Poseban doprinos čak i bez prvog mjesta.", tone: "gold", source: "admin" },
+  never_give_up: { emoji: "💪", title: "Nema predaje", description: "Borba do zadnje karte.", tone: "red", source: "admin" },
+  clean_game: { emoji: "🧼", title: "Čista igra", description: "Bez rasprava, natezanja i problema.", tone: "green", source: "admin" },
+  big_match_team: { emoji: "🌟", title: "Ekipa za velike mečeve", description: "Ekipa koja se posebno digne u velikim utakmicama.", tone: "purple", source: "admin" },
+  organizer_pick: { emoji: "✅", title: "Izbor organizatora", description: "Posebna admin medalja za ekipu koju organizator želi istaknuti.", tone: "blue", source: "admin" },
+  hall_of_fame: { emoji: "🏛️", title: "Hall of Fame", description: "Trajna elitna titula za ekipe koje ulaze u povijest Bele Arene.", tone: "gold", source: "admin" },
 };
 
 function calculateAchievements(profileStats: any, headToHeadStats: HeadToHeadRow[], manualRows: any[]): Achievement[] {
@@ -409,129 +378,41 @@ function calculateAchievements(profileStats: any, headToHeadStats: HeadToHeadRow
     });
   }
 
-  if (profileStats.wins > 0) {
-    achievements.push({
-      emoji: "🏆",
-      title: "Prva pobjeda",
-      description: `Ekipa ima ${profileStats.wins} pobjeda ukupno.`,
-      tone: "gold",
-      source: "auto",
-    });
-  }
-
-  if (profileStats.finishedMatches >= 3 && profileStats.losses === 0) {
-    achievements.push({
-      emoji: "🔥",
-      title: "Neporaženi",
-      description: `Bez poraza kroz ${profileStats.finishedMatches} završenih mečeva.`,
-      tone: "green",
-      source: "auto",
-    });
-  }
-
-  if (profileStats.currentElo >= 1100) {
-    achievements.push({
-      emoji: "♟️",
-      title: "ELO majstor",
-      description: `Prešli su ${profileStats.currentElo} ELO po šahovskom obračunu.`,
-      tone: "blue",
-      source: "auto",
-    });
-  }
-
-  if (profileStats.currentElo >= 1200) {
-    achievements.push({
-      emoji: "💎",
-      title: "Elitni ELO",
-      description: `ELO od ${profileStats.currentElo} znači da su među najopasnijim ekipama.`,
-      tone: "purple",
-      source: "auto",
-    });
-  }
-
-  if (profileStats.bestSingleGameDeclarations >= 50) {
-    achievements.push({
-      emoji: "👑",
-      title: "Kraljevi zvanja",
-      description: `Rekord im je ${profileStats.bestSingleGameDeclarations} zvanja u jednoj partiji.`,
-      tone: "purple",
-      source: "auto",
-    });
-  }
-
-
-  if (profileStats.totalMatches >= 5) {
-    achievements.push({
-      emoji: "🧱",
-      title: "Stalni sudionici",
-      description: `Već imaju ${profileStats.totalMatches} mečeva u Bela Areni.`,
-      tone: "blue",
-      source: "auto",
-    });
-  }
-
-  if (profileStats.totalMatches >= 10) {
-    achievements.push({
-      emoji: "🎖️",
-      title: "Iskusna ekipa",
-      description: `Odigrali su ${profileStats.totalMatches} mečeva kroz turnire.`,
-      tone: "gold",
-      source: "auto",
-    });
-  }
-
-  if (profileStats.totalMatches >= 25) {
-    achievements.push({
-      emoji: "🛡️",
-      title: "Veterani arene",
-      description: `S ${profileStats.totalMatches} mečeva spadaju među najiskusnije ekipe.`,
-      tone: "purple",
-      source: "auto",
-    });
-  }
-
-  if (profileStats.finishedMatches >= 5 && profileStats.winrate >= 70) {
-    achievements.push({
-      emoji: "🎯",
-      title: "Precizni završivači",
-      description: `${profileStats.winrate}% pobjeda kroz ${profileStats.finishedMatches} završenih mečeva.`,
-      tone: "green",
-      source: "auto",
-    });
-  }
+  const addAuto = (condition: boolean, achievement: Achievement) => {
+    if (condition) achievements.push({ ...achievement, source: "auto" });
+  };
 
   const lastFiveWins = (profileStats.lastFive || []).filter((item: string) => item === "W").length;
-  if (lastFiveWins >= 4) {
-    achievements.push({
-      emoji: "⚡",
-      title: "Forma u naletu",
-      description: `${lastFiveWins} pobjeda u zadnjih 5 završenih mečeva.`,
-      tone: "green",
-      source: "auto",
-    });
-  }
+  const positiveHeadToHead = headToHeadStats.filter((row) => row.totalMatches >= 2 && row.wins > row.losses).length;
+  const unbeatenRival = headToHeadStats.find((row) => row.totalMatches >= 3 && row.losses === 0);
+  const dominantRival = headToHeadStats.find((row) => row.totalMatches >= 3 && row.averageDiff >= 30);
+  const avgPoints = profileStats.finishedMatches > 0 ? Math.round(profileStats.totalPoints / profileStats.finishedMatches) : 0;
 
-  if ((profileStats.lastFive || []).length >= 5 && lastFiveWins === 5) {
-    achievements.push({
-      emoji: "🚀",
-      title: "Serija bez kočnica",
-      description: "Pet pobjeda u zadnjih pet završenih mečeva.",
-      tone: "red",
-      source: "auto",
-    });
-  }
-
-
-  const bestRivalScore = headToHeadStats.find((row) => row.totalMatches >= 3 && row.losses === 0);
-  if (bestRivalScore) {
-    achievements.push({
-      emoji: "🧊",
-      title: "Noćna mora protivnika",
-      description: `${bestRivalScore.wins}-0 protiv ekipe ${bestRivalScore.opponentName}.`,
-      tone: "red",
-      source: "auto",
-    });
-  }
+  addAuto(profileStats.totalMatches >= 1, { emoji: "🪙", title: "Prvi meč", description: "Ekipa je upisala prvi nastup u Bela Areni.", tone: "blue" });
+  addAuto(profileStats.wins > 0, { emoji: "🏆", title: "Prva pobjeda", description: `Ekipa ima ${profileStats.wins} pobjeda ukupno.`, tone: "gold" });
+  addAuto(profileStats.finishedMatches >= 3 && profileStats.losses === 0, { emoji: "🔥", title: "Neporaženi", description: `Bez poraza kroz ${profileStats.finishedMatches} završenih mečeva.`, tone: "green" });
+  addAuto(profileStats.currentElo >= 1100, { emoji: "♟️", title: "ELO majstor", description: `Prešli su ${profileStats.currentElo} ELO po šahovskom obračunu.`, tone: "blue" });
+  addAuto(profileStats.currentElo >= 1200, { emoji: "💎", title: "Elitni ELO", description: `ELO od ${profileStats.currentElo} znači da su među najopasnijim ekipama.`, tone: "purple" });
+  addAuto(profileStats.currentElo >= 1300, { emoji: "👑", title: "ELO kraljevi", description: `S ${profileStats.currentElo} ELO ulaze u elitni rang Bele Arene.`, tone: "gold" });
+  addAuto(profileStats.bestSingleGameDeclarations >= 50, { emoji: "🗣️", title: "Kraljevi zvanja", description: `Rekord im je ${profileStats.bestSingleGameDeclarations} zvanja u jednoj partiji.`, tone: "purple" });
+  addAuto(profileStats.bestSingleGameDeclarations >= 90, { emoji: "💥", title: "Zvanje bomba", description: `U jednoj partiji su došli do ${profileStats.bestSingleGameDeclarations} zvanja.`, tone: "red" });
+  addAuto(profileStats.totalDeclarations >= 200, { emoji: "📢", title: "Glasni za stolom", description: `Ukupno imaju ${profileStats.totalDeclarations} zvanja.`, tone: "gold" });
+  addAuto(profileStats.totalDeclarations >= 500, { emoji: "🎺", title: "Orkestar zvanja", description: `Prešli su ${profileStats.totalDeclarations} ukupnih zvanja.`, tone: "purple" });
+  addAuto(profileStats.totalMatches >= 5, { emoji: "🧱", title: "Stalni sudionici", description: `Već imaju ${profileStats.totalMatches} mečeva u Bela Areni.`, tone: "blue" });
+  addAuto(profileStats.totalMatches >= 10, { emoji: "🎖️", title: "Iskusna ekipa", description: `Odigrali su ${profileStats.totalMatches} mečeva kroz turnire.`, tone: "gold" });
+  addAuto(profileStats.totalMatches >= 25, { emoji: "🛡️", title: "Veterani arene", description: `S ${profileStats.totalMatches} mečeva spadaju među najiskusnije ekipe.`, tone: "purple" });
+  addAuto(profileStats.totalMatches >= 50, { emoji: "🏟️", title: "Legende sezone", description: `Nevjerojatnih ${profileStats.totalMatches} mečeva u sustavu.`, tone: "gold" });
+  addAuto(profileStats.finishedMatches >= 5 && profileStats.winrate >= 60, { emoji: "🥉", title: "Pozitivan omjer", description: `${profileStats.winrate}% pobjeda kroz ${profileStats.finishedMatches} završenih mečeva.`, tone: "green" });
+  addAuto(profileStats.finishedMatches >= 5 && profileStats.winrate >= 70, { emoji: "🥈", title: "Jaka pobjednička stopa", description: `${profileStats.winrate}% pobjeda pokazuje ozbiljnu konstantu.`, tone: "green" });
+  addAuto(profileStats.finishedMatches >= 8 && profileStats.winrate >= 85, { emoji: "🥇", title: "Elitna pobjednička stopa", description: `${profileStats.winrate}% pobjeda protiv konkurencije.`, tone: "gold" });
+  addAuto(lastFiveWins >= 3, { emoji: "🌪️", title: "Opasna forma", description: `${lastFiveWins} pobjeda u zadnjih 5 završenih mečeva.`, tone: "green" });
+  addAuto(lastFiveWins >= 4, { emoji: "⚡", title: "Forma u naletu", description: `${lastFiveWins} pobjeda u zadnjih 5 završenih mečeva.`, tone: "green" });
+  addAuto((profileStats.lastFive || []).length >= 5 && lastFiveWins === 5, { emoji: "🚀", title: "Serija bez kočnica", description: "Pet pobjeda u zadnjih pet završenih mečeva.", tone: "red" });
+  addAuto(avgPoints >= 140, { emoji: "🧮", title: "Bod mašina", description: `Prosječno oko ${avgPoints} bodova po završenom meču.`, tone: "blue" });
+  addAuto(profileStats.totalPoints >= 1000, { emoji: "🧨", title: "Napadačka ekipa", description: `Ukupno su skupili ${profileStats.totalPoints} bodova.`, tone: "red" });
+  addAuto(positiveHeadToHead >= 2, { emoji: "🔒", title: "Stabilna ekipa", description: `Imaju pozitivan međusobni omjer protiv ${positiveHeadToHead} ekipa.`, tone: "blue" });
+  addAuto(Boolean(unbeatenRival), { emoji: "🧊", title: "Noćna mora protivnika", description: unbeatenRival ? `${unbeatenRival.wins}-0 protiv ekipe ${unbeatenRival.opponentName}.` : "Dominantan međusobni omjer.", tone: "red" });
+  addAuto(Boolean(dominantRival), { emoji: "🪓", title: "Dominator", description: dominantRival ? `Protiv ${dominantRival.opponentName} imaju prosječnu razliku +${dominantRival.averageDiff}.` : "Dominantni međusobni susreti.", tone: "purple" });
 
   return achievements;
 }

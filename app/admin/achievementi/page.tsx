@@ -15,70 +15,31 @@ type AchievementTemplate = {
 };
 
 const MANUAL_ACHIEVEMENTS: AchievementTemplate[] = [
-  {
-    key: "bela_arena_legend",
-    emoji: "👑",
-    title: "Legenda Bele Arene",
-    description: "Posebna titula za ekipu koja je obilježila turnire i ostavila trag u zajednici.",
-    tone: "gold",
-    category: "Prestiž",
-  },
-  {
-    key: "fair_play",
-    emoji: "🤝",
-    title: "Fair Play ekipa",
-    description: "Za ekipu poznatu po poštenoj igri, normalnom ponašanju i sportskom duhu.",
-    tone: "green",
-    category: "Ponašanje",
-  },
-  {
-    key: "best_duo",
-    emoji: "🧬",
-    title: "Najbolji dvojac",
-    description: "Za ekipu koja najbolje djeluje kao pravi par za belu.",
-    tone: "purple",
-    category: "Igra",
-  },
-  {
-    key: "tournament_hero",
-    emoji: "🦸",
-    title: "Heroji turnira",
-    description: "Za ekipu koja je izvukla nemoguće ili nosila atmosferu turnira.",
-    tone: "blue",
-    category: "Turnir",
-  },
-  {
-    key: "crowd_favorite",
-    emoji: "📣",
-    title: "Miljenici publike",
-    description: "Ekipa koju je publika najviše pratila, komentirala ili bodrila.",
-    tone: "gold",
-    category: "Publika",
-  },
-  {
-    key: "comeback_kings_manual",
-    emoji: "🔁",
-    title: "Kraljevi comebacka",
-    description: "Ručna titula za najveći povratak dok se ne uvede detaljno praćenje dijeljenja.",
-    tone: "red",
-    category: "Drama",
-  },
-  {
-    key: "captain_of_the_night",
-    emoji: "🧢",
-    title: "Kapetan večeri",
-    description: "Za vođu ekipe koji je držao igru, ritam i atmosferu.",
-    tone: "blue",
-    category: "Vodstvo",
-  },
-  {
-    key: "clutch_team",
-    emoji: "⏱️",
-    title: "Clutch ekipa",
-    description: "Za ekipu koja najbolje odigra kada je najnapetije.",
-    tone: "red",
-    category: "Drama",
-  },
+  { key: "bela_arena_legend", emoji: "👑", title: "Legenda Bele Arene", description: "Najveća posebna titula za ekipu koja je obilježila Bela Arenu i ostavila trag kroz turnire.", tone: "gold", category: "Prestiž" },
+  { key: "fair_play", emoji: "🤝", title: "Fair Play ekipa", description: "Za ekipu koja igra pošteno, ne stvara probleme i poštuje protivnike.", tone: "green", category: "Ponašanje" },
+  { key: "best_duo", emoji: "🧬", title: "Najbolji dvojac", description: "Za par koji izgleda kao da igra zajedno sto godina.", tone: "purple", category: "Igra" },
+  { key: "tournament_hero", emoji: "🦸", title: "Heroji turnira", description: "Za ekipu koja je izvukla nemoguće ili spasila turnirsku atmosferu.", tone: "blue", category: "Turnir" },
+  { key: "crowd_favorite", emoji: "📣", title: "Miljenici publike", description: "Ekipa koju publika najviše prati, komentira i bodri.", tone: "gold", category: "Publika" },
+  { key: "comeback_kings_manual", emoji: "🔁", title: "Kraljevi comebacka", description: "Ručna titula za najluđi povratak dok ne postoji detaljan unos tijeka partije.", tone: "red", category: "Drama" },
+  { key: "captain_of_the_night", emoji: "🧢", title: "Kapetan večeri", description: "Za igrača/ekipu koja vodi igru, ritam i komunikaciju.", tone: "blue", category: "Vodstvo" },
+  { key: "clutch_team", emoji: "⏱️", title: "Clutch ekipa", description: "Za ekipu koja najbolje odigra kad je najnapetije.", tone: "red", category: "Drama" },
+  { key: "showtime_team", emoji: "🎭", title: "Showtime ekipa", description: "Za ekipu koja od svakog meča napravi predstavu.", tone: "purple", category: "Atmosfera" },
+  { key: "silent_killers", emoji: "🥷", title: "Tihi ubojice", description: "Za mirnu ekipu koja ne priča puno, ali stalno pobjeđuje.", tone: "blue", category: "Stil" },
+  { key: "table_bosses", emoji: "🪑", title: "Gazde stola", description: "Za ekipu koja djeluje kao da je taj stol njihov teren.", tone: "gold", category: "Dominacija" },
+  { key: "respect_team", emoji: "🫡", title: "Ekipa za respekt", description: "Za ekipu koju svi poštuju bez obzira na rezultat.", tone: "green", category: "Ponašanje" },
+  { key: "underdog_story", emoji: "🐺", title: "Underdog priča", description: "Za ekipu koja nije bila favorit, ali je napravila veliki rezultat.", tone: "red", category: "Drama" },
+  { key: "golden_pair", emoji: "🥇", title: "Zlatni par", description: "Za posebno dobru kombinaciju igrača.", tone: "gold", category: "Igra" },
+  { key: "iron_mentality", emoji: "🧠", title: "Čelična glava", description: "Za ekipu koja se ne raspada pod pritiskom.", tone: "blue", category: "Mentalitet" },
+  { key: "arena_icon", emoji: "🏟️", title: "Ikone arene", description: "Za ekipu koja je postala prepoznatljiv dio turnira.", tone: "purple", category: "Prestiž" },
+  { key: "most_fun_team", emoji: "😂", title: "Najzabavnija ekipa", description: "Za ekipu s najboljom atmosferom, forama i energijom.", tone: "green", category: "Atmosfera" },
+  { key: "ice_in_veins", emoji: "🧊", title: "Led u venama", description: "Za hladnokrvne završnice i mirnu ruku.", tone: "blue", category: "Drama" },
+  { key: "card_wizards", emoji: "🪄", title: "Majstori karata", description: "Za ekipu koja je jednostavno imala poteze za pamćenje.", tone: "purple", category: "Igra" },
+  { key: "honorary_champions", emoji: "🏅", title: "Počasni prvaci", description: "Titula koju admin dodjeljuje za poseban doprinos, čak i bez prvog mjesta.", tone: "gold", category: "Prestiž" },
+  { key: "never_give_up", emoji: "💪", title: "Nema predaje", description: "Za ekipu koja se borila do zadnje karte.", tone: "red", category: "Mentalitet" },
+  { key: "clean_game", emoji: "🧼", title: "Čista igra", description: "Za ekipu bez rasprava, natezanja i problema.", tone: "green", category: "Ponašanje" },
+  { key: "big_match_team", emoji: "🌟", title: "Ekipa za velike mečeve", description: "Za ekipu koja se posebno digne u velikim utakmicama.", tone: "purple", category: "Turnir" },
+  { key: "organizer_pick", emoji: "✅", title: "Izbor organizatora", description: "Posebna admin medalja za ekipu koju organizator želi istaknuti.", tone: "blue", category: "Admin" },
+  { key: "hall_of_fame", emoji: "🏛️", title: "Hall of Fame", description: "Trajna elitna titula za ekipe koje ulaze u povijest Bele Arene.", tone: "gold", category: "Prestiž" },
 ];
 
 const AUTOMATIC_ACHIEVEMENTS = [
@@ -87,19 +48,33 @@ const AUTOMATIC_ACHIEVEMENTS = [
   "♟️ ELO majstor",
   "💎 Elitni ELO",
   "👑 Kraljevi zvanja",
+  "💥 Zvanje bomba",
   "🧱 Stalni sudionici",
   "🎖️ Iskusna ekipa",
   "🛡️ Veterani arene",
+  "🏟️ Legende sezone",
   "🎯 Precizni završivači",
   "⚡ Forma u naletu",
   "🚀 Serija bez kočnica",
   "🧊 Noćna mora protivnika",
+  "🪓 Dominatori",
+  "🧮 Bod mašina",
+  "📈 ELO uspon",
+  "🌪️ Opasna forma",
+  "🔒 Stabilna ekipa",
+  "🧨 Napadačka ekipa",
+  "🪙 Prvi meč",
+  "📚 Turnirsko iskustvo",
+  "🥉 Pozitivan omjer",
+  "🥈 Jaka pobjednička stopa",
+  "🥇 Elitna pobjednička stopa",
 ];
 
 export default function AdminAchievementiPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [password, setPassword] = useState("");
   const [teams, setTeams] = useState<any[]>([]);
+  const [teamSearch, setTeamSearch] = useState("");
   const [awards, setAwards] = useState<any[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState("");
   const [selectedAchievementKey, setSelectedAchievementKey] = useState(MANUAL_ACHIEVEMENTS[0].key);
@@ -220,6 +195,17 @@ export default function AdminAchievementiPage() {
   }, [isAdmin]);
 
   const teamById = useMemo(() => new Map(teams.map((team) => [team.id, team])), [teams]);
+  const filteredTeams = useMemo(() => {
+    const search = teamSearch.trim().toLowerCase();
+    if (!search) return teams;
+    return teams.filter((team) => {
+      const haystack = [team.name, team.team_name, team.city, team.player_one, team.player_two, team.captain_name, team.status]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(search);
+    });
+  }, [teams, teamSearch]);
   const selectedTemplate = MANUAL_ACHIEVEMENTS.find((item) => item.key === selectedAchievementKey) || MANUAL_ACHIEVEMENTS[0];
 
   if (!isAdmin) {
@@ -260,7 +246,7 @@ export default function AdminAchievementiPage() {
           </p>
           <h1 className="text-4xl font-black text-[#f3dfad] sm:text-5xl">Achievement centar</h1>
           <p className="mt-3 max-w-3xl text-zinc-300">
-            Automatske medalje app računa sama, a posebne titule ovdje ručno dodjeljuješ ekipama.
+            Automatske medalje app računa sama iz rezultata, ELO-a, mečeva i zvanja, a posebne titule ovdje ručno dodjeljuješ ekipama iz Supabase liste.
           </p>
         </div>
 
@@ -273,8 +259,8 @@ export default function AdminAchievementiPage() {
       <section className="mb-8 grid gap-4 md:grid-cols-3">
         <div className="card-soft">
           <p className="text-sm text-zinc-400">Ukupno achievementa</p>
-          <p className="mt-2 text-4xl font-black text-[#f3dfad]">20</p>
-          <p className="mt-1 text-sm text-zinc-500">12 automatskih + 8 admin titula</p>
+          <p className="mt-2 text-4xl font-black text-[#f3dfad]">50</p>
+          <p className="mt-1 text-sm text-zinc-500">25 automatskih + 25 admin titula</p>
         </div>
         <div className="card-soft">
           <p className="text-sm text-zinc-400">Ručno dodijeljeno</p>
@@ -296,13 +282,22 @@ export default function AdminAchievementiPage() {
           <form onSubmit={awardAchievement} className="mt-6 space-y-5">
             <div>
               <label className="mb-2 block text-sm font-bold text-[#d4b06a]">Ekipa</label>
+              <input
+                value={teamSearch}
+                onChange={(e) => setTeamSearch(e.target.value)}
+                className="input mb-3"
+                placeholder="Pretraži ekipu, igrača, grad ili status..."
+              />
               <select value={selectedTeamId} onChange={(e) => setSelectedTeamId(e.target.value)} className="input" required>
-                {teams.map((team) => (
+                {filteredTeams.map((team) => (
                   <option key={team.id} value={team.id}>
-                    {team.name || team.team_name || "Ekipa bez imena"} {team.city ? `— ${team.city}` : ""}
+                    {team.name || team.team_name || "Ekipa bez imena"} {team.city ? `— ${team.city}` : ""} {team.player_one || team.player_two ? `(${[team.player_one, team.player_two].filter(Boolean).join(" / ")})` : ""}
                   </option>
                 ))}
               </select>
+              <p className="mt-2 text-xs text-zinc-500">
+                Učitava direktno sve ekipe iz Supabase tablice <b>teams</b>. Prikazano: {filteredTeams.length}/{teams.length}
+              </p>
             </div>
 
             <div>
@@ -344,7 +339,7 @@ export default function AdminAchievementiPage() {
 
         <section className="card">
           <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">Achievementi</h2>
-          <p className="mt-2 text-zinc-400">Doktorski sistem: ono što se može izračunati ide automatski, ostalo dodaje admin.</p>
+          <p className="mt-2 text-zinc-400">Doktorski sistem: 25 automatskih medalja računa aplikacija, a 25 posebnih titula dodjeljuje admin.</p>
 
           <div className="mt-6 grid gap-4 lg:grid-cols-2">
             <div className="rounded-3xl border border-green-500/20 bg-green-500/10 p-5">
