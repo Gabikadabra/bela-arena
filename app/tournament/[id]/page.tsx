@@ -492,7 +492,11 @@ function GroupTable({
               return (
                 <tr key={row.id || row.team_id} className={`border-t border-[#d4b06a]/10 ${qualified ? "bg-[#d4b06a]/10" : ""}`}>
                   <td className="p-3 font-black text-white/60">{index + 1}</td>
-                  <td className="p-3 font-black text-[#f3dfad]">{row.team_name}</td>
+                  <td className="p-3 font-black">
+                    <a href={`/ekipa/${row.team_id}`} className="text-[#f3dfad] hover:text-[#d4b06a]">
+                      {row.team_name}
+                    </a>
+                  </td>
                   <td className="p-3">{row.played}</td>
                   <td className="p-3">{row.wins}</td>
                   <td className="p-3">{row.losses}</td>
@@ -545,8 +549,8 @@ function MatchCard({ match, live }: { match: any; live?: boolean }) {
         </span>
       </div>
 
-      <TeamLine name={match.team_a_name || match.team_a_seed || "Čeka"} score={match.score_a} winner={winnerA} />
-      <TeamLine name={match.team_b_name || match.team_b_seed || "Čeka"} score={match.score_b} winner={winnerB} />
+      <TeamLine name={match.team_a_name || match.team_a_seed || "Čeka"} score={match.score_a} winner={winnerA} teamId={match.team_a_id} />
+      <TeamLine name={match.team_b_name || match.team_b_seed || "Čeka"} score={match.score_b} winner={winnerB} teamId={match.team_b_id} />
 
       <div className="mt-4 flex gap-3">
         {locked ? (
@@ -563,10 +567,28 @@ function MatchCard({ match, live }: { match: any; live?: boolean }) {
   );
 }
 
-function TeamLine({ name, score, winner }: { name: string; score: number; winner: boolean }) {
+function TeamLine({
+  name,
+  score,
+  winner,
+  teamId
+}: {
+  name: string;
+  score: number;
+  winner: boolean;
+  teamId?: string;
+}) {
+  const content = <span className="font-bold">{name}</span>;
+
   return (
     <div className={`mb-2 flex justify-between rounded-xl p-3 ${winner ? "bg-green-500/20 text-green-300" : "bg-[#12392b] text-zinc-200"}`}>
-      <span className="font-bold">{name}</span>
+      {teamId ? (
+        <a href={`/ekipa/${teamId}`} className="font-bold hover:text-[#d4b06a]">
+          {name}
+        </a>
+      ) : (
+        content
+      )}
       <span className="font-black">{score || 0}</span>
     </div>
   );

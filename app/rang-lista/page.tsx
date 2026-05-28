@@ -267,9 +267,12 @@ export default function RangListaPage() {
               </div>
 
               <div>
-                <p className="text-xl font-black text-[#d4b06a]">
+                <a
+                  href={`/ekipa/${team.team_id}`}
+                  className="text-xl font-black text-[#d4b06a] hover:text-[#f3dfad]"
+                >
                   {team.team_name}
-                </p>
+                </a>
                 <p className="text-sm text-zinc-500">
                   Najbolje dijeljenje: {team.best_single_deal || 0}
                 </p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 export default function MojRacunPage() {
@@ -13,6 +13,7 @@ export default function MojRacunPage() {
   });
 
   const [teams, setTeams] = useState<any[]>([]);
+  const [tournaments, setTournaments] = useState<any[]>([]);
   const [openTournaments, setOpenTournaments] = useState<any[]>([]);
   const [selectedTournamentByTeam, setSelectedTournamentByTeam] = useState<Record<string, string>>({});
   const [registeringTeamId, setRegisteringTeamId] = useState<string | null>(null);
@@ -95,21 +96,22 @@ export default function MojRacunPage() {
     const { data: tournamentData } = await supabase
       .from("tournaments")
       .select("*")
-      .eq("status", "open")
       .order("starts_at", { ascending: true });
 
-    setOpenTournaments(tournamentData || []);
+    setTournaments(tournamentData || []);
+    setOpenTournaments((tournamentData || []).filter((tournament) => tournament.status === "open"));
 
     setSelectedTournamentByTeam((prev) => {
+      const openTournamentData = (tournamentData || []).filter((tournament) => tournament.status === "open");
       const next = { ...prev };
 
       for (const team of teamData || []) {
         if (!next[team.id]) {
-          next[team.id] = tournamentData?.[0]?.id || "";
+          next[team.id] = openTournamentData?.[0]?.id || "";
         }
 
-        if (next[team.id] && !tournamentData?.some((tournament) => tournament.id === next[team.id])) {
-          next[team.id] = tournamentData?.[0]?.id || "";
+        if (next[team.id] && !openTournamentData?.some((tournament) => tournament.id === next[team.id])) {
+          next[team.id] = openTournamentData?.[0]?.id || "";
         }
       }
 
@@ -300,6 +302,29 @@ export default function MojRacunPage() {
   const activeMatches = myMatches.filter((match) => match.status !== "finished");
   const finishedMatches = myMatches.filter((match) => match.status === "finished");
 
+  const tournamentById = useMemo(() => {
+    return new Map(tournaments.map((tournament) => [tournament.id, tournament]));
+  }, [tournaments]);
+
+  const accountStats = useMemo(() => {
+    const teamIds = new Set(teams.map((team) => team.id));
+    const finished = myMatches.filter((match) => match.status === "finished");
+    const wins = finished.filter((match) => teamIds.has(match.winner_id)).length;
+    const losses = finished.length - wins;
+    const active = myMatches.filter((match) => match.status !== "finished").length;
+    const winrate = finished.length > 0 ? Math.round((wins / finished.length) * 100) : 0;
+
+    return {
+      active,
+      finished: finished.length,
+      losses,
+      teams: teams.length,
+      winrate,
+      wins,
+    };
+  }, [teams, myMatches]);
+
+
   if (!user) {
     return (
       <main className="mx-auto max-w-xl px-6 py-20">
@@ -350,6 +375,13 @@ export default function MojRacunPage() {
           Odjava
         </button>
       </div>
+
+      <section className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <AccountStat title="Moje ekipe" value={accountStats.teams} sub="spremljene i prijavljene ekipe" />
+        <AccountStat title="Aktivni mečevi" value={accountStats.active} sub="trenutno čeka rezultat" />
+        <AccountStat title="Omjer" value={`${accountStats.wins}-${accountStats.losses}`} sub={`${accountStats.winrate}% pobjeda`} />
+        <AccountStat title="Završeni mečevi" value={accountStats.finished} sub="povijest tvojih ekipa" />
+      </section>
 
       <section className="mb-8 card">
         <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">Moji mečevi</h2>
@@ -458,6 +490,9 @@ export default function MojRacunPage() {
 
                       <div className="mt-3 grid gap-2 text-sm text-zinc-400 sm:grid-cols-2">
                         {team.city && <p>Grad: {team.city}</p>}
+                        {team.tournament_id && (
+                          <p>Turnir: {tournamentById.get(team.tournament_id)?.name || "-"}</p>
+                        )}
                         {team.captain_name && <p>Kapetan: {team.captain_name}</p>}
                         {team.player_one && <p>Igrač 1: {team.player_one}</p>}
                         {team.player_two && <p>Igrač 2: {team.player_two}</p>}
@@ -469,6 +504,17 @@ export default function MojRacunPage() {
                     <span className="w-fit rounded-full border border-[#d4b06a]/20 bg-[#d4b06a]/10 px-4 py-2 text-xs font-bold uppercase tracking-wide text-[#d4b06a]">
                       Spremljena ekipa
                     </span>
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <a href={`/ekipa/${team.id}`} className="btn-outline">
+                      Profil ekipe
+                    </a>
+                    {team.tournament_id && (
+                      <a href={`/tournament/${team.tournament_id}`} className="btn-outline">
+                        Otvori turnir
+                      </a>
+                    )}
                   </div>
 
                   <div className="mt-5 grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
@@ -538,6 +584,24 @@ export default function MojRacunPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+function AccountStat({
+  title,
+  value,
+  sub
+}: {
+  title: string;
+  value: any;
+  sub: string;
+}) {
+  return (
+    <div className="rounded-3xl border border-[#d4b06a]/20 bg-[#0a2018] p-6">
+      <p className="text-sm text-zinc-400">{title}</p>
+      <p className="mt-2 text-3xl font-black text-[#f3dfad]">{value ?? 0}</p>
+      <p className="mt-1 text-sm text-zinc-500">{sub}</p>
+    </div>
   );
 }
 
