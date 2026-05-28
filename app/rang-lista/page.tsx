@@ -89,8 +89,8 @@ export default function RangListaPage() {
     return base
       .map((team) => {
         const eloData = matchEloMap.get(team.team_id) || {
-          elo: calculateBaseElo(team),
-          opponentStrengthBonus: 0,
+          elo: 1000,
+          totalEloChange: 0,
           averageOpponentElo: 1000,
           lastMatchChange: 0,
         };
@@ -98,7 +98,7 @@ export default function RangListaPage() {
         return {
           ...team,
           elo: eloData.elo,
-          opponent_strength_bonus: eloData.opponentStrengthBonus,
+          total_elo_change: eloData.totalEloChange,
           average_opponent_elo: eloData.averageOpponentElo,
           last_match_elo_change: eloData.lastMatchChange,
           streak: calculateStreak(team.team_id, matches, selectedTournament),
@@ -175,10 +175,10 @@ export default function RangListaPage() {
           Kako ELO funkcionira?
         </h2>
         <p className="mt-3 max-w-4xl text-zinc-300">
-          ELO je broj koji pokazuje jačinu ekipe na rang-listi. Svaka ekipa
-          kreće od 1000 ELO, ali se ne računa samo zbrajanjem pobjeda. Svaka
-          utakmica se obrađuje posebno: prvo se pogleda koliko je protivnik jak,
-          pa se onda izračuna koliko ta pobjeda ili poraz vrijedi.
+          ELO radi kao u šahu: svaka ekipa kreće od 1000, a svaka utakmica
+          mijenja ELO prema tvojoj snazi i snazi protivnika prije te utakmice.
+          Ne gleda se samo je li protivnik jak, nego koliko je jak u odnosu na
+          tebe. Zato ista pobjeda ne vrijedi uvijek isto.
         </p>
         <div className="mt-5 grid gap-3 md:grid-cols-4">
           <InfoBox title="Start" text="Svaka ekipa počinje s 1000 ELO." />
@@ -192,25 +192,24 @@ export default function RangListaPage() {
           />
           <InfoBox
             title="Protivnik"
-            text="Za svaku utakmicu posebno gleda se ELO protivnika prije te utakmice."
+            text="U svakoj utakmici uspoređuje se tvoj ELO i ELO protivnika prije tog meča."
           />
           <InfoBox
-            title="Bonus"
-            text="Razlika u bodovima u meču dodaje mali bonus na promjenu ELO-a."
+            title="Omjer snage"
+            text="Ako si puno slabiji i pobijediš, dobiješ puno. Ako si puno jači i pobijediš, dobiješ malo."
           />
         </div>
         <p className="mt-4 rounded-2xl border border-[#d4b06a]/15 bg-[#184332]/60 p-4 text-sm text-zinc-300">
           Formula u aplikaciji po svakoj utakmici:{" "}
           <span className="font-bold text-[#f3dfad]">
             očekivani rezultat = 1 / (1 + 10^((ELO protivnika - moj ELO) /
-            400)), promjena = 32 × (rezultat - očekivani rezultat) + bonus
-            razlike u bodovima
+            400)), promjena = 32 × (rezultat - očekivani rezultat)
           </span>
-          . Rezultat je 1 za pobjedu i 0 za poraz. Ako pobijediš jačeg
-          protivnika, očekivani rezultat ti je nizak pa dobiješ puno ELO-a. Ako
-          pobijediš slabijeg protivnika, dobiješ manje. Isto vrijedi obrnuto za
-          poraze. Zato se snaga protivnika sada ne računa kao jedan prosjek,
-          nego se gleda posebno za svaku odigranu utakmicu.
+          . Rezultat je 1 za pobjedu i 0 za poraz. Ovo znači da se protivnikova
+          snaga uvijek gleda u odnosu na tvoju snagu. Ako imaš 1000 ELO i
+          pobijediš ekipu od 1200 ELO, dobiješ puno više nego da pobijediš ekipu
+          od 800 ELO. Ako si favorit i izgubiš od slabije ekipe, izgubiš puno
+          više nego protiv jače ekipe.
         </p>
       </section>
 
@@ -278,7 +277,7 @@ export default function RangListaPage() {
 
               <Stat
                 label="ELO"
-                value={`${team.elo} (${formatOpponentBonus(team.last_match_elo_change)})`}
+                value={`${team.elo} (${formatLastMatchChange(team.last_match_elo_change)})`}
               />
               <Stat label="Mečevi" value={team.matches_played} />
               <Stat label="W" value={team.wins} />
@@ -298,15 +297,6 @@ export default function RangListaPage() {
   );
 }
 
-function calculateBaseElo(team: any) {
-  return (
-    1000 +
-    Number(team.wins || 0) * 35 -
-    Number(team.losses || 0) * 15 +
-    Math.floor(Number(team.total_points || 0) / 100) +
-    Math.floor(Number(team.total_declarations || 0) / 50)
-  );
-}
 
 function mergeGlobalStats(stats: any[]) {
   const map = new Map();
@@ -343,12 +333,7 @@ function mergeGlobalStats(stats: any[]) {
         ? Number(((team.wins / team.matches_played) * 100).toFixed(1))
         : 0;
 
-    const elo =
-      1000 +
-      team.wins * 35 -
-      team.losses * 15 +
-      Math.floor(team.total_points / 100) +
-      Math.floor(team.total_declarations / 50);
+    const elo = 1000;
 
     return {
       ...team,
@@ -367,14 +352,14 @@ function calculateMatchByMatchElo(
   const eloMap = new Map<string, number>();
   const opponentEloSums = new Map<string, number>();
   const opponentCounts = new Map<string, number>();
-  const opponentStrengthBonus = new Map<string, number>();
+  const totalEloChange = new Map<string, number>();
   const lastMatchChange = new Map<string, number>();
 
   for (const team of teams) {
     eloMap.set(team.team_id, 1000);
     opponentEloSums.set(team.team_id, 0);
     opponentCounts.set(team.team_id, 0);
-    opponentStrengthBonus.set(team.team_id, 0);
+    totalEloChange.set(team.team_id, 0);
     lastMatchChange.set(team.team_id, 0);
   }
 
@@ -412,11 +397,8 @@ function calculateMatchByMatchElo(
 
     const expectedA = calculateExpectedScore(eloA, eloB);
     const expectedB = calculateExpectedScore(eloB, eloA);
-    const pointsBonusA = calculatePointsBonus(match.score_a, match.score_b);
-    const pointsBonusB = calculatePointsBonus(match.score_b, match.score_a);
-
-    const changeA = Math.round(32 * (resultA - expectedA) + pointsBonusA);
-    const changeB = Math.round(32 * (resultB - expectedB) + pointsBonusB);
+    const changeA = Math.round(32 * (resultA - expectedA));
+    const changeB = Math.round(32 * (resultB - expectedB));
 
     eloMap.set(teamAId, Math.max(100, eloA + changeA));
     eloMap.set(teamBId, Math.max(100, eloB + changeB));
@@ -425,13 +407,13 @@ function calculateMatchByMatchElo(
     opponentEloSums.set(teamBId, (opponentEloSums.get(teamBId) || 0) + eloA);
     opponentCounts.set(teamAId, (opponentCounts.get(teamAId) || 0) + 1);
     opponentCounts.set(teamBId, (opponentCounts.get(teamBId) || 0) + 1);
-    opponentStrengthBonus.set(
+    totalEloChange.set(
       teamAId,
-      (opponentStrengthBonus.get(teamAId) || 0) + Math.round(changeA),
+      (totalEloChange.get(teamAId) || 0) + Math.round(changeA),
     );
-    opponentStrengthBonus.set(
+    totalEloChange.set(
       teamBId,
-      (opponentStrengthBonus.get(teamBId) || 0) + Math.round(changeB),
+      (totalEloChange.get(teamBId) || 0) + Math.round(changeB),
     );
     lastMatchChange.set(teamAId, changeA);
     lastMatchChange.set(teamBId, changeB);
@@ -441,7 +423,7 @@ function calculateMatchByMatchElo(
     string,
     {
       elo: number;
-      opponentStrengthBonus: number;
+      totalEloChange: number;
       averageOpponentElo: number;
       lastMatchChange: number;
     }
@@ -456,8 +438,8 @@ function calculateMatchByMatchElo(
 
     result.set(team.team_id, {
       elo: Math.round(eloMap.get(team.team_id) || 1000),
-      opponentStrengthBonus: Math.round(
-        opponentStrengthBonus.get(team.team_id) || 0,
+      totalEloChange: Math.round(
+        totalEloChange.get(team.team_id) || 0,
       ),
       averageOpponentElo,
       lastMatchChange: Math.round(lastMatchChange.get(team.team_id) || 0),
@@ -471,13 +453,8 @@ function calculateExpectedScore(teamElo: number, opponentElo: number) {
   return 1 / (1 + Math.pow(10, (opponentElo - teamElo) / 400));
 }
 
-function calculatePointsBonus(myScore: number, opponentScore: number) {
-  const difference = Number(myScore || 0) - Number(opponentScore || 0);
 
-  return Math.max(-6, Math.min(6, difference / 50));
-}
-
-function formatOpponentBonus(value: number) {
+function formatLastMatchChange(value: number) {
   if (!value) return "zadnji meč ±0";
 
   return value > 0 ? `zadnji meč +${value}` : `zadnji meč ${value}`;
