@@ -1,0 +1,13 @@
+PROMJENA: Rang-lista - najviše zvanja u jednoj partiji
+
+Što je promijenjeno:
+- Na stranici Rang lista više se ne prikazuje rekord po ukupnim zvanjima kao glavni highlight.
+- Novi highlight je: "Najviše zvanja u jednoj partiji".
+- U tablici je stupac promijenjen u "Zvanja / partija".
+- Rekord se računa direktno iz tablice match_games po jednom unosu/partiji:
+  - team_a_declarations za ekipu A
+  - team_b_declarations za ekipu B
+- Rang-lista već sluša realtime promjene na match_games, pa se rekord automatski mijenja kad se rezultat/zvanja urede ili obrišu.
+
+Glavna izmjena:
+- app/rang-lista/page.tsx
