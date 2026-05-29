@@ -303,6 +303,51 @@ export default function MecPage({ params }: PageProps) {
   const afterSubmitA = totalA + preview.finalA;
   const afterSubmitB = totalB + preview.finalB;
 
+
+  function updateLinkedScores(team: TeamSide, value: string) {
+    const cleanValue = value.replace(/\D/g, "");
+
+    if (cleanValue === "") {
+      setForm((old) => ({
+        ...old,
+        teamAScore: "",
+        teamBScore: ""
+      }));
+      return;
+    }
+
+    const score = Math.min(162, Math.max(0, Number(cleanValue || 0)));
+    const otherScore = 162 - score;
+
+    setForm((old) => ({
+      ...old,
+      teamAScore: team === "A" ? String(score) : String(otherScore),
+      teamBScore: team === "B" ? String(score) : String(otherScore)
+    }));
+  }
+
+  function updateLinkedEditScores(team: TeamSide, value: string) {
+    const cleanValue = value.replace(/\D/g, "");
+
+    if (cleanValue === "") {
+      setEditForm((old) => ({
+        ...old,
+        teamAScore: "",
+        teamBScore: ""
+      }));
+      return;
+    }
+
+    const score = Math.min(162, Math.max(0, Number(cleanValue || 0)));
+    const otherScore = 162 - score;
+
+    setEditForm((old) => ({
+      ...old,
+      teamAScore: team === "A" ? String(score) : String(otherScore),
+      teamBScore: team === "B" ? String(score) : String(otherScore)
+    }));
+  }
+
   function addDeclaration(team: TeamSide, value: number) {
     if (team === "A") {
       setForm((old) => ({
@@ -924,7 +969,7 @@ export default function MecPage({ params }: PageProps) {
           <div>
             <h2 className="section-title">Novi unos</h2>
             <p className="muted mt-2">
-              Upiši bodove za jednu ekipu i drugi box se odmah automatski popuni do 162. Ako upišeš obje ekipe, zajedno moraju biti 162.
+              Piši u bilo koji box. Onaj u koji trenutno pišeš je glavni, a drugi se odmah automatski mijenja do 162.
             </p>
           </div>
 
@@ -939,15 +984,13 @@ export default function MecPage({ params }: PageProps) {
           <ScoreInput
             label={match.team_a_name || "Ekipa A"}
             value={form.teamAScore}
-            calculatedValue={form.teamAScore === "" && form.teamBScore !== "" ? preview.rawA : undefined}
-            onChange={(value) => setForm({ ...form, teamAScore: value })}
+            onChange={(value) => updateLinkedScores("A", value)}
           />
 
           <ScoreInput
             label={match.team_b_name || "Ekipa B"}
             value={form.teamBScore}
-            calculatedValue={form.teamBScore === "" && form.teamAScore !== "" ? preview.rawB : undefined}
-            onChange={(value) => setForm({ ...form, teamBScore: value })}
+            onChange={(value) => updateLinkedScores("B", value)}
           />
         </div>
 
@@ -1056,7 +1099,7 @@ export default function MecPage({ params }: PageProps) {
                 </h2>
 
                 <p className="muted mt-2 text-sm">
-                  Promijeni bodove jedne ili obje ekipe. Drugi box se automatski popuni do 162.
+                  Piši u bilo koji box. Onaj koji trenutno uređuješ je glavni, a drugi se odmah automatski mijenja do 162.
                 </p>
               </div>
 
@@ -1073,19 +1116,13 @@ export default function MecPage({ params }: PageProps) {
               <ScoreInput
                 label={match.team_a_name || "Ekipa A"}
                 value={editForm.teamAScore}
-                calculatedValue={editForm.teamAScore === "" && editForm.teamBScore !== "" ? editPreview.rawA : undefined}
-                onChange={(value) =>
-                  setEditForm({ ...editForm, teamAScore: value })
-                }
+                onChange={(value) => updateLinkedEditScores("A", value)}
               />
 
               <ScoreInput
                 label={match.team_b_name || "Ekipa B"}
                 value={editForm.teamBScore}
-                calculatedValue={editForm.teamBScore === "" && editForm.teamAScore !== "" ? editPreview.rawB : undefined}
-                onChange={(value) =>
-                  setEditForm({ ...editForm, teamBScore: value })
-                }
+                onChange={(value) => updateLinkedEditScores("B", value)}
               />
             </div>
 
@@ -1179,7 +1216,7 @@ function ScoreInput({
       />
 
       <p className="mt-2 text-center text-xs font-bold text-white/45">
-        {calculatedValue !== undefined && value === "" ? "Auto popunjeno" : "Upiši 0 - 162"}
+        Upiši 0 - 162 · drugi box se sam mijenja
       </p>
     </label>
   );
