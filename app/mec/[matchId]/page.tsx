@@ -557,7 +557,6 @@ export default function MecPage({ params }: PageProps) {
       winner_id: finalWinnerId,
       status: finalStatus,
       result_status: allGames.length > 0 ? "submitted" : "draft",
-      submitted_by: user?.id || match.submitted_by || null
     };
 
     const { error: matchUpdateError } = await supabase
@@ -637,7 +636,6 @@ export default function MecPage({ params }: PageProps) {
       match_id: matchId,
       set_number: currentSet,
       game_number: gameNumber,
-      submitted_by: user.id,
       caller_team: null,
       called_team_fell: false,
       raw_team_a_tricks: preview.rawA,
@@ -663,8 +661,7 @@ export default function MecPage({ params }: PageProps) {
     let updateMatch: any = {
       score_a: newTotalA,
       score_b: newTotalB,
-      result_status: "submitted",
-      submitted_by: user.id
+      result_status: "submitted"
     };
 
     const setFinished = newTotalA >= scoreLimit || newTotalB >= scoreLimit;
@@ -777,6 +774,159 @@ export default function MecPage({ params }: PageProps) {
 
     setSaving(false);
     await loadData(false);
+  }
+
+
+  async function finishCurrentPartija() {
+    setMessage("");
+
+    if (!user) {
+      setMessageType("error");
+      setMessage("Moraš biti prijavljen za završavanje partije.");
+      return;
+    }
+
+    if (!match || !tournament) {
+      setMessageType("error");
+      setMessage("Meč nije učitan.");
+      return;
+    }
+
+    if (isFinished) {
+      setMessageType("error");
+      setMessage("Meč je već završen.");
+      return;
+    }
+
+    if (isLocked) {
+      setMessageType("error");
+      setMessage("Ovaj meč je zaključan.");
+      return;
+    }
+
+    if (totalA === totalB) {
+      setMessageType("error");
+      setMessage("Partija ne može završiti neriješeno.");
+      return;
+    }
+
+    if (totalA <= 0 && totalB <= 0) {
+      setMessageType("error");
+      setMessage("Prvo upiši barem jedan rezultat pa završi partiju.");
+      return;
+    }
+
+    const confirmFinish = window.confirm(
+      `Završiti partiju s rezultatom ${totalA} : ${totalB}?`
+    );
+
+    if (!confirmFinish) return;
+
+    setSaving(true);
+
+    try {
+      const setWinnerId = totalA > totalB ? match.team_a_id : match.team_b_id;
+      const setWinnerName = totalA > totalB ? match.team_a_name : match.team_b_name;
+      const currentSetsA = Number(match.sets_a || 0);
+      const currentSetsB = Number(match.sets_b || 0);
+      const newSetsA = setWinnerId === match.team_a_id ? currentSetsA + 1 : currentSetsA;
+      const newSetsB = setWinnerId === match.team_b_id ? currentSetsB + 1 : currentSetsB;
+      const matchFinished = newSetsA >= setsToWin || newSetsB >= setsToWin;
+
+      const { data: existingSet, error: existingSetError } = await supabase
+        .from("match_sets")
+        .select("id")
+        .eq("match_id", matchId)
+        .eq("set_number", currentSet)
+        .maybeSingle();
+
+      if (existingSetError) throw existingSetError;
+
+      if (existingSet) {
+        const { error: updateSetError } = await supabase
+          .from("match_sets")
+          .update({
+            team_a_score: totalA,
+            team_b_score: totalB,
+            winner_id: setWinnerId,
+            status: "finished",
+            finished_at: new Date().toISOString()
+          })
+          .eq("id", existingSet.id);
+
+        if (updateSetError) throw updateSetError;
+      } else {
+        const { error: insertSetError } = await supabase
+          .from("match_sets")
+          .insert({
+            match_id: matchId,
+            set_number: currentSet,
+            team_a_score: totalA,
+            team_b_score: totalB,
+            winner_id: setWinnerId,
+            status: "finished",
+            finished_at: new Date().toISOString()
+          });
+
+        if (insertSetError) throw insertSetError;
+      }
+
+      const updateMatch: any = matchFinished
+        ? {
+            score_a: totalA,
+            score_b: totalB,
+            sets_a: newSetsA,
+            sets_b: newSetsB,
+            winner_id: setWinnerId,
+            status: "finished",
+            result_status: "submitted"
+          }
+        : {
+            score_a: 0,
+            score_b: 0,
+            sets_a: newSetsA,
+            sets_b: newSetsB,
+            current_set: currentSet + 1,
+            status: "scheduled",
+            result_status: "submitted"
+          };
+
+      const { error: matchError } = await supabase
+        .from("matches")
+        .update(updateMatch)
+        .eq("id", matchId);
+
+      if (matchError) throw matchError;
+
+      if (matchFinished) {
+        await advanceWinnerToNextMatch(setWinnerId, setWinnerName);
+      }
+
+      await syncTournamentAfterResult({
+        ...match,
+        ...updateMatch,
+        id: matchId,
+        tournament_id: match.tournament_id,
+        phase: match.phase,
+        group_name: match.group_name,
+        round: match.round,
+        round_number: match.round_number
+      });
+
+      setMessageType("success");
+      setMessage(
+        matchFinished
+          ? "Partija je završena i meč ima status završen."
+          : "Partija je završena i otvorena je sljedeća partija."
+      );
+
+      await loadData(false);
+    } catch (error: any) {
+      setMessageType("error");
+      setMessage("Greška kod završavanja partije: " + error.message);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function saveEditedGame(event: React.FormEvent) {
@@ -1007,13 +1157,24 @@ export default function MecPage({ params }: PageProps) {
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={saving || !user || isFinished || isLocked}
-          className="btn-primary mt-8 w-full py-4 text-lg disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {saving ? "Spremam..." : "Spremi rezultat"}
-        </button>
+        <div className="mt-8 grid gap-3 sm:grid-cols-2">
+          <button
+            type="submit"
+            disabled={saving || !user || isFinished || isLocked}
+            className="btn-primary w-full py-4 text-lg disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {saving ? "Spremam..." : "Spremi rezultat"}
+          </button>
+
+          <button
+            type="button"
+            onClick={finishCurrentPartija}
+            disabled={saving || !user || isFinished || isLocked || currentSetGames.length === 0}
+            className="rounded-2xl border border-green-400/35 bg-green-500/15 px-5 py-4 text-lg font-black text-green-200 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Završi partiju
+          </button>
+        </div>
       </form>
 
       {message && (
