@@ -150,13 +150,14 @@ function buildQualification(rows: any[], knockoutSize = 16) {
   });
 
   const remaining = Math.max(0, knockoutSize - directQualifiers.length);
+  const bestExtraRank = directPerGroup + 1;
   const extraCandidates = groupEntries
     .flatMap(([groupName, groupRows]) =>
-      groupRows.slice(directPerGroup).map((row, index) => ({
+      groupRows.slice(directPerGroup, bestExtraRank).map((row) => ({
         ...row,
         qualification_type: "extra",
-        qualification_label: `Najbolji dodatni (${groupName})`,
-        group_rank: directPerGroup + index + 1,
+        qualification_label: `Najbolji ${bestExtraRank}. (${groupName})`,
+        group_rank: bestExtraRank,
       })),
     )
     .sort((a, b) => (sortStandings([a, b])[0] === a ? -1 : 1));

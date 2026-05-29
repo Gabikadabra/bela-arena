@@ -160,13 +160,14 @@ function buildQualification(rows: any[], knockoutSize = 16) {
   });
 
   const remaining = Math.max(0, knockoutSize - directQualifiers.length);
+  const bestExtraRank = directPerGroup + 1;
   const extraCandidates = groupEntries
     .flatMap(([groupName, groupRows]) =>
-      groupRows.slice(directPerGroup).map((row, index) => ({
+      groupRows.slice(directPerGroup, bestExtraRank).map((row) => ({
         ...row,
         qualification_type: "extra",
-        qualification_label: `Najbolji dodatni (${groupName})`,
-        group_rank: directPerGroup + index + 1
+        qualification_label: `Najbolji ${bestExtraRank}. (${groupName})`,
+        group_rank: bestExtraRank
       }))
     )
     .sort((a, b) => sortStandings([a, b])[0] === a ? -1 : 1);
@@ -896,7 +897,7 @@ export default function ZdrijebAdminPage() {
           <div className="mt-5 card-soft">
             <p className="font-bold text-[#f3dfad]">Pravila prolaska</p>
             <p className="muted mt-2">
-              Knockout prima <b className="text-[#d4b06a]">{knockoutSize}</b> ekipa. Grupni mečevi se generiraju Berger sustavom, po rundama. Prvo je otključana samo 1. runda, a iduća se otključava tek kad se svi mečevi prethodne runde u toj grupi završe. Sustav zatim uzima najbolje iz svake grupe, a preostala mjesta popunjava najboljim idućim ekipama po bodovima, pobjedama, razlici i postignutim bodovima.
+              Knockout prima <b className="text-[#d4b06a]">{knockoutSize}</b> ekipa. Grupni mečevi se generiraju Berger sustavom, po rundama. Prvo je otključana samo 1. runda, a iduća se otključava tek kad se svi mečevi prethodne runde u toj grupi završe. Sustav zatim uzima direktne prolaznike iz svake grupe, a preostala mjesta popunjava samo najboljim ekipama iz idućeg ranga. Primjer: ako prolazi 16 ekipa iz 6 grupa, prolaze prvi i drugi iz svake grupe te samo 4 najbolja treća — četvrti ne može proći dalje.
             </p>
           </div>
         )}

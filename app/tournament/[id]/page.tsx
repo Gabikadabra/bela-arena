@@ -45,12 +45,13 @@ function buildQualification(rows: any[], knockoutSize = 16) {
   });
 
   const remaining = Math.max(0, knockoutSize - directQualifiers.length);
+  const bestExtraRank = directPerGroup + 1;
   const extraQualifiers = groupEntries
     .flatMap(([groupName, groupRows]) =>
-      groupRows.slice(directPerGroup).map((row) => ({
+      groupRows.slice(directPerGroup, bestExtraRank).map((row) => ({
         ...row,
         qualification_type: "extra",
-        qualification_label: `Najbolji dodatni (${groupName})`
+        qualification_label: `Najbolji ${bestExtraRank}. (${groupName})`
       }))
     )
     .sort((a, b) => sortStandings([a, b])[0] === a ? -1 : 1)
@@ -309,7 +310,7 @@ export default function TournamentPage({
             <div>
               <h2 className="section-title">Tablice grupa</h2>
               <p className="muted mt-2">
-                Poredak se sortira po bodovima, pobjedama, razlici i postignutim bodovima. Oznaka pokazuje tko trenutno prolazi dalje.
+                Poredak se sortira po bodovima, pobjedama, razlici i postignutim bodovima. Ako je npr. 16 prolaznika i 6 grupa, prolaze prvi i drugi iz svake grupe te samo najbolji treći — četvrti ne može proći dalje.
               </p>
             </div>
             <span className="badge">
