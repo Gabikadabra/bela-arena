@@ -66,7 +66,7 @@ export default function RangListaPage() {
     const { data: gameData } = await supabase
       .from("match_games")
       .select(
-        "id, match_id, team_a_declarations, team_b_declarations, created_at",
+        "id, match_id, set_number, team_a_declarations, team_b_declarations, created_at",
       )
       .order("created_at", { ascending: true });
 
@@ -102,7 +102,7 @@ export default function RangListaPage() {
           average_opponent_elo: eloData.averageOpponentElo,
           last_match_elo_change: eloData.lastMatchChange,
           streak: calculateStreak(team.team_id, matches, selectedTournament),
-          best_single_game_declarations: calculateBestSingleGameDeclarations(
+          best_single_set_declarations: calculateBestSingleSetDeclarations(
             team.team_id,
             matches,
             matchGames,
@@ -117,10 +117,10 @@ export default function RangListaPage() {
   const topPoints = [...filteredStats].sort(
     (a, b) => Number(b.total_points) - Number(a.total_points),
   )[0];
-  const topSingleGameDeclarations = [...filteredStats].sort(
+  const topSingleSetDeclarations = [...filteredStats].sort(
     (a, b) =>
-      Number(b.best_single_game_declarations) -
-      Number(a.best_single_game_declarations),
+      Number(b.best_single_set_declarations) -
+      Number(a.best_single_set_declarations),
   )[0];
   const topStreak = [...filteredStats].sort(
     (a, b) => Number(b.streak) - Number(a.streak),
@@ -146,7 +146,7 @@ export default function RangListaPage() {
         </h1>
 
         <p className="mt-4 max-w-2xl text-zinc-300">
-          ELO, pobjede, bodovi, rekord zvanja u jednoj partiji, streakovi i
+          ELO, pobjede, bodovi, rekord zvanja u jednom setu, streakovi i
           najbolji rezultati.
         </p>
       </div>
@@ -230,9 +230,9 @@ export default function RangListaPage() {
           sub={`${topPoints?.total_points || 0} bodova`}
         />
         <Highlight
-          title="Rekord zvanja u jednoj partiji"
-          value={topSingleGameDeclarations?.team_name || "-"}
-          sub={`Ekipa ima ${topSingleGameDeclarations?.best_single_game_declarations || 0} zvanja u jednoj partiji`}
+          title="Rekord zvanja u jednom setu"
+          value={topSingleSetDeclarations?.team_name || "-"}
+          sub={`Ekipa ima ${topSingleSetDeclarations?.best_single_set_declarations || 0} zvanja u jednom setu`}
         />
         <Highlight
           title="Najveći streak"
@@ -251,7 +251,7 @@ export default function RangListaPage() {
           <div>L</div>
           <div>Win%</div>
           <div>Bodovi</div>
-          <div>Zvanja / partija</div>
+          <div>Zvanja / set</div>
           <div>Streak</div>
         </div>
 
@@ -293,8 +293,8 @@ export default function RangListaPage() {
               <Stat label="Win%" value={`${team.winrate}%`} />
               <Stat label="Bodovi" value={team.total_points} />
               <Stat
-                label="Zvanja / partija"
-                value={team.best_single_game_declarations}
+                label="Zvanja / set"
+                value={team.best_single_set_declarations}
               />
               <Stat label="Streak" value={team.streak} />
             </div>
@@ -468,14 +468,14 @@ function formatLastMatchChange(value: number) {
   return value > 0 ? `zadnji meč +${value}` : `zadnji meč ${value}`;
 }
 
-function calculateBestSingleGameDeclarations(
+function calculateBestSingleSetDeclarations(
   teamId: string,
   matches: any[],
   matchGames: any[],
   selectedTournament: string,
 ) {
   const matchById = new Map(matches.map((match) => [match.id, match]));
-  let best = 0;
+  const declarationsBySet = new Map<string, number>();
 
   for (const game of matchGames) {
     const match = matchById.get(game.match_id);
@@ -488,16 +488,25 @@ function calculateBestSingleGameDeclarations(
 
     if (!inTournament) continue;
 
+    const setNumber = Number(game.set_number || 1);
+    const key = `${game.match_id}-${setNumber}`;
+
     if (match.team_a_id === teamId) {
-      best = Math.max(best, Number(game.team_a_declarations || 0));
+      declarationsBySet.set(
+        key,
+        (declarationsBySet.get(key) || 0) + Number(game.team_a_declarations || 0),
+      );
     }
 
     if (match.team_b_id === teamId) {
-      best = Math.max(best, Number(game.team_b_declarations || 0));
+      declarationsBySet.set(
+        key,
+        (declarationsBySet.get(key) || 0) + Number(game.team_b_declarations || 0),
+      );
     }
   }
 
-  return best;
+  return Math.max(0, ...Array.from(declarationsBySet.values()));
 }
 
 function calculateStreak(
