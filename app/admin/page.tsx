@@ -183,7 +183,7 @@ export default function AdminPage() {
         </button>
       </div>
 
-      <div className="mb-10 grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="mb-10 grid gap-4 md:grid-cols-2 lg:grid-cols-10">
         <a
           href="/admin/novi-turnir"
           className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
@@ -217,7 +217,7 @@ export default function AdminPage() {
         </a>
 
         <a
-          href="/admin/rezultati"
+          href={selectedTournament ? `/tournament/${selectedTournament}` : "/admin"}
           className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
         >
           <span className="block text-2xl text-[#d4b06a]">🏆</span>
@@ -237,14 +237,6 @@ export default function AdminPage() {
         </a>
 
         <a
-          href="/admin/achievementi"
-          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
-        >
-          <span className="block text-2xl text-[#d4b06a]">🏅</span>
-          Achievementi
-        </a>
-
-        <a
           href={selectedTournament ? `/dashboard/${selectedTournament}` : "/admin"}
           target={selectedTournament ? "_blank" : undefined}
           rel={selectedTournament ? "noopener noreferrer" : undefined}
@@ -255,12 +247,26 @@ export default function AdminPage() {
         </a>
 
         <a
-          href={selectedTournament ? `/story/${selectedTournament}` : "/admin"}
-          target={selectedTournament ? "_blank" : undefined}
-          rel={selectedTournament ? "noopener noreferrer" : undefined}
+          href={selectedTournament ? `/liga/${selectedTournament}` : "/admin"}
           className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
         >
-          <span className="block text-2xl text-[#d4b06a]">📸</span>
+          <span className="block text-2xl text-[#d4b06a]">📊</span>
+          Liga prikaz
+        </a>
+
+        <a
+          href="/admin/achievementi"
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
+        >
+          <span className="block text-2xl text-[#d4b06a]">🏅</span>
+          Achievementi
+        </a>
+
+        <a
+          href={selectedTournament ? `/story/${selectedTournament}` : "/admin"}
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
+        >
+          <span className="block text-2xl text-[#d4b06a]">📱</span>
           Story generator
         </a>
       </div>
@@ -320,6 +326,28 @@ export default function AdminPage() {
                 className="rounded-xl bg-[#d4b06a] px-5 py-2 font-black text-black transition hover:bg-[#f3dfad]"
               >
                 Otvori TV dashboard
+              </a>
+
+              <a
+                href={`/liga/${selectedTournamentData.id}`}
+                className="rounded-xl border border-[#d4b06a]/30 px-5 py-2 font-bold text-[#f3dfad] transition hover:bg-[#d4b06a]/10"
+              >
+                Otvori liga prikaz
+              </a>
+
+
+              <a
+                href={`/story/${selectedTournamentData.id}`}
+                className="rounded-xl border border-[#d4b06a]/30 px-5 py-2 font-bold text-[#f3dfad] transition hover:bg-[#d4b06a]/10"
+              >
+                Story generator
+              </a>
+
+              <a
+                href="/admin/achievementi"
+                className="rounded-xl border border-[#d4b06a]/30 px-5 py-2 font-bold text-[#f3dfad] transition hover:bg-[#d4b06a]/10"
+              >
+                Achievementi
               </a>
             </div>
           </div>
