@@ -266,8 +266,8 @@ export default function MecPage({ params }: PageProps) {
     const declarationsA = Number(source.teamADeclarations || 0);
     const declarationsB = Number(source.teamBDeclarations || 0);
 
-    const belaA = source.teamABela ? 20 : 0;
-    const belaB = source.teamBBela ? 20 : 0;
+    const belaA = 0;
+    const belaB = 0;
 
     return {
       rawA,
@@ -317,26 +317,6 @@ export default function MecPage({ params }: PageProps) {
     }
   }
 
-  function removeDeclaration(team: TeamSide, value: number) {
-    if (team === "A") {
-      setForm((old) => ({
-        ...old,
-        teamADeclarations: Math.max(
-          0,
-          Number(old.teamADeclarations || 0) - value
-        )
-      }));
-    } else {
-      setForm((old) => ({
-        ...old,
-        teamBDeclarations: Math.max(
-          0,
-          Number(old.teamBDeclarations || 0) - value
-        )
-      }));
-    }
-  }
-
   function clearDeclarations(team: TeamSide) {
     if (team === "A") {
       setForm((old) => ({
@@ -351,22 +331,6 @@ export default function MecPage({ params }: PageProps) {
     }
   }
 
-  function toggleBela(team: TeamSide) {
-    if (team === "A") {
-      setForm((old) => ({
-        ...old,
-        teamABela: !old.teamABela,
-        teamBBela: false
-      }));
-    } else {
-      setForm((old) => ({
-        ...old,
-        teamBBela: !old.teamBBela,
-        teamABela: false
-      }));
-    }
-  }
-
   function openEditGame(game: any) {
     setEditingGame(game);
 
@@ -375,8 +339,8 @@ export default function MecPage({ params }: PageProps) {
       teamBScore: String(game.team_b_tricks ?? game.raw_team_b_tricks ?? 0),
       teamADeclarations: Number(game.team_a_declarations || 0),
       teamBDeclarations: Number(game.team_b_declarations || 0),
-      teamABela: Boolean(game.team_a_bela),
-      teamBBela: Boolean(game.team_b_bela)
+      teamABela: false,
+      teamBBela: false
     });
   }
 
@@ -391,22 +355,6 @@ export default function MecPage({ params }: PageProps) {
       teamABela: false,
       teamBBela: false
     });
-  }
-
-  function toggleEditBela(team: TeamSide) {
-    if (team === "A") {
-      setEditForm((old) => ({
-        ...old,
-        teamABela: !old.teamABela,
-        teamBBela: false
-      }));
-    } else {
-      setEditForm((old) => ({
-        ...old,
-        teamBBela: !old.teamBBela,
-        teamABela: false
-      }));
-    }
   }
 
   async function advanceWinnerToNextMatch(winnerId: string, winnerName: string) {
@@ -634,12 +582,6 @@ export default function MecPage({ params }: PageProps) {
       return;
     }
 
-    if (form.teamABela && form.teamBBela) {
-      setMessageType("error");
-      setMessage("Bela može biti samo kod jedne ekipe.");
-      return;
-    }
-
     setSaving(true);
 
     const gameNumber = currentSetGames.length + 1;
@@ -659,8 +601,8 @@ export default function MecPage({ params }: PageProps) {
       team_b_tricks: preview.rawB,
       team_a_declarations: preview.declarationsA,
       team_b_declarations: preview.declarationsB,
-      team_a_bela: form.teamABela,
-      team_b_bela: form.teamBBela,
+      team_a_bela: false,
+      team_b_bela: false,
       team_a_total: preview.finalA,
       team_b_total: preview.finalB,
       note: ""
@@ -819,12 +761,6 @@ export default function MecPage({ params }: PageProps) {
       return;
     }
 
-    if (editForm.teamABela && editForm.teamBBela) {
-      setMessageType("error");
-      setMessage("Bela može biti samo kod jedne ekipe.");
-      return;
-    }
-
     setSaving(true);
     setMessage("");
 
@@ -840,8 +776,8 @@ export default function MecPage({ params }: PageProps) {
           team_b_tricks: result.rawB,
           team_a_declarations: result.declarationsA,
           team_b_declarations: result.declarationsB,
-          team_a_bela: editForm.teamABela,
-          team_b_bela: editForm.teamBBela,
+          team_a_bela: false,
+          team_b_bela: false,
           team_a_total: result.finalA,
           team_b_total: result.finalB,
           note: ""
@@ -942,7 +878,7 @@ export default function MecPage({ params }: PageProps) {
       </section>
 
       <section className="sticky top-0 z-20 -mx-4 mt-5 overflow-x-auto border-y border-[rgba(212,176,106,0.12)] bg-[rgba(10,32,24,0.96)] px-4 py-3 backdrop-blur md:static md:mx-0 md:rounded-3xl md:border md:bg-[rgba(10,32,24,0.72)]">
-        <div className="grid min-w-[760px] grid-cols-4 gap-3">
+        <div className="grid min-w-[640px] grid-cols-4 gap-2 sm:gap-3">
           <Info title={match.team_a_name || "Ekipa A"} value={totalA} subtitle="Rezultat" />
           <Info title={match.team_b_name || "Ekipa B"} value={totalB} subtitle="Rezultat" />
           <Info title="Setovi" value={`${match.sets_a || 0} : ${match.sets_b || 0}`} subtitle="Omjer" />
@@ -988,9 +924,7 @@ export default function MecPage({ params }: PageProps) {
           <div>
             <h2 className="section-title">Novi unos</h2>
             <p className="muted mt-2">
-              Možeš upisati bodove za prvu ili drugu ekipu. Ako upišeš samo jednu,
-              druga se automatski računa kao ostatak do 162. Ako upišeš obje,
-              zajedno moraju biti 162.
+              Upiši bodove za jednu ekipu i drugi box se odmah automatski popuni do 162. Ako upišeš obje ekipe, zajedno moraju biti 162.
             </p>
           </div>
 
@@ -1026,44 +960,8 @@ export default function MecPage({ params }: PageProps) {
             valueA={form.teamADeclarations}
             valueB={form.teamBDeclarations}
             onAdd={(value) => addDeclaration(selectedDeclarationTeam, value)}
-            onRemove={(value) => removeDeclaration(selectedDeclarationTeam, value)}
             onClear={() => clearDeclarations(selectedDeclarationTeam)}
           />
-        </div>
-
-        <div className="mt-6">
-          <h3 className="text-lg font-black text-[var(--gold-light)]">
-            Bela
-          </h3>
-          <p className="muted mt-1 text-sm">
-            Bela može biti označena samo za jednu ekipu.
-          </p>
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => toggleBela("A")}
-              className={`rounded-2xl border p-5 text-left font-black transition active:scale-[0.98] ${
-                form.teamABela
-                  ? "border-[var(--gold-light)] bg-[var(--gold)] text-[#0f2f24]"
-                  : "border-[rgba(212,176,106,0.2)] bg-[rgba(10,32,24,0.75)] text-[var(--gold-light)]"
-              }`}
-            >
-              Bela - {match.team_a_name}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => toggleBela("B")}
-              className={`rounded-2xl border p-5 text-left font-black transition active:scale-[0.98] ${
-                form.teamBBela
-                  ? "border-[var(--gold-light)] bg-[var(--gold)] text-[#0f2f24]"
-                  : "border-[rgba(212,176,106,0.2)] bg-[rgba(10,32,24,0.75)] text-[var(--gold-light)]"
-              }`}
-            >
-              Bela - {match.team_b_name}
-            </button>
-          </div>
         </div>
 
         <button
@@ -1108,7 +1006,6 @@ export default function MecPage({ params }: PageProps) {
                   name={match.team_a_name}
                   tricks={game.team_a_tricks}
                   declarations={game.team_a_declarations}
-                  bela={game.team_a_bela}
                   total={game.team_a_total}
                 />
 
@@ -1116,7 +1013,6 @@ export default function MecPage({ params }: PageProps) {
                   name={match.team_b_name}
                   tricks={game.team_b_tricks}
                   declarations={game.team_b_declarations}
-                  bela={game.team_b_bela}
                   total={game.team_b_total}
                 />
               </div>
@@ -1160,8 +1056,7 @@ export default function MecPage({ params }: PageProps) {
                 </h2>
 
                 <p className="muted mt-2 text-sm">
-                  Promijeni bodove jedne ili obje ekipe. Ako upišeš samo jednu,
-                  druga se automatski računa.
+                  Promijeni bodove jedne ili obje ekipe. Drugi box se automatski popuni do 162.
                 </p>
               </div>
 
@@ -1215,19 +1110,6 @@ export default function MecPage({ params }: PageProps) {
                     });
                   }
                 }}
-                onRemove={(value) => {
-                  if (selectedEditDeclarationTeam === "A") {
-                    setEditForm({
-                      ...editForm,
-                      teamADeclarations: Math.max(0, Number(editForm.teamADeclarations || 0) - value)
-                    });
-                  } else {
-                    setEditForm({
-                      ...editForm,
-                      teamBDeclarations: Math.max(0, Number(editForm.teamBDeclarations || 0) - value)
-                    });
-                  }
-                }}
                 onClear={() => {
                   if (selectedEditDeclarationTeam === "A") {
                     setEditForm({ ...editForm, teamADeclarations: 0 });
@@ -1236,32 +1118,6 @@ export default function MecPage({ params }: PageProps) {
                   }
                 }}
               />
-            </div>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => toggleEditBela("A")}
-                className={`rounded-2xl border p-5 text-left font-black transition ${
-                  editForm.teamABela
-                    ? "border-[var(--gold-light)] bg-[var(--gold)] text-[#0f2f24]"
-                    : "border-[rgba(212,176,106,0.2)] bg-[rgba(10,32,24,0.75)] text-[var(--gold-light)]"
-                }`}
-              >
-                Bela - {match.team_a_name}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => toggleEditBela("B")}
-                className={`rounded-2xl border p-5 text-left font-black transition ${
-                  editForm.teamBBela
-                    ? "border-[var(--gold-light)] bg-[var(--gold)] text-[#0f2f24]"
-                    : "border-[rgba(212,176,106,0.2)] bg-[rgba(10,32,24,0.75)] text-[var(--gold-light)]"
-                }`}
-              >
-                Bela - {match.team_b_name}
-              </button>
             </div>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -1299,6 +1155,8 @@ function ScoreInput({
   calculatedValue?: number;
   onChange: (value: string) => void;
 }) {
+  const displayValue = value === "" && calculatedValue !== undefined ? String(calculatedValue) : value;
+
   return (
     <label className="block rounded-2xl border border-[rgba(212,176,106,0.15)] bg-[rgba(10,32,24,0.7)] p-4">
       <span className="block text-sm font-black text-[var(--gold)]">
@@ -1307,7 +1165,7 @@ function ScoreInput({
 
       <input
         type="text"
-        value={value}
+        value={displayValue}
         onChange={(event) => {
           const onlyNumbers = event.target.value.replace(/\D/g, "");
           const numberValue = Math.min(162, Number(onlyNumbers || 0));
@@ -1320,15 +1178,9 @@ function ScoreInput({
         pattern="[0-9]*"
       />
 
-      {calculatedValue !== undefined && value === "" ? (
-        <p className="mt-2 text-center text-xs font-bold text-[var(--gold-light)]">
-          Auto izračun: {calculatedValue}
-        </p>
-      ) : (
-        <p className="mt-2 text-center text-xs font-bold text-white/45">
-          Upiši 0 - 162 ili ostavi prazno za auto
-        </p>
-      )}
+      <p className="mt-2 text-center text-xs font-bold text-white/45">
+        {calculatedValue !== undefined && value === "" ? "Auto popunjeno" : "Upiši 0 - 162"}
+      </p>
     </label>
   );
 }
@@ -1342,7 +1194,6 @@ function DeclarationsPicker({
   valueA,
   valueB,
   onAdd,
-  onRemove,
   onClear
 }: {
   teamAName: string;
@@ -1352,7 +1203,6 @@ function DeclarationsPicker({
   valueA: number;
   valueB: number;
   onAdd: (value: number) => void;
-  onRemove: (value: number) => void;
   onClear: () => void;
 }) {
   const values = [20, 50, 100, 150, 200];
@@ -1360,28 +1210,28 @@ function DeclarationsPicker({
   const selectedValue = selectedTeam === "A" ? valueA : valueB;
 
   return (
-    <div className="card-soft">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+    <div className="rounded-2xl border border-[rgba(212,176,106,0.15)] bg-[rgba(10,32,24,0.62)] p-4">
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
           <p className="text-sm font-black text-[var(--gold)]">Zvanja</p>
-          <h3 className="mt-1 text-xl font-black text-[var(--gold-light)]">
-            Odaberi ekipu i dodaj zvanja
+          <h3 className="mt-1 text-lg font-black text-[var(--gold-light)]">
+            Odaberi ekipu i klikni zvanja
           </h3>
         </div>
 
-        <div className="rounded-2xl bg-[rgba(5,22,15,0.75)] px-4 py-3 text-right">
+        <div className="rounded-xl bg-[rgba(5,22,15,0.75)] px-3 py-2 text-right">
           <p className="text-xs text-white/45">Odabrano</p>
-          <p className="text-2xl font-black text-[var(--gold-light)]">
+          <p className="text-xl font-black text-[var(--gold-light)]">
             {selectedValue}
           </p>
         </div>
       </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">
         <button
           type="button"
           onClick={() => onSelectTeam("A")}
-          className={`rounded-2xl border p-5 text-left font-black transition active:scale-[0.98] ${
+          className={`rounded-xl border p-3 text-left font-black transition active:scale-[0.98] ${
             selectedTeam === "A"
               ? "border-[var(--gold-light)] bg-[var(--gold)] text-[#0f2f24]"
               : "border-[rgba(212,176,106,0.2)] bg-[rgba(5,22,15,0.65)] text-[var(--gold-light)]"
@@ -1395,7 +1245,7 @@ function DeclarationsPicker({
         <button
           type="button"
           onClick={() => onSelectTeam("B")}
-          className={`rounded-2xl border p-5 text-left font-black transition active:scale-[0.98] ${
+          className={`rounded-xl border p-3 text-left font-black transition active:scale-[0.98] ${
             selectedTeam === "B"
               ? "border-[var(--gold-light)] bg-[var(--gold)] text-[#0f2f24]"
               : "border-[rgba(212,176,106,0.2)] bg-[rgba(5,22,15,0.65)] text-[var(--gold-light)]"
@@ -1407,32 +1257,19 @@ function DeclarationsPicker({
         </button>
       </div>
 
-      <p className="mt-4 text-sm text-white/55">
+      <p className="mt-3 text-sm text-white/55">
         Dodaješ zvanja za: <b className="text-[var(--gold-light)]">{selectedName}</b>
       </p>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div className="mt-3 grid grid-cols-5 gap-2">
         {values.map((declarationValue) => (
           <button
             key={declarationValue}
             type="button"
             onClick={() => onAdd(declarationValue)}
-            className="rounded-2xl border border-[rgba(212,176,106,0.25)] bg-[rgba(5,22,15,0.75)] py-4 text-lg font-black text-[var(--gold-light)] transition active:scale-95"
+            className="rounded-xl border border-[rgba(212,176,106,0.25)] bg-[rgba(5,22,15,0.75)] py-3 text-sm font-black text-[var(--gold-light)] transition active:scale-95 sm:text-base"
           >
             +{declarationValue}
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
-        {values.map((declarationValue) => (
-          <button
-            key={declarationValue}
-            type="button"
-            onClick={() => onRemove(declarationValue)}
-            className="rounded-2xl border border-red-500/20 bg-red-500/10 py-4 text-base font-black text-red-200 transition active:scale-95"
-          >
-            -{declarationValue}
           </button>
         ))}
       </div>
@@ -1440,9 +1277,9 @@ function DeclarationsPicker({
       <button
         type="button"
         onClick={onClear}
-        className="mt-3 w-full rounded-xl border border-red-500/25 bg-red-500/10 py-3 font-black text-red-200"
+        className="mt-3 w-full rounded-xl border border-red-500/25 bg-red-500/10 py-2.5 font-black text-red-200"
       >
-        Očisti zvanja za odabranu ekipu
+        Reset zvanja
       </button>
     </div>
   );
@@ -1458,9 +1295,9 @@ function Info({
   subtitle?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-[rgba(212,176,106,0.15)] bg-[rgba(10,32,24,0.8)] p-4 md:p-5">
+    <div className="rounded-2xl border border-[rgba(212,176,106,0.15)] bg-[rgba(10,32,24,0.8)] p-3 md:p-5">
       <p className="truncate text-xs text-white/55 sm:text-sm">{title}</p>
-      <p className="mt-2 text-3xl font-black text-[var(--gold-light)] sm:text-4xl">
+      <p className="mt-1 text-2xl font-black text-[var(--gold-light)] sm:mt-2 sm:text-4xl">
         {value}
       </p>
       {subtitle && (
@@ -1476,13 +1313,11 @@ function HistoryTeamBox({
   name,
   tricks,
   declarations,
-  bela,
   total
 }: {
   name: string;
   tricks: any;
   declarations: any;
-  bela: any;
   total: any;
 }) {
   return (
@@ -1492,7 +1327,6 @@ function HistoryTeamBox({
       <div className="mt-2 space-y-1 text-sm text-white/65">
         <p>Bodovi: {tricks}</p>
         <p>Zvanja: {declarations}</p>
-        <p>Bela: {bela ? "Da" : "Ne"}</p>
       </div>
 
       <p className="mt-3 text-xl font-black text-[var(--gold)]">
