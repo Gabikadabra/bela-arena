@@ -25,6 +25,7 @@ export default function MecPage({ params }: PageProps) {
   const { matchId } = use(params);
 
   const [user, setUser] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [match, setMatch] = useState<any>(null);
   const [tournament, setTournament] = useState<any>(null);
   const [games, setGames] = useState<any[]>([]);
@@ -67,6 +68,11 @@ export default function MecPage({ params }: PageProps) {
   useEffect(() => {
     loadData();
   }, [matchId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setIsAdmin(sessionStorage.getItem("bela_admin") === "true");
+  }, []);
 
   useEffect(() => {
     if (!matchId) return;
@@ -777,6 +783,131 @@ export default function MecPage({ params }: PageProps) {
   }
 
 
+  async function disqualifyTeam(disqualifiedTeam: TeamSide) {
+    if (!match || !tournament) {
+      setMessageType("error");
+      setMessage("Meč nije učitan.");
+      return;
+    }
+
+    if (!isAdmin) {
+      setMessageType("error");
+      setMessage("Samo admin može upisati DNF.");
+      return;
+    }
+
+    if (isFinished) {
+      setMessageType("error");
+      setMessage("Meč je već završen.");
+      return;
+    }
+
+    const loserId = disqualifiedTeam === "A" ? match.team_a_id : match.team_b_id;
+    const winnerId = disqualifiedTeam === "A" ? match.team_b_id : match.team_a_id;
+    const loserName = disqualifiedTeam === "A" ? match.team_a_name : match.team_b_name;
+    const winnerName = disqualifiedTeam === "A" ? match.team_b_name : match.team_a_name;
+
+    if (!loserId || !winnerId) {
+      setMessageType("error");
+      setMessage("Ne mogu upisati DNF jer jedna ekipa nije poznata.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Upisati DNF za ${loserName || "ekipu"}? ${winnerName || "Protivnik"} automatski pobjeđuje.`
+    );
+
+    if (!confirmed) return;
+
+    setSaving(true);
+    setMessage("");
+
+    try {
+      const finalScoreA =
+        disqualifiedTeam === "A" ? totalA : Math.max(totalA, scoreLimit);
+      const finalScoreB =
+        disqualifiedTeam === "B" ? totalB : Math.max(totalB, scoreLimit);
+
+      const gameNumber = currentSetGames.length + 1;
+      const dnfNote = `DNF - ${loserName || "ekipa"} diskvalificirana`;
+
+      const { error: gameError } = await supabase.from("match_games").insert({
+        match_id: matchId,
+        set_number: currentSet,
+        game_number: gameNumber,
+        caller_team: null,
+        called_team_fell: false,
+        raw_team_a_tricks: 0,
+        raw_team_b_tricks: 0,
+        team_a_tricks: 0,
+        team_b_tricks: 0,
+        team_a_declarations: 0,
+        team_b_declarations: 0,
+        team_a_bela: false,
+        team_b_bela: false,
+        team_a_total: Math.max(0, finalScoreA - totalA),
+        team_b_total: Math.max(0, finalScoreB - totalB),
+        note: dnfNote
+      });
+
+      if (gameError) throw gameError;
+
+      const currentSetsA = Number(match.sets_a || 0);
+      const currentSetsB = Number(match.sets_b || 0);
+      const finalSetsA = disqualifiedTeam === "A" ? currentSetsA : setsToWin;
+      const finalSetsB = disqualifiedTeam === "B" ? currentSetsB : setsToWin;
+
+      const matchUpdateWithNote: any = {
+        score_a: finalScoreA,
+        score_b: finalScoreB,
+        sets_a: finalSetsA,
+        sets_b: finalSetsB,
+        winner_id: winnerId,
+        status: "finished",
+        result_status: "dnf",
+        admin_note: dnfNote
+      };
+
+      let { error: matchError } = await supabase
+        .from("matches")
+        .update(matchUpdateWithNote)
+        .eq("id", matchId);
+
+      if (matchError && String(matchError.message || "").toLowerCase().includes("admin_note")) {
+        const { admin_note, ...matchUpdateWithoutNote } = matchUpdateWithNote;
+        const retry = await supabase
+          .from("matches")
+          .update(matchUpdateWithoutNote)
+          .eq("id", matchId);
+        matchError = retry.error;
+      }
+
+      if (matchError) throw matchError;
+
+      await advanceWinnerToNextMatch(winnerId, winnerName || "Pobjednik");
+
+      await syncTournamentAfterResult({
+        ...match,
+        ...matchUpdateWithNote,
+        id: matchId,
+        tournament_id: match.tournament_id,
+        phase: match.phase,
+        group_name: match.group_name,
+        round: match.round,
+        round_number: match.round_number
+      });
+
+      setMessageType("success");
+      setMessage(`${loserName || "Ekipa"} je označena kao DNF. ${winnerName || "Protivnik"} je pobjednik.`);
+      await loadData(false);
+    } catch (error: any) {
+      setMessageType("error");
+      setMessage("Greška kod upisa DNF-a: " + error.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function finishCurrentPartija() {
     setMessage("");
 
@@ -1112,6 +1243,39 @@ export default function MecPage({ params }: PageProps) {
           Ovaj meč je zaključan jer se grupe igraju Berger sustavom po rundama.
           Prvo se moraju završiti svi mečevi prethodne runde.
         </div>
+      )}
+
+      {isAdmin && !isFinished && !isLocked && (
+        <section className="card mt-6 border-red-500/25 bg-red-500/5">
+          <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+            <div>
+              <h2 className="text-2xl font-black text-red-200">Admin DNF</h2>
+              <p className="muted mt-2">
+                Diskvalificiraj ekipu u ovoj partiji. Protivnik odmah dobiva pobjedu, a meč se označava kao završen.
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[420px]">
+              <button
+                type="button"
+                onClick={() => disqualifyTeam("A")}
+                disabled={saving}
+                className="rounded-2xl border border-red-400/35 bg-red-500/15 px-5 py-4 font-black text-red-100 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                DNF {match.team_a_name || "Ekipa A"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => disqualifyTeam("B")}
+                disabled={saving}
+                className="rounded-2xl border border-red-400/35 bg-red-500/15 px-5 py-4 font-black text-red-100 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                DNF {match.team_b_name || "Ekipa B"}
+              </button>
+            </div>
+          </div>
+        </section>
       )}
 
       <form onSubmit={addGame} className="card mt-6">
