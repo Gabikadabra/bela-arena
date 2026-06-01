@@ -1,0 +1,8 @@
+PROMJENA: Završeni turniri idu u Povijest
+
+- Admin panel više ne prikazuje turnire sa statusom finished u odabiru aktivnog turnira.
+- Admin stranica za uređivanje turnira prikazuje samo aktivne turnire.
+- Admin ždrijeb prikazuje samo aktivne turnire.
+- Javni tab Turniri više ne prikazuje finished turnire.
+- Povijest sada dohvaća i prikazuje samo turnire sa statusom finished.
+- Nije potreban novi SQL.

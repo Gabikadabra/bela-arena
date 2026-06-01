@@ -378,13 +378,17 @@ export default function ZdrijebAdminPage() {
       .select("*")
       .order("starts_at", { ascending: true });
 
-    setTournaments(data || []);
+    const activeTournaments = (data || []).filter(
+      (tournament) => tournament.status !== "finished"
+    );
 
-    if (data && data.length > 0) {
-      setSelectedTournament((current) =>
-        current && data.some((t) => t.id === current) ? current : data[0].id
-      );
-    }
+    setTournaments(activeTournaments);
+
+    setSelectedTournament((current) =>
+      current && activeTournaments.some((t) => t.id === current)
+        ? current
+        : activeTournaments[0]?.id || ""
+    );
   }
 
   async function loadTournamentData() {

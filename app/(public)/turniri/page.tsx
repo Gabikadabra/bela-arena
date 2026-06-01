@@ -32,7 +32,7 @@ export default function TurniriPage() {
       .select("*")
       .order("starts_at", { ascending: true });
 
-    setTournaments(data || []);
+    setTournaments((data || []).filter((tournament) => tournament.status !== "finished"));
     setLoading(false);
   }
 
@@ -62,7 +62,7 @@ export default function TurniriPage() {
         </h1>
 
         <p className="mt-4 max-w-2xl text-zinc-300">
-          Pogledaj sve turnire, pravila, prijave, ždrijeb i live rezultate.
+          Pogledaj aktivne turnire, pravila, prijave, ždrijeb i live rezultate. Završeni turniri su u povijesti.
         </p>
       </div>
 
@@ -70,7 +70,7 @@ export default function TurniriPage() {
 
       {!loading && tournaments.length === 0 && (
         <div className="rounded-3xl border border-[#d4b06a]/15 bg-[#0a2018] p-8 text-zinc-300">
-          Trenutno nema kreiranih turnira.
+          Trenutno nema aktivnih turnira.
         </div>
       )}
 

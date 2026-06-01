@@ -33,7 +33,7 @@ export default function OdaberiTurnirZaUredjivanjePage() {
       .order("starts_at", { ascending: false });
 
     if (!error) {
-      setTournaments(data || []);
+      setTournaments((data || []).filter((tournament) => tournament.status !== "finished"));
     }
 
     setLoading(false);
@@ -47,7 +47,7 @@ export default function OdaberiTurnirZaUredjivanjePage() {
         <h1 className="page-title mt-4">Uredi turnir</h1>
 
         <p className="muted mt-4 max-w-2xl">
-          Odaberi turnir kojem želiš promijeniti podatke, status, limite bodova ili format meča.
+          Odaberi aktivan turnir kojem želiš promijeniti podatke, status, limite bodova ili format meča. Završeni turniri su u povijesti.
         </p>
       </section>
 
@@ -55,7 +55,7 @@ export default function OdaberiTurnirZaUredjivanjePage() {
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
             <h2 className="section-title">Turniri</h2>
-            <p className="muted mt-2">Svi kreirani turniri dostupni za uređivanje.</p>
+            <p className="muted mt-2">Aktivni turniri dostupni za uređivanje.</p>
           </div>
 
           <a href="/admin" className="btn-outline">Admin panel</a>
@@ -65,7 +65,7 @@ export default function OdaberiTurnirZaUredjivanjePage() {
 
         {!loading && tournaments.length === 0 && (
           <div className="card-soft mt-6">
-            <p className="muted">Nema kreiranih turnira.</p>
+            <p className="muted">Nema aktivnih turnira za uređivanje.</p>
           </div>
         )}
 

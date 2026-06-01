@@ -47,13 +47,26 @@ export default function AdminPage() {
       .select("*")
       .order("starts_at", { ascending: true });
 
-    setTournaments(data || []);
+    const activeTournaments = (data || []).filter(
+      (tournament) => tournament.status !== "finished"
+    );
 
-    if (data && data.length > 0) {
-      setSelectedTournament((current) =>
-        current && data.some((t) => t.id === current) ? current : data[0].id
-      );
+    setTournaments(activeTournaments);
+
+    if (activeTournaments.length === 0) {
+      setSelectedTournament("");
+      setTeams([]);
+      setMatches([]);
+      setManualScores({});
+      setLoading(false);
+      return;
     }
+
+    setSelectedTournament((current) =>
+      current && activeTournaments.some((t) => t.id === current)
+        ? current
+        : activeTournaments[0]?.id || ""
+    );
   }
 
   async function loadTeams(tournamentId: string) {
@@ -246,7 +259,12 @@ export default function AdminPage() {
   }, [isAdmin]);
 
   useEffect(() => {
-    if (!selectedTournament) return;
+    if (!selectedTournament) {
+      setTeams([]);
+      setMatches([]);
+      setLoading(false);
+      return;
+    }
 
     loadTeams(selectedTournament);
     loadMatches(selectedTournament);
@@ -435,7 +453,7 @@ export default function AdminPage() {
         </h2>
 
         <p className="mt-2 text-zinc-400">
-          Odaberi turnir i potvrdi ili odbij ekipe koje su se prijavile.
+          Odaberi aktivan turnir i potvrdi ili odbij ekipe koje su se prijavile. Završeni turniri su u povijesti.
         </p>
 
         <div className="mt-6">
@@ -453,8 +471,17 @@ export default function AdminPage() {
                 {tournament.name} — {tournament.location}
               </option>
             ))}
+            {tournaments.length === 0 && (
+              <option value="">Nema aktivnih turnira</option>
+            )}
           </select>
         </div>
+
+        {!loading && tournaments.length === 0 && (
+          <div className="mt-6 rounded-2xl border border-[#d4b06a]/15 bg-[#12392b] p-6 text-zinc-300">
+            Nema aktivnih turnira za administraciju. Završene turnire možeš pregledati u povijesti.
+          </div>
+        )}
 
         {selectedTournamentData && (
           <div className="mt-6 rounded-2xl bg-[#12392b] p-5">
