@@ -1,0 +1,7 @@
+PROMJENE - Liga prvaka animacija protivnika
+
+- Ždrijeb za format Liga prvaka više u animaciji ne prikazuje redni broj ekipe.
+- Za svaku ekipu animacija prikazuje koliko mečeva ima u liga fazi.
+- Ispod imena ekipe prikazuje se lista protivnika protiv kojih ta ekipa igra.
+- Desni panel animacije za Liga prvaka format sada se zove "Raspored po ekipama".
+- Ostali formati ždrijeba ostaju isti.

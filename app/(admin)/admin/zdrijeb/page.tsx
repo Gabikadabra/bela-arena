@@ -382,6 +382,37 @@ function getDrawAnimationItems(format: string, teams: any[], generated: any[] = 
       ]);
   }
 
+  if (format === "league_knockout") {
+    const opponentsByTeam = new Map<string, Set<string>>();
+
+    teams.forEach((team: any) => {
+      opponentsByTeam.set(team.id, new Set<string>());
+    });
+
+    generated
+      .filter((match: any) => match.phase === "round_robin" && match.team_a_id && match.team_b_id)
+      .forEach((match: any) => {
+        if (!opponentsByTeam.has(match.team_a_id)) opponentsByTeam.set(match.team_a_id, new Set<string>());
+        if (!opponentsByTeam.has(match.team_b_id)) opponentsByTeam.set(match.team_b_id, new Set<string>());
+
+        opponentsByTeam.get(match.team_a_id)?.add(match.team_b_name || "Nepoznata ekipa");
+        opponentsByTeam.get(match.team_b_id)?.add(match.team_a_name || "Nepoznata ekipa");
+      });
+
+    return teams.map((team: any) => {
+      const opponents = Array.from(opponentsByTeam.get(team.id) || []);
+      const opponentText = opponents.length > 0
+        ? opponents.join(", ")
+        : "Protivnici još nisu složeni";
+
+      return {
+        label: `${opponents.length} mečeva`,
+        title: team.name,
+        subtitle: `Igra protiv: ${opponentText}`
+      };
+    });
+  }
+
   return teams.map((team: any, index: number) => ({
     label: `Redni broj ${index + 1}`,
     title: team.name,
@@ -745,7 +776,7 @@ export default function ZdrijebAdminPage() {
         await playDrawAnimation(
           "LIVE ŽDRIJEB LIGE PRVAKA",
           `Prvo se slaže liga faza (${Number(tournament.league_match_count || 8)} mečeva po ekipi), a knockout čeka najbolje ekipe`,
-          getDrawAnimationItems("round_robin", teams, generatedLeague)
+          getDrawAnimationItems("league_knockout", teams, generatedLeague)
         );
         await clearOldDraw();
 
@@ -1243,6 +1274,7 @@ function FancyDrawOverlay({ animation }: { animation: DrawAnimationState }) {
   const showGroupTables = groupLabels.length > 1 && groupLabels.every((label) => label.toLowerCase().includes("grupa"));
 
   const tableLabels = showGroupTables ? groupLabels : groupLabels.slice(0, 8);
+  const isLeagueSchedule = animation.title.toLowerCase().includes("lige prvaka");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-[#020806]/95 px-3 py-5 backdrop-blur-xl">
@@ -1283,7 +1315,7 @@ function FancyDrawOverlay({ animation }: { animation: DrawAnimationState }) {
                     {activeItem.title}
                   </h3>
                   <div className="mt-5 inline-flex rounded-full bg-[#071810] px-4 py-2 text-sm font-black text-[#f3dfad]">
-                    Ide u {activeItem.label}
+                    {isLeagueSchedule ? `Liga faza · ${activeItem.label}` : `Ide u ${activeItem.label}`}
                   </div>
                   {activeItem.subtitle && (
                     <p className="mt-3 text-sm font-bold text-[#071810]/65">{activeItem.subtitle}</p>
@@ -1308,7 +1340,9 @@ function FancyDrawOverlay({ animation }: { animation: DrawAnimationState }) {
                 {animation.finished
                   ? "Ždrijeb završen — spremam raspored"
                   : activeItem
-                    ? `${activeItem.title} se upisuje u ${activeItem.label}`
+                    ? isLeagueSchedule
+                      ? `${activeItem.title} dobiva svoje protivnike`
+                      : `${activeItem.title} se upisuje u ${activeItem.label}`
                     : "Za trenutak kreće prvo ime."}
               </p>
             </div>
@@ -1316,7 +1350,7 @@ function FancyDrawOverlay({ animation }: { animation: DrawAnimationState }) {
 
           <div className="rounded-[1.8rem] border border-[#d4b06a]/15 bg-[#071810]/70 p-4">
             <div className="mb-4 flex items-center justify-between gap-3">
-              <p className="font-black text-[#f3dfad]">{showGroupTables ? "Tablice grupa" : "Izvučeno"}</p>
+              <p className="font-black text-[#f3dfad]">{isLeagueSchedule ? "Raspored po ekipama" : showGroupTables ? "Tablice grupa" : "Izvučeno"}</p>
               <span className="text-xs font-bold uppercase tracking-[0.18em] text-white/40">sporo izvlačenje</span>
             </div>
 
