@@ -1,0 +1,20 @@
+PROMJENE - BERGER GRUPE I ZAKLJUČAVANJE RUNDI
+
+Dodano:
+1. Grupni mečevi se sada generiraju Berger sustavom.
+   - Svaka ekipa u grupi igra najviše jedan meč po rundi.
+   - Za grupu od 4 ekipe dobiješ 3 runde po 2 meča.
+
+2. Round robin format se također generira Berger sustavom.
+
+3. Zaključavanje sljedećih rundi:
+   - Kada se generira ždrijeb, samo 1. runda grupa ima status 'scheduled'.
+   - Sve kasnije runde imaju status 'waiting'.
+   - Upišeš li rezultat zadnjeg meča u trenutnoj rundi, aplikacija automatski otključava iduću rundu iste grupe.
+   - Zaključani meč se ne može upisivati na /mec/[matchId].
+
+4. U Admin -> Ždrijeb dodan je tekst da grupe idu Berger sustavom.
+
+Supabase:
+- Ne trebaš dodavati nove stupce.
+- Koristi se postojeći matches.status i matches.round.

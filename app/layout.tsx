@@ -1,5 +1,5 @@
 import "./globals.css";
-import Nav from "@/components/Nav";
+import Nav from "@/components/layout/AppNav";
 
 export const metadata = {
   title: "Bela Arena",

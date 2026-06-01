@@ -1,0 +1,11 @@
+PROMJENE - ORGANIZACIJA PROJEKTA
+
+- Rute su prebačene u Next.js route grupe: (public), (admin), (auth), (system).
+- URL-ovi ostaju isti, promijenjena je samo interna organizacija foldera.
+- Navigacija je prebačena u components/layout/AppNav.tsx.
+- Linkovi navigacije su izvučeni u config/navigation.ts.
+- Stari import components/Nav.tsx ostaje kao kompatibilni re-export.
+- SQL skripte za Supabase su organizirane u supabase/migrations.
+- Bilješke o promjenama su premještene u docs/changes.
+- Setup bilješke su premještene u docs/setup.
+- Iz finalnog paketa treba izbaciti node_modules, .git i build/cache datoteke.

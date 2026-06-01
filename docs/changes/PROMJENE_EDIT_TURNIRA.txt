@@ -1,0 +1,29 @@
+DODANO: EDITIRANJE VEĆ KREIRANIH TURNIRA
+
+Što je dodano:
+- Nova admin stranica: /admin/uredi-turnir/[tournamentId]
+- U Admin panelu dodan je tab/gumb "Uredi turnir"
+- Na kartici odabranog turnira dodan je gumb "Uredi ovaj turnir"
+- Možeš mijenjati:
+  - naziv turnira
+  - lokaciju
+  - datum
+  - status turnira
+  - maksimalan broj ekipa
+  - kotizaciju
+  - limit bodova za grupe
+  - limit bodova za knockout
+  - format meča za grupe (jedna partija / best of 3 / best of 5)
+  - format meča za knockout
+  - sustav turnira
+  - repešaž
+  - dodatna pravila
+
+Napomena:
+- Editiranje turnira NE briše postojeće ekipe, mečeve ni ždrijeb.
+- Ako promijeniš format turnira nakon što je ždrijeb već generiran, moraš ponovno otići u Admin → Ždrijeb i generirati novi raspored ako želiš da se postojeći mečevi promijene.
+
+Build provjera:
+- Next compile i TypeScript su prošli.
+- Build se zaustavio na /api/send_invite jer u ovom okruženju nema RESEND_API_KEY env varijable.
+- To nije greška u editiranju turnira; na Vercelu trebaš imati postavljen RESEND_API_KEY ako koristiš slanje pozivnica.

@@ -1,0 +1,34 @@
+Bela Arena - realtime svugdje
+
+Dodano je realtime osvježavanje na glavne stranice:
+- /mec/[matchId]
+- /live/[matchId]
+- /tournament/[id]
+- /turniri
+- /rang-lista
+- /prijava
+- /moj-racun
+- /admin
+- /admin/zdrijeb
+- /admin/bracket/[tournamentId]
+- /admin/uredi-turnir
+- /admin/uredi-turnir/[tournamentId]
+
+Što se sada automatski osvježava:
+- rezultati mečeva
+- live unosi
+- setovi
+- tablice grupa
+- statusi Berger rundi
+- knockout bracket
+- prijave ekipa
+- status turnira
+- rang lista nakon rezultata
+
+Supabase:
+Pokreni SUPABASE_REALTIME_SVUGDJE.sql u SQL Editoru.
+Isti sadržaj je kopiran i u SUPABASE_REALTIME.sql.
+
+Napomena:
+Realtime radi samo za tablice koje su uključene u publication supabase_realtime.
+SQL skripta uključuje glavne tablice i ignorira viewove ako postoje.

@@ -1,0 +1,13 @@
+PROMJENE - automatski update rezultata i live statusa
+
+Dodano:
+1. Nakon svakog upisa rezultata/dijeljenja poziva se syncTournamentAfterResult().
+2. Kod grupnih mečeva automatski se preračunavaju group_standings.
+3. Kad svi mečevi trenutne Berger runde u grupi završe, iduća runda se automatski otključava.
+4. Kad su sve grupe završene, knockout se automatski puni prolaznicima.
+5. Mečevi sa statusom waiting više se ne prikazuju kao LIVE.
+6. Zaključani mečevi sada pišu Zaključano / Čeka prethodnu rundu.
+
+Supabase:
+- Ne treba dodavati nove stupce.
+- Koristi postojeće tablice: matches, match_games, match_sets, group_standings, tournaments.

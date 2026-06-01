@@ -1,0 +1,16 @@
+PROMJENE - FENSI ŽDRIJEB ANIMACIJA
+
+Dodano u app/admin/zdrijeb/page.tsx:
+- Champions League style overlay animacija prije generiranja ždrijeba.
+- Za knockout prikazuje izvlačenje pozicija po mečevima.
+- Za grupe + knockout prikazuje izvlačenje ekipa po grupama.
+- Za round robin prikazuje predstavljanje ekipa prije Berger rasporeda.
+- Nakon animacije stvarni raspored se sprema u Supabase i realtime update ostaje raditi kao prije.
+- Overlay je responzivan i prilagođen mobitelu.
+
+Dodano u app/globals.css:
+- draw-lights, draw-confetti, draw-ball i draw-reveal animacije.
+
+Napomena:
+- Build nisam mogao dovršiti jer Next pokušava preuzeti SWC paket iz npm registryja, a sandbox blokira protected npm registry config.
+- TypeScript provjera je prošla: npx tsc --noEmit.
