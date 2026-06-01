@@ -247,6 +247,48 @@ export function generateRoundRobinMatches(
   return matches;
 }
 
+
+export function generateLimitedLeagueMatches(
+  tournamentId: string,
+  teams: Team[],
+  matchesPerTeam = 8,
+): MatchInsert[] {
+  if (teams.length < 2) {
+    throw new Error("Za liga fazu trebaju barem 2 ekipe.");
+  }
+
+  const maxRounds = teams.length % 2 === 0 ? teams.length - 1 : teams.length;
+  const requestedRounds = Math.max(1, Number(matchesPerTeam || 1));
+  const roundsToUse = Math.min(requestedRounds, maxRounds);
+  const bergerRounds = generateBergerRounds(teams);
+  const matches: MatchInsert[] = [];
+  let matchNumber = 1;
+
+  for (let roundIndex = 0; roundIndex < roundsToUse; roundIndex++) {
+    const roundPairs = bergerRounds[roundIndex % bergerRounds.length] || [];
+    const roundNumber = roundIndex + 1;
+
+    roundPairs.forEach((pair, index) => {
+      matches.push({
+        tournament_id: tournamentId,
+        phase: "round_robin",
+        round: roundNumber,
+        match_number: matchNumber,
+        bracket_position: index + 1,
+        team_a_id: pair.teamA.id,
+        team_b_id: pair.teamB.id,
+        team_a_name: pair.teamA.name,
+        team_b_name: pair.teamB.name,
+        status: roundNumber === 1 ? "scheduled" : "waiting",
+      });
+
+      matchNumber++;
+    });
+  }
+
+  return matches;
+}
+
 export function generateGroups(
   tournamentId: string,
   teams: Team[],
@@ -380,6 +422,15 @@ export function recommendFormat(teamCount: number) {
 
 export function calculateRoundRobinMatchCount(teamCount: number, leagueRounds = 1) {
   return ((teamCount * (teamCount - 1)) / 2) * Math.max(1, Number(leagueRounds || 1));
+}
+
+export function calculateLimitedLeagueMatchCount(teamCount: number, matchesPerTeam = 8) {
+  if (teamCount < 2) return 0;
+
+  const maxRounds = teamCount % 2 === 0 ? teamCount - 1 : teamCount;
+  const roundsToUse = Math.min(Math.max(1, Number(matchesPerTeam || 1)), maxRounds);
+
+  return Math.floor(teamCount / 2) * roundsToUse;
 }
 
 export function calculateGroupMatchCount(teamCount: number, groupSize = 4) {

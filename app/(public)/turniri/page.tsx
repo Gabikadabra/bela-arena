@@ -129,6 +129,13 @@ export default function TurniriPage() {
                 {formatType(tournament.tournament_format)}
               </p>
 
+              {tournament.tournament_format === "league_knockout" && (
+                <p>
+                  <b className="text-[#d4b06a]">Liga faza:</b>{" "}
+                  {Number(tournament.league_match_count || 8)} mečeva po ekipi, {Number(tournament.knockout_size || 16)} prolazi dalje
+                </p>
+              )}
+
               <p>
                 <b className="text-[#d4b06a]">Format meča:</b>{" "}
                 {formatMatch(tournament.match_format)}

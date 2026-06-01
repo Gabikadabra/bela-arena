@@ -248,7 +248,7 @@ export default function PrijavaPage() {
               <div className="mt-3 flex flex-wrap gap-2 text-sm font-bold text-white/70">
                 <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1">Format: {selectedTournament.tournament_format === "league_knockout" ? "Liga prvaka" : selectedTournament.tournament_format === "groups_knockout" ? "Grupe + knockout" : selectedTournament.tournament_format === "round_robin" ? "Liga" : "Knockout"}</span>
                 {hasGroupSettings && <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1">Grupe: {selectedTournament.group_size || 4} ekipe</span>}
-                {hasLeagueSettings && <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1">Liga: {Number(selectedTournament.league_rounds || 1) === 2 ? "dvokružno" : "jednokružno"}</span>}
+                {hasLeagueSettings && <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1">Liga: {selectedTournament.tournament_format === "league_knockout" ? `${Number(selectedTournament.league_match_count || 8)} mečeva po ekipi` : Number(selectedTournament.league_rounds || 1) === 2 ? "dvokružno" : "jednokružno"}</span>}
                 {hasKnockoutAfter && <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1">Prolazi dalje: {selectedTournament.knockout_size || 16}</span>}
               </div>
               {hasGroupSettings && (

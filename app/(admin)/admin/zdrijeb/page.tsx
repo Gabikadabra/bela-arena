@@ -5,10 +5,12 @@ import { supabase } from "@/lib/supabase";
 import {
   generateKnockoutMatches,
   generateRoundRobinMatches,
+  generateLimitedLeagueMatches,
   generateGroups,
   generateGroupsKnockoutSeeds,
   recommendFormat,
-  calculateRoundRobinMatchCount
+  calculateRoundRobinMatchCount,
+  calculateLimitedLeagueMatchCount
 } from "@/lib/bracketEngine";
 
 function standingScore(row: any) {
@@ -698,13 +700,13 @@ export default function ZdrijebAdminPage() {
         setMessage("Round robin raspored je generiran.");
       } else if (tournament.tournament_format === "league_knockout") {
         const knockoutSize = Number(tournament.knockout_size || 8);
-        const leagueRounds = Number(tournament.league_rounds || 1);
-        const generatedLeague = generateRoundRobinMatches(selectedTournament, teams, leagueRounds);
+        const leagueMatchCount = Number(tournament.league_match_count || 8);
+        const generatedLeague = generateLimitedLeagueMatches(selectedTournament, teams, leagueMatchCount);
         const generatedKnockout = generateGroupsKnockoutSeeds(selectedTournament, knockoutSize);
 
         await playDrawAnimation(
           "LIVE ŽDRIJEB LIGE PRVAKA",
-          "Prvo se slaže liga faza, a knockout čeka najbolje ekipe",
+          `Prvo se slaže liga faza (${Number(tournament.league_match_count || 8)} mečeva po ekipi), a knockout čeka najbolje ekipe`,
           getDrawAnimationItems("round_robin", teams, generatedLeague)
         );
         await clearOldDraw();
@@ -989,9 +991,21 @@ export default function ZdrijebAdminPage() {
           <p className="mt-5 card-soft muted">
             Round robin s {teams.length} ekipa generira{" "}
             <b className="text-[#d4b06a]">
-              {calculateRoundRobinMatchCount(teams.length)}
+              {calculateRoundRobinMatchCount(teams.length, Number(tournament?.league_rounds || 1))}
             </b>{" "}
             mečeva.
+          </p>
+        )}
+
+        {tournament?.tournament_format === "league_knockout" && (
+          <p className="mt-5 card-soft muted">
+            Liga prvaka faza: svaka ekipa igra do{" "}
+            <b className="text-[#d4b06a]">{Number(tournament?.league_match_count || 8)}</b>{" "}
+            mečeva, ukupno oko{" "}
+            <b className="text-[#d4b06a]">
+              {calculateLimitedLeagueMatchCount(teams.length, Number(tournament?.league_match_count || 8))}
+            </b>{" "}
+            ligaških mečeva prije knockout-a.
           </p>
         )}
 
@@ -999,7 +1013,15 @@ export default function ZdrijebAdminPage() {
           <div className="mt-5 card-soft">
             <p className="font-bold text-[#f3dfad]">Pravila prolaska</p>
             <p className="muted mt-2">
-              Knockout prima <b className="text-[#d4b06a]">{knockoutSize}</b> ekipa. Grupni mečevi se generiraju Berger sustavom, po rundama. Prvo je otključana samo 1. runda, a iduća se otključava tek kad se svi mečevi prethodne runde u toj grupi završe. Sustav zatim uzima direktne prolaznike iz svake grupe, a preostala mjesta popunjava samo najboljim ekipama iz idućeg ranga. Primjer: ako prolazi 16 ekipa iz 6 grupa, prolaze prvi i drugi iz svake grupe te samo 4 najbolja treća — četvrti ne može proći dalje.
+              {tournament?.tournament_format === "league_knockout" ? (
+                <>
+                  Knockout prima <b className="text-[#d4b06a]">{knockoutSize}</b> ekipa. Liga faza se generira ograničenim Berger rasporedom: svaka ekipa igra do <b className="text-[#d4b06a]">{Number(tournament?.league_match_count || 8)}</b> mečeva, ne svatko protiv svakog. Prvo je otključana samo 1. runda, a iduća se otključava tek kad se prethodna runda završi. Nakon liga faze sustav sortira jednu zajedničku tablicu i u knockout šalje najboljih <b className="text-[#d4b06a]">{knockoutSize}</b> ekipa.
+                </>
+              ) : (
+                <>
+                  Knockout prima <b className="text-[#d4b06a]">{knockoutSize}</b> ekipa. Grupni mečevi se generiraju Berger sustavom, po rundama. Prvo je otključana samo 1. runda, a iduća se otključava tek kad se svi mečevi prethodne runde u toj grupi završe. Sustav zatim uzima direktne prolaznike iz svake grupe, a preostala mjesta popunjava samo najboljim ekipama iz idućeg ranga. Primjer: ako prolazi 16 ekipa iz 6 grupa, prolaze prvi i drugi iz svake grupe te samo 4 najbolja treća — četvrti ne može proći dalje.
+                </>
+              )}
             </p>
           </div>
         )}

@@ -264,6 +264,7 @@ export default function TournamentPage({
               <Badge label={`Status: ${tournament.status}`} />
               <Badge label={`Igra se do ${tournament.score_limit || 1001}`} />
               <Badge label={formatType(tournament.tournament_format)} />
+              {tournament.tournament_format === "league_knockout" && <Badge label={`${Number(tournament.league_match_count || 8)} mečeva po ekipi`} />}
               <Badge label={formatMatch(tournament.match_format)} />
               <Badge label={`Repešaž: ${tournament.has_repechage ? "Da" : "Ne"}`} />
             </div>

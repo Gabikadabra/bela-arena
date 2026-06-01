@@ -37,6 +37,7 @@ export default function NoviTurnirPage() {
     groupSize: 4,
     knockoutSize: 16,
     leagueRounds: 1,
+    leagueMatchCount: 8,
     hasRepechage: false,
     manualScoreEntry: false,
     rules: ""
@@ -48,7 +49,7 @@ export default function NoviTurnirPage() {
 
   const formatHint = useMemo(() => {
     if (form.tournamentFormat === "league_knockout") {
-      return "Liga prvaka format: prvo liga/svatko sa svakim, zatim najboljih X ide u knockout.";
+      return "Liga prvaka format: liga faza s ograničenim brojem mečeva po ekipi, zatim najboljih X ide u knockout.";
     }
 
     if (form.tournamentFormat === "groups_knockout") {
@@ -71,6 +72,7 @@ export default function NoviTurnirPage() {
     const groupSize = showGroups ? Number(form.groupSize) : null;
     const knockoutSize = showKnockoutAfter ? Number(form.knockoutSize) : null;
     const leagueRounds = showLeague ? Number(form.leagueRounds) : 1;
+    const leagueMatchCount = tournamentFormat === "league_knockout" ? Number(form.leagueMatchCount) : null;
 
     const { error } = await supabase.from("tournaments").insert({
       name: form.name,
@@ -89,6 +91,7 @@ export default function NoviTurnirPage() {
       group_size: groupSize,
       knockout_size: knockoutSize,
       league_rounds: leagueRounds,
+      league_match_count: leagueMatchCount,
       has_repechage: form.hasRepechage,
       manual_score_entry: form.manualScoreEntry,
       rules: form.rules
@@ -112,6 +115,7 @@ export default function NoviTurnirPage() {
         groupSize: 4,
         knockoutSize: 16,
         leagueRounds: 1,
+        leagueMatchCount: 8,
         hasRepechage: false,
         manualScoreEntry: false,
         rules: ""
@@ -178,12 +182,25 @@ export default function NoviTurnirPage() {
 
           {showLeague && (
             <>
-              <Field label="Format lige">
-                <select value={form.leagueRounds} onChange={(e) => setForm({ ...form, leagueRounds: Number(e.target.value) })} className="input">
-                  <option value={1}>Jednokružno — svatko sa svakim jednom</option>
-                  <option value={2}>Dvokružno — svatko sa svakim dvaput</option>
-                </select>
-              </Field>
+              {form.tournamentFormat === "league_knockout" ? (
+                <Field label="Broj mečeva po ekipi u liga fazi">
+                  <select value={form.leagueMatchCount} onChange={(e) => setForm({ ...form, leagueMatchCount: Number(e.target.value) })} className="input">
+                    <option value={3}>3 meča po ekipi</option>
+                    <option value={4}>4 meča po ekipi</option>
+                    <option value={5}>5 mečeva po ekipi</option>
+                    <option value={6}>6 mečeva po ekipi</option>
+                    <option value={7}>7 mečeva po ekipi</option>
+                    <option value={8}>8 mečeva po ekipi</option>
+                  </select>
+                </Field>
+              ) : (
+                <Field label="Format lige">
+                  <select value={form.leagueRounds} onChange={(e) => setForm({ ...form, leagueRounds: Number(e.target.value) })} className="input">
+                    <option value={1}>Jednokružno — svatko sa svakim jednom</option>
+                    <option value={2}>Dvokružno — svatko sa svakim dvaput</option>
+                  </select>
+                </Field>
+              )}
 
               <Field label="Liga se igra do">
                 <select value={form.groupScoreLimit} onChange={(e) => setForm({ ...form, groupScoreLimit: Number(e.target.value) })} className="input">

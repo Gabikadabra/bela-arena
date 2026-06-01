@@ -1,0 +1,9 @@
+PROMJENE - Liga prvaka broj mečeva
+
+- Liga prvaka više nije običan svatko-sa-svakim format.
+- Dodana je postavka league_match_count za broj mečeva po ekipi u liga fazi.
+- Kreiranje turnira prikazuje "Broj mečeva po ekipi u liga fazi" samo za Liga prvaka format.
+- Uređivanje turnira podržava istu postavku.
+- Admin ždrijeb za Liga prvaka koristi ograničeni Berger raspored umjesto punog round robin rasporeda.
+- Javna prijava i javne stranice prikazuju koliko mečeva po ekipi ima Liga prvaka faza.
+- Dodana migracija SUPABASE_LIGA_PRVAKA_MATCH_COUNT.sql za novu kolonu league_match_count.

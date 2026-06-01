@@ -19,6 +19,7 @@ type TournamentForm = {
   groupSize: number;
   knockoutSize: number;
   leagueRounds: number;
+  leagueMatchCount: number;
   hasRepechage: boolean;
   manualScoreEntry: boolean;
   rules: string;
@@ -39,6 +40,7 @@ const defaultForm: TournamentForm = {
   groupSize: 4,
   knockoutSize: 16,
   leagueRounds: 1,
+  leagueMatchCount: 8,
   hasRepechage: false,
   manualScoreEntry: false,
   rules: ""
@@ -61,7 +63,7 @@ export default function UrediTurnirPage() {
   const showKnockoutAfter = KNOCKOUT_AFTER_FORMATS.has(form.tournamentFormat);
 
   const formatHint = useMemo(() => {
-    if (form.tournamentFormat === "league_knockout") return "Liga prvaka format: prvo liga faza, zatim najboljih X ide u knockout.";
+    if (form.tournamentFormat === "league_knockout") return "Liga prvaka format: liga faza s ograničenim brojem mečeva po ekipi, zatim najboljih X ide u knockout.";
     if (form.tournamentFormat === "groups_knockout") return "Grupe pa knockout: samo ovdje se prikazuju postavke grupa.";
     if (form.tournamentFormat === "round_robin") return "Liga format: svatko sa svakim bez završnog knockout-a.";
     return "Samo knockout: odmah se generira eliminacijski bracket.";
@@ -114,6 +116,7 @@ export default function UrediTurnirPage() {
       groupSize: Number(data.group_size || 4),
       knockoutSize: Number(data.knockout_size || 16),
       leagueRounds: Number(data.league_rounds || 1),
+      leagueMatchCount: Number(data.league_match_count || 8),
       hasRepechage: Boolean(data.has_repechage),
       manualScoreEntry: Boolean(data.manual_score_entry),
       rules: data.rules || ""
@@ -144,6 +147,7 @@ export default function UrediTurnirPage() {
       group_size: showGroups ? Number(form.groupSize) : null,
       knockout_size: showKnockoutAfter ? Number(form.knockoutSize) : null,
       league_rounds: showLeague ? Number(form.leagueRounds) : 1,
+      league_match_count: form.tournamentFormat === "league_knockout" ? Number(form.leagueMatchCount) : null,
       has_repechage: form.hasRepechage,
       manual_score_entry: form.manualScoreEntry,
       rules: form.rules
@@ -186,7 +190,7 @@ export default function UrediTurnirPage() {
 
           {showGroups && (<><Field label="Veličina grupe"><select value={form.groupSize} onChange={(e) => setForm({ ...form, groupSize: Number(e.target.value) })} className="input"><option value={3}>3 ekipe po grupi</option><option value={4}>4 ekipe po grupi</option><option value={5}>5 ekipa po grupi</option><option value={6}>6 ekipa po grupi</option></select></Field><Field label="Grupe se igraju do"><select value={form.groupScoreLimit} onChange={(e) => setForm({ ...form, groupScoreLimit: Number(e.target.value) })} className="input"><option value={501}>501</option><option value={701}>701</option><option value={1001}>1001</option><option value={1501}>1501</option></select></Field><Field label="Grupe - format meča"><select value={form.groupBestOf} onChange={(e) => setForm({ ...form, groupBestOf: Number(e.target.value) })} className="input"><option value={1}>Jedna partija</option><option value={3}>Do 2 pobjede / best of 3</option><option value={5}>Do 3 pobjede / best of 5</option></select></Field></>)}
 
-          {showLeague && (<><Field label="Format lige"><select value={form.leagueRounds} onChange={(e) => setForm({ ...form, leagueRounds: Number(e.target.value) })} className="input"><option value={1}>Jednokružno — svatko sa svakim jednom</option><option value={2}>Dvokružno — svatko sa svakim dvaput</option></select></Field><Field label="Liga se igra do"><select value={form.groupScoreLimit} onChange={(e) => setForm({ ...form, groupScoreLimit: Number(e.target.value) })} className="input"><option value={501}>501</option><option value={701}>701</option><option value={1001}>1001</option><option value={1501}>1501</option></select></Field></>)}
+          {showLeague && (<>{form.tournamentFormat === "league_knockout" ? <Field label="Broj mečeva po ekipi u liga fazi"><select value={form.leagueMatchCount} onChange={(e) => setForm({ ...form, leagueMatchCount: Number(e.target.value) })} className="input"><option value={3}>3 meča po ekipi</option><option value={4}>4 meča po ekipi</option><option value={5}>5 mečeva po ekipi</option><option value={6}>6 mečeva po ekipi</option><option value={7}>7 mečeva po ekipi</option><option value={8}>8 mečeva po ekipi</option></select></Field> : <Field label="Format lige"><select value={form.leagueRounds} onChange={(e) => setForm({ ...form, leagueRounds: Number(e.target.value) })} className="input"><option value={1}>Jednokružno — svatko sa svakim jednom</option><option value={2}>Dvokružno — svatko sa svakim dvaput</option></select></Field>}<Field label="Liga se igra do"><select value={form.groupScoreLimit} onChange={(e) => setForm({ ...form, groupScoreLimit: Number(e.target.value) })} className="input"><option value={501}>501</option><option value={701}>701</option><option value={1001}>1001</option><option value={1501}>1501</option></select></Field></>)}
 
           {showKnockoutAfter && <Field label="Koliko ekipa prolazi dalje u knockout"><select value={form.knockoutSize} onChange={(e) => setForm({ ...form, knockoutSize: Number(e.target.value) })} className="input"><option value={2}>2 ekipe</option><option value={4}>4 ekipe</option><option value={8}>8 ekipa</option><option value={16}>16 ekipa</option><option value={32}>32 ekipe</option></select></Field>}
 
