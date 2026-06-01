@@ -3,15 +3,7 @@ import Nav from "@/components/layout/AppNav";
 
 export const metadata = {
   title: "Bela Arena",
-  description: "Platforma za organizaciju turnira u beli",
-  icons: {
-    icon: "/brand/bela-arena-logo.svg"
-  },
-  openGraph: {
-    title: "Bela Arena",
-    description: "Turniri u beli, live rezultati i rang lista.",
-    images: ["/brand/bela-arena-logo.svg"]
-  }
+  description: "Platforma za organizaciju turnira u beli"
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

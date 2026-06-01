@@ -1,0 +1,22 @@
+Vraćen je stari dizajn prije UI refresh/chess-style promjena.
+
+Ovaj paket vraća:
+- app/globals.css
+- app/layout.tsx
+- početnu stranicu
+- admin dashboard layout
+- navigaciju
+- javne stranice rezultata koje su bile mijenjane u UI refreshu
+
+Ne dira novije funkcionalnosti baze i formata turnira:
+- finished turniri idu u povijest
+- Liga prvaka / league_knockout format
+- broj mečeva po ekipi u liga fazi
+- koliko ekipa prolazi dalje
+
+Ako želiš potpuno očistiti neiskorištene UI fajlove iz novog dizajna, možeš ručno obrisati:
+- components/brand/BelaLogo.tsx
+- components/live/AutoRefresh.tsx
+- public/brand/bela-arena-logo.svg
+- docs/changes/PROMJENE_UI_REFRESH_MOBILE_AUTO_REFRESH.txt
+- docs/changes/PROMJENE_CHESS_STYLE_UI.txt

@@ -336,131 +336,220 @@ export default function AdminPage() {
     (t) => t.id === selectedTournament
   );
 
-  const pendingTeams = teams.filter((team) => team.status === "pending").length;
-  const approvedTeams = teams.filter((team) => team.status === "approved").length;
-  const finishedMatches = matches.filter((match) => match.status === "finished").length;
-
-  const adminActions = [
-    { href: "/admin/novi-turnir", icon: "+", label: "Novi turnir", hint: "Kreiraj" },
-    { href: "/admin/uredi-turnir", icon: "✎", label: "Uredi turnir", hint: "Postavke" },
-    { href: "/admin/zdrijeb", icon: "🎲", label: "Ždrijeb", hint: "Generiraj" },
-    { href: selectedTournament ? `/tournament/${selectedTournament}` : "/admin", icon: "♟", label: "Rezultati", hint: "Javno" },
-    { href: selectedTournament ? `/admin/bracket/${selectedTournament}` : "/admin", icon: "▦", label: "Bracket", hint: "Admin" },
-    { href: selectedTournament ? `/dashboard/${selectedTournament}` : "/admin", icon: "▣", label: "TV dashboard", hint: "Live", external: Boolean(selectedTournament) },
-    { href: selectedTournament ? `/liga/${selectedTournament}` : "/admin", icon: "≡", label: "Liga prikaz", hint: "Tablica" },
-    { href: "/admin/achievementi", icon: "★", label: "Achievementi", hint: "Nagrade" },
-    { href: selectedTournament ? `/story/${selectedTournament}` : "/admin", icon: "▤", label: "Story", hint: "Objava" }
-  ];
-
   return (
-    <main className="page admin-shell">
-      <div className="admin-header">
+    <main className="page">
+      <div className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
         <div>
-          <p className="admin-panel-title">Bela Arena admin</p>
-          <h1 className="mt-2 text-4xl font-black tracking-[-0.04em] text-white sm:text-5xl">
-            Kontrolni centar
-          </h1>
-          <p className="mt-3 max-w-2xl text-[#d8cfc1]">
-            Jednostavniji pregled turnira, prijava, ždrijeba i rezultata. Završeni turniri se ne prikazuju ovdje.
+          <p className="mb-4 inline-block rounded-full border border-[#d4b06a]/30 bg-[#d4b06a]/10 px-4 py-2 text-sm text-[#d4b06a]">
+            Admin dashboard
+          </p>
+
+          <h1 className="text-4xl font-black text-[#f3dfad] sm:text-5xl">Admin panel</h1>
+
+          <p className="mt-3 max-w-2xl text-zinc-300">
+            Upravljaj turnirima, prijavama, ždrijebom i rezultatima.
           </p>
         </div>
 
-        <button onClick={logoutAdmin} className="btn-danger">
-          Odjava
+        <button
+          onClick={logoutAdmin}
+          className="btn-danger"
+        >
+          Odjava admina
         </button>
       </div>
 
-      <div className="admin-layout">
-        <aside className="admin-panel space-y-4">
-          <div>
-            <p className="admin-panel-title">Aktivni turnir</p>
-            <select
-              value={selectedTournament}
-              onChange={(e) => setSelectedTournament(e.target.value)}
-              className="input mt-3"
-            >
-              {tournaments.map((tournament) => (
-                <option key={tournament.id} value={tournament.id}>
-                  {tournament.name} — {tournament.location}
-                </option>
-              ))}
-              {tournaments.length === 0 && (
-                <option value="">Nema aktivnih turnira</option>
-              )}
-            </select>
+      <div className="mb-10 grid gap-4 md:grid-cols-2 lg:grid-cols-10">
+        <a
+          href="/admin/novi-turnir"
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
+        >
+          <span className="block text-2xl text-[#d4b06a]">+</span>
+          Novi turnir
+        </a>
+
+        <a
+          href="/admin/uredi-turnir"
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
+        >
+          <span className="block text-2xl text-[#d4b06a]">✏️</span>
+          Uredi turnir
+        </a>
+
+        <a
+          href="/admin"
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
+        >
+          <span className="block text-2xl text-[#d4b06a]">{teams.length}</span>
+          Prijave
+        </a>
+
+        <a
+          href="/admin/zdrijeb"
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
+        >
+          <span className="block text-2xl text-[#d4b06a]">🎲</span>
+          Ždrijeb
+        </a>
+
+        <a
+          href={selectedTournament ? `/tournament/${selectedTournament}` : "/admin"}
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
+        >
+          <span className="block text-2xl text-[#d4b06a]">🏆</span>
+          Rezultati
+        </a>
+
+        <a
+          href={
+            selectedTournament
+              ? `/admin/bracket/${selectedTournament}`
+              : "/admin"
+          }
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
+        >
+          <span className="block text-2xl text-[#d4b06a]">🏁</span>
+          Bracket
+        </a>
+
+        <a
+          href={selectedTournament ? `/dashboard/${selectedTournament}` : "/admin"}
+          target={selectedTournament ? "_blank" : undefined}
+          rel={selectedTournament ? "noopener noreferrer" : undefined}
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
+        >
+          <span className="block text-2xl text-[#d4b06a]">📺</span>
+          TV dashboard
+        </a>
+
+        <a
+          href={selectedTournament ? `/liga/${selectedTournament}` : "/admin"}
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
+        >
+          <span className="block text-2xl text-[#d4b06a]">📊</span>
+          Liga prikaz
+        </a>
+
+        <a
+          href="/admin/achievementi"
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
+        >
+          <span className="block text-2xl text-[#d4b06a]">🏅</span>
+          Achievementi
+        </a>
+
+        <a
+          href={selectedTournament ? `/story/${selectedTournament}` : "/admin"}
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
+        >
+          <span className="block text-2xl text-[#d4b06a]">📱</span>
+          Story generator
+        </a>
+      </div>
+
+      <section className="card">
+        <h2 className="text-2xl font-black text-[#f3dfad] sm:text-3xl">
+          Prijave po turniru
+        </h2>
+
+        <p className="mt-2 text-zinc-400">
+          Odaberi aktivan turnir i potvrdi ili odbij ekipe koje su se prijavile. Završeni turniri su u povijesti.
+        </p>
+
+        <div className="mt-6">
+          <label className="mb-2 block text-sm font-bold text-[#d4b06a]">
+            Odaberi turnir
+          </label>
+
+          <select
+            value={selectedTournament}
+            onChange={(e) => setSelectedTournament(e.target.value)}
+            className="input"
+          >
+            {tournaments.map((tournament) => (
+              <option key={tournament.id} value={tournament.id}>
+                {tournament.name} — {tournament.location}
+              </option>
+            ))}
+            {tournaments.length === 0 && (
+              <option value="">Nema aktivnih turnira</option>
+            )}
+          </select>
+        </div>
+
+        {!loading && tournaments.length === 0 && (
+          <div className="mt-6 rounded-2xl border border-[#d4b06a]/15 bg-[#12392b] p-6 text-zinc-300">
+            Nema aktivnih turnira za administraciju. Završene turnire možeš pregledati u povijesti.
           </div>
+        )}
 
-          {selectedTournamentData ? (
-            <div className="admin-current-card">
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-[#b7e286]">Trenutno vodiš</p>
-              <h2 className="mt-2 text-2xl font-black text-white">{selectedTournamentData.name}</h2>
-              <p className="mt-1 text-sm text-[#d8cfc1]">
-                {selectedTournamentData.location || "Bez lokacije"} · {selectedTournamentData.starts_at || "bez datuma"}
-              </p>
-              <p className="mt-3 text-sm text-[#d8cfc1]">
-                Manual rezultati: {selectedTournamentData.manual_score_entry ? "uključeni" : "isključeni"}
-              </p>
-            </div>
-          ) : (
-            <div className="rounded-2xl bg-[#2a2825] p-4 text-[#d8cfc1]">
-              Nema aktivnih turnira. Kreiraj novi ili pogledaj povijest.
-            </div>
-          )}
+        {selectedTournamentData && (
+          <div className="mt-6 rounded-2xl bg-[#12392b] p-5">
+            <p className="text-sm text-zinc-400">Trenutni turnir</p>
 
-          <div className="admin-stat-grid">
-            <div className="admin-stat-card"><span>Ekipe</span><strong>{teams.length}</strong></div>
-            <div className="admin-stat-card"><span>Čekaju</span><strong>{pendingTeams}</strong></div>
-            <div className="admin-stat-card"><span>Potvrđene</span><strong>{approvedTeams}</strong></div>
-            <div className="admin-stat-card"><span>Gotovi mečevi</span><strong>{finishedMatches}</strong></div>
-          </div>
+            <h3 className="mt-1 text-xl font-bold text-[#d4b06a] sm:text-2xl">
+              {selectedTournamentData.name}
+            </h3>
 
-          {selectedTournamentData && (
-            <button type="button" onClick={finishTournament} className="btn-danger w-full">
-              Turnir završen
-            </button>
-          )}
-        </aside>
-
-        <div className="space-y-5">
-          <section className="admin-panel">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <p className="admin-panel-title">Brze akcije</p>
-                <h2 className="mt-1 text-2xl font-black text-white">Sve bitno na jednom mjestu</h2>
-              </div>
-            </div>
-
-            <div className="admin-action-grid">
-              {adminActions.map((action) => (
-                <a
-                  key={action.label}
-                  href={action.href}
-                  target={action.external ? "_blank" : undefined}
-                  rel={action.external ? "noopener noreferrer" : undefined}
-                  className="admin-action-card"
-                >
-                  <strong>{action.icon}</strong>
-                  <span>{action.label}</span>
-                  <small className="text-[#b9a78a]">{action.hint}</small>
-                </a>
-              ))}
-            </div>
-          </section>
-
-          <section className="card">
-            <h2 className="text-2xl font-black text-white sm:text-3xl">
-              Prijave i rezultati
-            </h2>
-
-            <p className="mt-2 text-[#d8cfc1]">
-              Ovdje potvrđuješ ekipe, dodaješ ekipu na dan turnira i ručno upisuješ rezultate ako je to uključeno.
+            <p className="text-zinc-400">
+              {selectedTournamentData.location} ·{" "}
+              {selectedTournamentData.starts_at}
             </p>
 
-            {!loading && tournaments.length === 0 && (
-              <div className="mt-6 rounded-2xl bg-[#2a2825] p-6 text-[#d8cfc1]">
-                Nema aktivnih turnira za administraciju. Završene turnire možeš pregledati u povijesti.
-              </div>
-            )}
+            <div className="mt-4 flex flex-wrap gap-3">
+              <a
+                href={`/tournament/${selectedTournamentData.id}`}
+                className="rounded-xl border border-[#d4b06a]/30 px-5 py-2 font-bold text-[#f3dfad] transition hover:bg-[#d4b06a]/10"
+              >
+                Otvori turnir
+              </a>
+
+              <a
+                href={`/dashboard/${selectedTournamentData.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-xl bg-[#d4b06a] px-5 py-2 font-black text-black transition hover:bg-[#f3dfad]"
+              >
+                Otvori TV dashboard
+              </a>
+
+              <a
+                href={`/liga/${selectedTournamentData.id}`}
+                className="rounded-xl border border-[#d4b06a]/30 px-5 py-2 font-bold text-[#f3dfad] transition hover:bg-[#d4b06a]/10"
+              >
+                Otvori liga prikaz
+              </a>
+
+
+              <a
+                href={`/story/${selectedTournamentData.id}`}
+                className="rounded-xl border border-[#d4b06a]/30 px-5 py-2 font-bold text-[#f3dfad] transition hover:bg-[#d4b06a]/10"
+              >
+                Story generator
+              </a>
+
+              <a
+                href="/admin/achievementi"
+                className="rounded-xl border border-[#d4b06a]/30 px-5 py-2 font-bold text-[#f3dfad] transition hover:bg-[#d4b06a]/10"
+              >
+                Achievementi
+              </a>
+
+              <button
+                type="button"
+                onClick={finishTournament}
+                className="rounded-xl bg-red-600 px-5 py-2 font-black text-white transition hover:bg-red-500"
+              >
+                Turnir završen
+              </button>
+            </div>
+
+            <p className="mt-4 text-sm text-zinc-400">
+              Manual upis rezultata: {selectedTournamentData.manual_score_entry ? "uključen" : "isključen"}
+              {selectedTournamentData.status === "finished" ? " · turnir je završen" : ""}
+            </p>
+          </div>
+        )}
 
         <form onSubmit={addTeamByAdmin} className="mt-8 rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-6">
           <h3 className="text-2xl font-black text-[#f3dfad]">Dodaj ekipu na dan turnira</h3>
@@ -544,7 +633,7 @@ export default function AdminPage() {
           {teams.map((team) => (
             <div
               key={team.id}
-              className="admin-team-card rounded-2xl border border-[#d4b06a]/15 bg-[#12392b] p-6"
+              className="rounded-2xl border border-[#d4b06a]/15 bg-[#12392b] p-6"
             >
               <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
                 <div>
@@ -598,9 +687,7 @@ export default function AdminPage() {
             </div>
           ))}
         </div>
-          </section>
-        </div>
-      </div>
+      </section>
     </main>
   );
 }

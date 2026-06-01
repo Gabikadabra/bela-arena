@@ -1,92 +1,60 @@
-import BelaLogo from "@/components/brand/BelaLogo";
-
-const highlights = [
-  { label: "Aktivni turniri", value: "Brzo" },
-  { label: "Live rezultati", value: "Auto refresh" },
-  { label: "Rang lista", value: "ELO + zvanja" },
-  { label: "Format", value: "Liga / knockout" }
-];
-
-export default function Home() {
+﻿export default function Home() {
   return (
     <main>
       <section className="page">
-        <div className="chess-hero">
-          <div className="hero-card">
-            <div className="relative z-10">
-              <div className="mb-7 inline-flex">
-                <BelaLogo />
+        <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+          <div>
+            <p className="mb-4 inline-flex rounded-full border border-[#d4b06a]/30 bg-[#d4b06a]/10 px-4 py-2 text-sm text-[#d4b06a]">
+              Igraj belu kao pravi profesionalac
+            </p>
+
+            <h1 className="max-w-4xl text-4xl font-black leading-tight sm:text-5xl md:text-7xl">
+              Zaigraj belu, prati rezultate i osvoji vrh ljestvice.
+            </h1>
+
+            <p className="mt-6 max-w-2xl text-lg text-zinc-300">
+              Bela Arena je mjesto gdje igrači prijavljuju ekipe, natječu se na turnirima,
+              prate live rezultate, ždrijeb i povijest svojih mečeva.
+            </p>
+
+            <div className="mt-8 flex flex-wrap gap-4">
+              <a
+                href="/turniri"
+                className="btn-primary transition hover:bg-[#f3dfad]"
+              >
+                Zaigraj odmah
+              </a>
+
+              <a
+                href="/rang-lista"
+                className="btn-outline transition hover:bg-[#d4b06a]/10"
+              >
+                Rang lista
+              </a>
+            </div>
+          </div>
+
+          <div className="card-glow rounded-3xl border border-[#d4b06a]/20 bg-[#184332]/85 p-6">
+            <div className="rounded-2xl bg-[#12392b] p-5">
+              <p className="text-sm text-zinc-400">Finale</p>
+
+              <div className="mt-4 space-y-3">
+                <div className="flex justify-between rounded-xl bg-[#0a2018]/40 p-4">
+                  <span>Kumovi</span>
+                  <b className="text-[#f3dfad]">1001</b>
+                </div>
+
+                <div className="flex justify-between rounded-xl bg-[#0a2018]/40 p-4">
+                  <span>Asovi</span>
+                  <b>842</b>
+                </div>
               </div>
 
-              <p className="badge mb-5">Turnirska bela bez kaosa</p>
-
-              <h1 className="max-w-4xl text-4xl font-black leading-[0.96] tracking-[-0.05em] text-white sm:text-6xl md:text-7xl">
-                Igraj belu kao ozbiljnu online arenu.
-              </h1>
-
-              <p className="mt-6 max-w-2xl text-lg leading-8 text-[#d8cfc1]">
-                Jednostavan dashboard, prijave ekipa, live rezultati, ždrijeb, liga, knockout,
-                povijest i rang lista — sve složeno kao moderna turnirska aplikacija.
+              <p className="mt-5 text-sm text-green-400">
+                Meč završen · pobjednik Kumovi 🏆
               </p>
-
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <a href="/turniri" className="btn-primary">
-                  Pogledaj turnire
-                </a>
-
-                <a href="/prijava" className="btn-outline">
-                  Prijavi ekipu
-                </a>
-              </div>
             </div>
           </div>
-
-          <div className="card p-5 sm:p-6">
-            <div className="mb-5 flex items-center justify-between gap-4">
-              <div>
-                <p className="admin-panel-title">Live primjer</p>
-                <h2 className="mt-1 text-2xl font-black">Finalni stol</h2>
-              </div>
-              <span className="rounded-full bg-red-500/15 px-3 py-1 text-xs font-black text-red-200">LIVE</span>
-            </div>
-
-            <div className="chess-board-preview" aria-hidden="true">
-              {Array.from({ length: 16 }).map((_, index) => (
-                <span key={index} />
-              ))}
-            </div>
-
-            <div className="mt-5 space-y-3">
-              <div className="rounded-2xl bg-[#2a2825] p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <span className="font-black">Kumovi</span>
-                  <span className="text-3xl font-black text-[#b7e286]">1001</span>
-                </div>
-                <div className="mt-3 h-2 rounded-full bg-black/25">
-                  <div className="h-2 w-full rounded-full bg-[#81b64c]" />
-                </div>
-              </div>
-
-              <div className="rounded-2xl bg-[#2a2825] p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <span className="font-black">Asovi</span>
-                  <span className="text-3xl font-black">842</span>
-                </div>
-                <div className="mt-3 h-2 rounded-full bg-black/25">
-                  <div className="h-2 w-[84%] rounded-full bg-[#eeeed2]" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {highlights.map((item) => (
-            <div key={item.label} className="stat-card">
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-[#b9a78a]">{item.label}</p>
-              <p className="mt-2 text-xl font-black text-[#f5f0e8]">{item.value}</p>
-            </div>
-          ))}
         </div>
       </section>
     </main>
