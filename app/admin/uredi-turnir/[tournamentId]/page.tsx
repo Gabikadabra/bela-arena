@@ -17,6 +17,7 @@ type TournamentForm = {
   knockoutBestOf: number;
   tournamentFormat: string;
   hasRepechage: boolean;
+  manualScoreEntry: boolean;
   rules: string;
 };
 
@@ -33,6 +34,7 @@ const defaultForm: TournamentForm = {
   knockoutBestOf: 3,
   tournamentFormat: "knockout",
   hasRepechage: false,
+  manualScoreEntry: false,
   rules: ""
 };
 
@@ -106,6 +108,7 @@ export default function UrediTurnirPage() {
       ),
       tournamentFormat: data.tournament_format || "knockout",
       hasRepechage: Boolean(data.has_repechage),
+      manualScoreEntry: Boolean(data.manual_score_entry),
       rules: data.rules || ""
     });
 
@@ -134,6 +137,7 @@ export default function UrediTurnirPage() {
         match_format: `best_of_${Number(form.knockoutBestOf)}`,
         tournament_format: form.tournamentFormat,
         has_repechage: form.hasRepechage,
+        manual_score_entry: form.manualScoreEntry,
         rules: form.rules
       })
       .eq("id", tournamentId);
@@ -322,23 +326,43 @@ export default function UrediTurnirPage() {
             </select>
           </Field>
 
-          <div className="card-soft md:col-span-2">
-            <label className="flex cursor-pointer items-center gap-3">
-              <input
-                type="checkbox"
-                checked={form.hasRepechage}
-                onChange={(e) =>
-                  setForm({ ...form, hasRepechage: e.target.checked })
-                }
-                className="h-5 w-5"
-              />
-              <span className="font-bold text-[#d4b06a]">Uključi repešaž</span>
-            </label>
+          <div className="md:col-span-2 grid gap-4 md:grid-cols-2">
+            <div className="card-soft">
+              <label className="flex cursor-pointer items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={form.hasRepechage}
+                  onChange={(e) =>
+                    setForm({ ...form, hasRepechage: e.target.checked })
+                  }
+                  className="h-5 w-5"
+                />
+                <span className="font-bold text-[#d4b06a]">Uključi repešaž</span>
+              </label>
 
-            <p className="muted mt-2 text-sm">
-              Promjena formata ne briše postojeći ždrijeb. Ako želiš novi raspored,
-              napravi ga ponovno u admin ždrijebu.
-            </p>
+              <p className="muted mt-2 text-sm">
+                Promjena formata ne briše postojeći ždrijeb. Ako želiš novi raspored,
+                napravi ga ponovno u admin ždrijebu.
+              </p>
+            </div>
+
+            <div className="card-soft">
+              <label className="flex cursor-pointer items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={form.manualScoreEntry}
+                  onChange={(e) =>
+                    setForm({ ...form, manualScoreEntry: e.target.checked })
+                  }
+                  className="h-5 w-5"
+                />
+                <span className="font-bold text-[#d4b06a]">Manualni upis rezultata</span>
+              </label>
+
+              <p className="muted mt-2 text-sm">
+                Kad je uključeno, admin može ručno spremiti konačne rezultate mečeva.
+              </p>
+            </div>
           </div>
 
           <div className="md:col-span-2">

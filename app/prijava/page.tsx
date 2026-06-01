@@ -122,9 +122,9 @@ export default function PrijavaPage() {
       captain_user_id: user.id,
       player_one: form.playerOne,
       player_two: form.playerTwo,
-      partner_email: form.partnerEmail,
+      partner_email: form.partnerEmail.trim() || null,
       partner_user_id: null,
-      invite_status: "pending",
+      invite_status: form.partnerEmail.trim() ? "pending" : "not_required",
       phone: form.phone,
       email: form.email,
       status: "pending"
@@ -137,23 +137,26 @@ export default function PrijavaPage() {
       return;
     }
 
-    // SEND EMAIL INVITE
-    await fetch("/api/send-invite", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        partnerEmail: form.partnerEmail,
-        captainName: form.captain,
-        teamName: form.teamName,
-        tournamentName: selectedTournament?.name || "Bela Arena"
-      })
-    });
+    if (form.partnerEmail.trim()) {
+      await fetch("/api/send_invite", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          partnerEmail: form.partnerEmail.trim(),
+          captainName: form.captain,
+          teamName: form.teamName,
+          tournamentName: selectedTournament?.name || "Bela Arena"
+        })
+      });
+    }
 
     setMessageType("success");
     setMessage(
-      "Ekipa prijavljena. Partner je dobio email poziv, admin mora potvrditi ekipu."
+      form.partnerEmail.trim()
+        ? "Ekipa prijavljena. Partner je dobio email poziv, admin mora potvrditi ekipu."
+        : "Ekipa prijavljena bez maila partnera. Admin mora potvrditi ekipu."
     );
 
     setForm({
@@ -284,7 +287,7 @@ export default function PrijavaPage() {
             />
           </Field>
 
-          <Field label="Email partnera">
+          <Field label="Email partnera (nije obavezno)">
             <input
               type="email"
               value={form.partnerEmail}
@@ -292,7 +295,6 @@ export default function PrijavaPage() {
                 setForm({ ...form, partnerEmail: e.target.value })
               }
               className="input"
-              required
             />
           </Field>
 

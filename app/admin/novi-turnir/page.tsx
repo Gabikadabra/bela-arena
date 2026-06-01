@@ -19,6 +19,7 @@ export default function NoviTurnirPage() {
     knockoutBestOf: 3,
     tournamentFormat: "knockout",
     hasRepechage: false,
+    manualScoreEntry: false,
     rules: ""
   });
 
@@ -42,6 +43,7 @@ export default function NoviTurnirPage() {
       match_format: `best_of_${Number(form.knockoutBestOf)}`,
       tournament_format: form.tournamentFormat,
       has_repechage: form.hasRepechage,
+      manual_score_entry: form.manualScoreEntry,
       rules: form.rules
     });
 
@@ -61,6 +63,7 @@ export default function NoviTurnirPage() {
         knockoutBestOf: 3,
         tournamentFormat: "knockout",
         hasRepechage: false,
+        manualScoreEntry: false,
         rules: ""
       });
     }
@@ -201,22 +204,42 @@ export default function NoviTurnirPage() {
             </select>
           </Field>
 
-          <div className="md:col-span-2 card-soft">
-            <label className="flex cursor-pointer items-center gap-3">
-              <input
-                type="checkbox"
-                checked={form.hasRepechage}
-                onChange={(e) => setForm({ ...form, hasRepechage: e.target.checked })}
-                className="h-5 w-5"
-              />
-              <span className="font-bold text-[#d4b06a]">
-                Uključi repešaž
-              </span>
-            </label>
+          <div className="md:col-span-2 grid gap-4 md:grid-cols-2">
+            <div className="card-soft">
+              <label className="flex cursor-pointer items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={form.hasRepechage}
+                  onChange={(e) => setForm({ ...form, hasRepechage: e.target.checked })}
+                  className="h-5 w-5"
+                />
+                <span className="font-bold text-[#d4b06a]">
+                  Uključi repešaž
+                </span>
+              </label>
 
-            <p className="mt-2 text-sm text-zinc-400">
-              Repešaž omogućuje da poražene ekipe dobiju dodatnu šansu kroz dodatni dio natjecanja.
-            </p>
+              <p className="mt-2 text-sm text-zinc-400">
+                Repešaž omogućuje da poražene ekipe dobiju dodatnu šansu kroz dodatni dio natjecanja.
+              </p>
+            </div>
+
+            <div className="card-soft">
+              <label className="flex cursor-pointer items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={form.manualScoreEntry}
+                  onChange={(e) => setForm({ ...form, manualScoreEntry: e.target.checked })}
+                  className="h-5 w-5"
+                />
+                <span className="font-bold text-[#d4b06a]">
+                  Manualni upis rezultata
+                </span>
+              </label>
+
+              <p className="mt-2 text-sm text-zinc-400">
+                Admin može ručno upisati konačan rezultat meča iz admin panela.
+              </p>
+            </div>
           </div>
 
           <div className="md:col-span-2">
