@@ -1,0 +1,17 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="112" fill="#071810"/>
+  <rect x="38" y="38" width="436" height="436" rx="88" fill="url(#paint0_linear)" stroke="#D4B06A" stroke-width="10"/>
+  <rect x="92" y="77" width="110" height="138" rx="22" fill="#071810" stroke="#F3DFAD" stroke-width="8"/>
+  <text x="122" y="143" fill="#F3DFAD" font-family="Arial Black,Arial,sans-serif" font-size="54" font-weight="900">A</text>
+  <text x="124" y="192" fill="#D4B06A" font-family="Arial Black,Arial,sans-serif" font-size="46" font-weight="900">♣</text>
+  <text x="119" y="326" fill="#071810" font-family="Arial Black,Arial,sans-serif" font-size="128" font-weight="900" letter-spacing="-16">BA</text>
+  <circle cx="367" cy="353" r="62" fill="#B11F24" stroke="#071810" stroke-width="10"/>
+  <text x="334" y="389" fill="white" font-family="Arial Black,Arial,sans-serif" font-size="84" font-weight="900">♠</text>
+  <defs>
+    <linearGradient id="paint0_linear" x1="69" y1="55" x2="449" y2="466" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F3DFAD"/>
+      <stop offset="0.48" stop-color="#D4B06A"/>
+      <stop offset="1" stop-color="#8A6427"/>
+    </linearGradient>
+  </defs>
+</svg>

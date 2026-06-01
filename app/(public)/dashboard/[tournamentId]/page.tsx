@@ -2,6 +2,7 @@
 
 import { use, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import AutoRefresh from "@/components/live/AutoRefresh";
 
 type PageProps = {
   params: Promise<{ tournamentId: string }>;
@@ -198,6 +199,7 @@ export default function TournamentDashboardPage({ params }: PageProps) {
 
   return (
     <main className="min-h-screen bg-[#061710] p-4 text-white sm:p-6 lg:p-8">
+      <AutoRefresh />
       <section className="mb-6 rounded-[2rem] border border-[#d4b06a]/20 bg-gradient-to-br from-[#0a2018] to-[#12392b] p-6 shadow-2xl lg:p-8">
         <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
           <div>

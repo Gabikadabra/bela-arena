@@ -1,0 +1,13 @@
+PROMJENE - UI refresh, mobilni dizajn i auto refresh rezultata
+
+- Dodan novi jednostavniji Bela Arena vizual: tamno zeleni stol/filc, zlatni detalji, karte i crveni live naglasci.
+- Dodan novi logo komponenta components/brand/BelaLogo.tsx i SVG logo u public/brand/bela-arena-logo.svg.
+- Navigacija je redizajnirana, bolja za desktop i mobitel, s hamburger menijem.
+- Početna stranica je redizajnirana da izgleda profesionalnije i jasnije.
+- Dodan components/live/AutoRefresh.tsx koji osvježava stranicu svake minute.
+- Auto refresh je dodan na stranice s rezultatima: turnir, live meč, unos meča, liga/tablica, dashboard i rang-lista.
+- Auto refresh ne refresh-a dok korisnik tipka u input/select/textarea poljima.
+- Dodane globalne UI klase i mobilne prilagodbe u app/globals.css.
+- Popravljen api/send_invite da build ne pukne ako RESEND_API_KEY nije dostupan u build okruženju.
+
+SQL nije potreban.
