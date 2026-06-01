@@ -1,17 +1,29 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="512" height="512" rx="112" fill="#071810"/>
-  <rect x="38" y="38" width="436" height="436" rx="88" fill="url(#paint0_linear)" stroke="#D4B06A" stroke-width="10"/>
-  <rect x="92" y="77" width="110" height="138" rx="22" fill="#071810" stroke="#F3DFAD" stroke-width="8"/>
-  <text x="122" y="143" fill="#F3DFAD" font-family="Arial Black,Arial,sans-serif" font-size="54" font-weight="900">A</text>
-  <text x="124" y="192" fill="#D4B06A" font-family="Arial Black,Arial,sans-serif" font-size="46" font-weight="900">♣</text>
-  <text x="119" y="326" fill="#071810" font-family="Arial Black,Arial,sans-serif" font-size="128" font-weight="900" letter-spacing="-16">BA</text>
-  <circle cx="367" cy="353" r="62" fill="#B11F24" stroke="#071810" stroke-width="10"/>
-  <text x="334" y="389" fill="white" font-family="Arial Black,Arial,sans-serif" font-size="84" font-weight="900">♠</text>
-  <defs>
-    <linearGradient id="paint0_linear" x1="69" y1="55" x2="449" y2="466" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#F3DFAD"/>
-      <stop offset="0.48" stop-color="#D4B06A"/>
-      <stop offset="1" stop-color="#8A6427"/>
-    </linearGradient>
-  </defs>
+  <rect width="512" height="512" rx="96" fill="#272522"/>
+  <rect x="54" y="54" width="404" height="404" rx="74" fill="#302E2C" stroke="#1F1D1A" stroke-width="12"/>
+  <g opacity="0.26">
+    <rect x="86" y="86" width="85" height="85" fill="#81B64C"/>
+    <rect x="171" y="86" width="85" height="85" fill="#EEEED2"/>
+    <rect x="256" y="86" width="85" height="85" fill="#81B64C"/>
+    <rect x="341" y="86" width="85" height="85" fill="#EEEED2"/>
+    <rect x="86" y="171" width="85" height="85" fill="#EEEED2"/>
+    <rect x="171" y="171" width="85" height="85" fill="#81B64C"/>
+    <rect x="256" y="171" width="85" height="85" fill="#EEEED2"/>
+    <rect x="341" y="171" width="85" height="85" fill="#81B64C"/>
+    <rect x="86" y="256" width="85" height="85" fill="#81B64C"/>
+    <rect x="171" y="256" width="85" height="85" fill="#EEEED2"/>
+    <rect x="256" y="256" width="85" height="85" fill="#81B64C"/>
+    <rect x="341" y="256" width="85" height="85" fill="#EEEED2"/>
+    <rect x="86" y="341" width="85" height="85" fill="#EEEED2"/>
+    <rect x="171" y="341" width="85" height="85" fill="#81B64C"/>
+    <rect x="256" y="341" width="85" height="85" fill="#EEEED2"/>
+    <rect x="341" y="341" width="85" height="85" fill="#81B64C"/>
+  </g>
+  <rect x="104" y="106" width="304" height="300" rx="52" fill="#272522" stroke="#81B64C" stroke-width="10"/>
+  <text x="143" y="294" fill="#F5F0E8" font-family="Arial Black,Arial,sans-serif" font-size="132" font-weight="900" letter-spacing="-18">BA</text>
+  <circle cx="366" cy="363" r="56" fill="#81B64C" stroke="#272522" stroke-width="10"/>
+  <text x="337" y="399" fill="#14200D" font-family="Arial Black,Arial,sans-serif" font-size="76" font-weight="900">♣</text>
+  <rect x="96" y="84" width="80" height="104" rx="18" fill="#F5F0E8" stroke="#272522" stroke-width="8"/>
+  <text x="121" y="132" fill="#272522" font-family="Arial Black,Arial,sans-serif" font-size="42" font-weight="900">A</text>
+  <text x="119" y="173" fill="#C9574D" font-family="Arial Black,Arial,sans-serif" font-size="42" font-weight="900">♥</text>
 </svg>

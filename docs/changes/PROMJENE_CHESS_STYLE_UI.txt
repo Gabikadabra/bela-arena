@@ -1,0 +1,14 @@
+PROMJENE - CHESS STYLE UI REDIZAJN
+
+- Globalni dizajn prebačen u tamni, jednostavni chess-style izgled.
+- Desktop navigacija je sada lijevi sidebar umjesto klasičnog gornjeg menija.
+- Mobilna navigacija ima gornju traku + donju brzu navigaciju za najčešće stranice.
+- Početna stranica je redizajnirana u jednostavniji hero layout s turnirskim/chess-board osjećajem.
+- Logo je osvježen u tamno-zelenom/chess-board stilu.
+- Admin dashboard je reorganiziran:
+  - aktivni turnir je u posebnom lijevom panelu,
+  - brze akcije su grupirane u jasne kartice,
+  - dodani su brzi brojači ekipa, pending prijava, potvrđenih ekipa i gotovih mečeva,
+  - prijave i manualni rezultati su u glavnom radnom panelu.
+- Funkcionalnosti, rute i baza nisu mijenjane.
+- SQL nije potreban.

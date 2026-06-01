@@ -4,7 +4,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { mainNavLinks } from "@/config/navigation";
+import BelaLogo from "@/components/brand/BelaLogo";
 
+const icons: Record<string, string> = {
+  "/": "♟",
+  "/turniri": "🏆",
+  "/prijava": "＋",
+  "/rang-lista": "♜",
+  "/povijest": "☰",
+  "/moj-racun": "♙",
+  "/admin": "⚙"
+};
 
 export default function Nav() {
   const pathname = usePathname();
@@ -16,85 +26,76 @@ export default function Nav() {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[#d4b06a]/10 bg-[#0a2018]/85 backdrop-blur-xl">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-        <Link href="/" className="group flex items-center gap-3" onClick={() => setOpen(false)}>
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#d4b06a]/30 bg-[#d4b06a]/10 text-xl font-black text-[#d4b06a] shadow-[0_0_25px_rgba(212,176,106,0.16)] transition group-hover:scale-105">
-            BA
-          </div>
-
-          <div className="leading-tight">
-            <p className="text-lg font-black text-[#f3dfad]">Bela Arena</p>
-            <p className="hidden text-xs font-bold uppercase tracking-[0.22em] text-zinc-500 sm:block">
-              Turnir platforma
-            </p>
-          </div>
+    <>
+      <aside className="app-sidebar hidden lg:flex">
+        <Link href="/" className="app-sidebar-logo" aria-label="Bela Arena početna">
+          <BelaLogo compact />
         </Link>
 
-        <div className="hidden items-center gap-2 lg:flex">
+        <nav className="app-sidebar-links" aria-label="Glavna navigacija">
           {mainNavLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className={`rounded-xl px-4 py-2 text-sm font-black transition ${
-                isActive(link.href)
-                  ? "bg-[#d4b06a] text-black shadow-[0_0_24px_rgba(212,176,106,0.18)]"
-                  : "text-zinc-300 hover:bg-[#d4b06a]/10 hover:text-[#d4b06a]"
-              }`}
+              className={`app-sidebar-link ${isActive(link.href) ? "is-active" : ""}`}
+              title={link.label}
             >
-              {link.label}
+              <span className="app-sidebar-icon">{icons[link.href] || "•"}</span>
+              <span className="app-sidebar-label">{link.label}</span>
             </Link>
           ))}
-        </div>
+        </nav>
+      </aside>
+
+      <header className="app-mobile-top lg:hidden">
+        <Link href="/" onClick={() => setOpen(false)} aria-label="Bela Arena početna">
+          <BelaLogo />
+        </Link>
 
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#d4b06a]/30 bg-[#d4b06a]/10 text-[#d4b06a] transition hover:bg-[#d4b06a]/20 lg:hidden"
+          className="app-mobile-menu-button"
           aria-label={open ? "Zatvori meni" : "Otvori meni"}
           aria-expanded={open}
         >
           <span className="relative h-5 w-6">
-            <span
-              className={`absolute left-0 top-0 h-0.5 w-6 rounded-full bg-current transition ${
-                open ? "translate-y-2 rotate-45" : ""
-              }`}
-            />
-            <span
-              className={`absolute left-0 top-2 h-0.5 w-6 rounded-full bg-current transition ${
-                open ? "opacity-0" : ""
-              }`}
-            />
-            <span
-              className={`absolute left-0 top-4 h-0.5 w-6 rounded-full bg-current transition ${
-                open ? "-translate-y-2 -rotate-45" : ""
-              }`}
-            />
+            <span className={`absolute left-0 top-0 h-0.5 w-6 rounded-full bg-current transition ${open ? "translate-y-2 rotate-45" : ""}`} />
+            <span className={`absolute left-0 top-2 h-0.5 w-6 rounded-full bg-current transition ${open ? "opacity-0" : ""}`} />
+            <span className={`absolute left-0 top-4 h-0.5 w-6 rounded-full bg-current transition ${open ? "-translate-y-2 -rotate-45" : ""}`} />
           </span>
         </button>
-      </nav>
+      </header>
 
       {open && (
-        <div className="border-t border-[#d4b06a]/10 bg-[#0a2018]/95 px-4 pb-5 pt-3 shadow-2xl lg:hidden">
-          <div className="mx-auto grid max-w-7xl gap-2">
-            {mainNavLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setOpen(false)}
-                className={`flex items-center justify-between rounded-2xl border px-4 py-4 text-base font-black transition ${
-                  isActive(link.href)
-                    ? "border-[#f3dfad]/50 bg-[#d4b06a] text-black"
-                    : "border-[#d4b06a]/15 bg-[#0a2018]/45 text-zinc-200 hover:border-[#d4b06a]/30 hover:bg-[#d4b06a]/10 hover:text-[#d4b06a]"
-                }`}
-              >
-                <span>{link.label}</span>
-                <span className="text-lg">›</span>
-              </Link>
-            ))}
-          </div>
+        <div className="app-mobile-menu lg:hidden">
+          {mainNavLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={() => setOpen(false)}
+              className={`app-mobile-menu-link ${isActive(link.href) ? "is-active" : ""}`}
+            >
+              <span>{icons[link.href] || "•"}</span>
+              <span>{link.label}</span>
+              <span className="ml-auto">›</span>
+            </Link>
+          ))}
         </div>
       )}
-    </header>
+
+      <nav className="app-bottom-nav lg:hidden" aria-label="Brza navigacija">
+        {mainNavLinks.slice(0, 5).map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            className={`app-bottom-link ${isActive(link.href) ? "is-active" : ""}`}
+          >
+            <span>{icons[link.href] || "•"}</span>
+            <span>{link.label}</span>
+          </Link>
+        ))}
+      </nav>
+    </>
   );
 }
