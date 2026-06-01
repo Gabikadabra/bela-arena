@@ -327,6 +327,22 @@ function buildSeedPreview(teams: any[], seedCount = 8) {
     .map((team, index) => ({ ...team, seed_rank: index + 1 }));
 }
 
+function getRequestedTournamentId() {
+  if (typeof window === "undefined") return "";
+
+  const params = new URLSearchParams(window.location.search);
+  return params.get("tournamentId") || params.get("turnir") || "";
+}
+
+function replaceTournamentInUrl(tournamentId: string) {
+  if (typeof window === "undefined") return;
+
+  const url = new URL(window.location.href);
+  if (tournamentId) url.searchParams.set("tournamentId", tournamentId);
+  else url.searchParams.delete("tournamentId");
+  window.history.replaceState(null, "", url.toString());
+}
+
 function getDrawAnimationItems(format: string, teams: any[], generated: any[] = []) {
   if (format === "groups_knockout") {
     const grouped: Record<string, any[]> = {};
@@ -451,13 +467,35 @@ export default function ZdrijebAdminPage() {
       .select("*")
       .order("starts_at", { ascending: true });
 
-    setTournaments(data || []);
+    const activeTournaments = (data || []).filter(
+      (row: any) => row.status !== "finished"
+    );
+    const requestedTournamentId = getRequestedTournamentId();
 
-    if (data && data.length > 0) {
-      setSelectedTournament((current) =>
-        current && data.some((t) => t.id === current) ? current : data[0].id
-      );
+    setTournaments(activeTournaments);
+
+    if (activeTournaments.length > 0) {
+      setSelectedTournament((current) => {
+        if (requestedTournamentId && activeTournaments.some((t) => t.id === requestedTournamentId)) {
+          return requestedTournamentId;
+        }
+
+        return current && activeTournaments.some((t) => t.id === current)
+          ? current
+          : activeTournaments[0].id;
+      });
+    } else {
+      setSelectedTournament("");
+      setTournament(null);
+      setTeams([]);
+      setMatches([]);
+      setStandings([]);
     }
+  }
+
+  function handleTournamentChange(tournamentId: string) {
+    setSelectedTournament(tournamentId);
+    replaceTournamentInUrl(tournamentId);
   }
 
   async function loadTournamentData() {
@@ -968,7 +1006,7 @@ export default function ZdrijebAdminPage() {
 
         <select
           value={selectedTournament}
-          onChange={(e) => setSelectedTournament(e.target.value)}
+          onChange={(e) => handleTournamentChange(e.target.value)}
           className="input"
         >
           {tournaments.map((t) => (

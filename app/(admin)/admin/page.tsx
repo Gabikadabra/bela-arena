@@ -405,6 +405,28 @@ export default function AdminPage() {
     { id: "manual", label: "Manual rezultati", count: manualEnabled ? openMatches.length : null },
   ] as const;
 
+  const tournamentQuery = selectedTournament
+    ? `?tournamentId=${encodeURIComponent(selectedTournament)}`
+    : "";
+  const editTournamentHref = selectedTournament
+    ? `/admin/uredi-turnir/${selectedTournament}`
+    : "/admin/uredi-turnir";
+  const drawHref = selectedTournament
+    ? `/admin/zdrijeb${tournamentQuery}`
+    : "/admin/zdrijeb";
+  const bracketHref = selectedTournament
+    ? `/admin/bracket/${selectedTournament}`
+    : "/admin";
+  const dashboardHref = selectedTournament
+    ? `/dashboard/${selectedTournament}`
+    : "/admin";
+  const publicTournamentHref = selectedTournament
+    ? `/tournament/${selectedTournament}`
+    : "/turniri";
+  const achievementsHref = selectedTournament
+    ? `/admin/achievementi${tournamentQuery}`
+    : "/admin/achievementi";
+
   if (!isAdmin) {
     return (
       <main className="mx-auto max-w-xl px-6 py-20">
@@ -557,23 +579,23 @@ export default function AdminPage() {
       </section>
 
       <section className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <a href="/admin/uredi-turnir" className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-4 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10">
+        <a href={editTournamentHref} className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-4 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10">
           <span className="block text-xl text-[#d4b06a]">✏️</span>
           Uredi turnir
         </a>
-        <a href="/admin/zdrijeb" className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-4 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10">
+        <a href={drawHref} className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-4 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10">
           <span className="block text-xl text-[#d4b06a]">🎲</span>
           Ždrijeb
         </a>
-        <a href={selectedTournament ? `/tournament/${selectedTournament}` : "/admin"} className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-4 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10">
+        <a href={publicTournamentHref} className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-4 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10">
           <span className="block text-xl text-[#d4b06a]">🏆</span>
           Rezultati
         </a>
-        <a href={selectedTournament ? `/dashboard/${selectedTournament}` : "/admin"} target={selectedTournament ? "_blank" : undefined} rel={selectedTournament ? "noopener noreferrer" : undefined} className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-4 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10">
+        <a href={dashboardHref} target={selectedTournament ? "_blank" : undefined} rel={selectedTournament ? "noopener noreferrer" : undefined} className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-4 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10">
           <span className="block text-xl text-[#d4b06a]">📺</span>
           TV dashboard
         </a>
-        <a href="/admin/achievementi" className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-4 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10">
+        <a href={achievementsHref} className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-4 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10">
           <span className="block text-xl text-[#d4b06a]">🏅</span>
           Achievementi
         </a>
@@ -638,7 +660,7 @@ export default function AdminPage() {
               <button type="button" onClick={() => setActiveSection("manual")} className="rounded-xl bg-[#12392b] p-4 text-left font-bold text-[#f3dfad] transition hover:bg-[#d4b06a]/10">
                 Upiši rezultat
               </button>
-              <a href={selectedTournament ? `/admin/bracket/${selectedTournament}` : "/admin"} className="rounded-xl bg-[#12392b] p-4 font-bold text-[#f3dfad] transition hover:bg-[#d4b06a]/10">
+              <a href={bracketHref} className="rounded-xl bg-[#12392b] p-4 font-bold text-[#f3dfad] transition hover:bg-[#d4b06a]/10">
                 Otvori bracket
               </a>
             </div>

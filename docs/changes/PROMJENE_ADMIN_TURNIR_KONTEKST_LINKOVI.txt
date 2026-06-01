@@ -1,0 +1,9 @@
+PROMJENA: Admin kartice pamte odabrani turnir
+
+- Admin dashboard sada šalje odabrani tournamentId u linkove/kartice.
+- Kartica "Uredi turnir" sada otvara direktno edit stranicu za odabrani turnir.
+- Kartica "Ždrijeb" otvara /admin/zdrijeb?tournamentId=<id> i automatski odabire isti turnir.
+- Kartice za javni turnir, TV dashboard, bracket i achievemente nose isti kontekst turnira gdje ima smisla.
+- Stranica /admin/zdrijeb podržava tournamentId query parametar i zadržava ga kad admin promijeni turnir u selectu.
+- Stranica /admin/uredi-turnir?tournamentId=<id> automatski prebacuje na /admin/uredi-turnir/<id>.
+- Finished turniri se i dalje ne nude u admin odabirima.

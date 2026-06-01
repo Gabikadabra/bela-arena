@@ -172,7 +172,7 @@ export default function UrediTurnirPage() {
           <h1 className="page-title">Uredi turnir</h1>
           <p className="muted mt-4 max-w-2xl">Promijeni podatke, status, limite bodova i format natjecanja.</p>
         </div>
-        <div className="flex flex-wrap gap-3"><a href="/admin" className="btn-outline">Admin panel</a><a href="/admin/zdrijeb" className="btn-outline">Ždrijeb</a></div>
+        <div className="flex flex-wrap gap-3"><a href="/admin" className="btn-outline">Admin panel</a><a href={`/admin/zdrijeb?tournamentId=${tournamentId}`} className="btn-outline">Ždrijeb</a></div>
       </div>
 
       <form onSubmit={handleSubmit} className="card shadow-2xl">
@@ -201,7 +201,7 @@ export default function UrediTurnirPage() {
           <div className="md:col-span-2"><Field label="Dodatna pravila"><textarea value={form.rules} onChange={(e) => setForm({ ...form, rules: e.target.value })} className="input min-h-32" /></Field></div>
         </div>
 
-        <div className="mt-8 flex flex-wrap items-center gap-4"><button type="submit" disabled={saving} className="btn-primary disabled:opacity-50">{saving ? "Spremam..." : "Spremi promjene"}</button><a href="/admin/uredi-turnir" className="btn-outline">Nazad</a></div>
+        <div className="mt-8 flex flex-wrap items-center gap-4"><button type="submit" disabled={saving} className="btn-primary disabled:opacity-50">{saving ? "Spremam..." : "Spremi promjene"}</button><a href={`/admin/uredi-turnir?tournamentId=${tournamentId}`} className="btn-outline">Nazad</a></div>
       </form>
 
       {message && <div className="mt-6 rounded-2xl border border-[#d4b06a]/30 bg-[#d4b06a]/10 p-5 font-bold text-[#d4b06a]">{message}</div>}

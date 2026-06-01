@@ -3,6 +3,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
+function getRequestedTournamentId() {
+  if (typeof window === "undefined") return "";
+
+  const params = new URLSearchParams(window.location.search);
+  return params.get("tournamentId") || params.get("turnir") || "";
+}
+
 export default function OdaberiTurnirZaUredjivanjePage() {
   const [tournaments, setTournaments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +40,17 @@ export default function OdaberiTurnirZaUredjivanjePage() {
       .order("starts_at", { ascending: false });
 
     if (!error) {
-      setTournaments((data || []).filter((tournament) => tournament.status !== "finished"));
+      const activeTournaments = (data || []).filter(
+        (tournament) => tournament.status !== "finished"
+      );
+      const requestedTournamentId = getRequestedTournamentId();
+
+      setTournaments(activeTournaments);
+
+      if (requestedTournamentId && activeTournaments.some((tournament) => tournament.id === requestedTournamentId)) {
+        window.location.href = `/admin/uredi-turnir/${requestedTournamentId}`;
+        return;
+      }
     }
 
     setLoading(false);
@@ -95,7 +112,7 @@ export default function OdaberiTurnirZaUredjivanjePage() {
                   Uredi
                 </a>
 
-                <a href={`/admin/zdrijeb`} className="btn-outline">
+                <a href={`/admin/zdrijeb?tournamentId=${tournament.id}`} className="btn-outline">
                   Ždrijeb
                 </a>
 
