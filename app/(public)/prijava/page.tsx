@@ -206,6 +206,11 @@ export default function PrijavaPage() {
     );
   }
 
+  const selectedTournament = tournaments.find((t) => t.id === form.tournamentId);
+  const hasGroupSettings = selectedTournament?.tournament_format === "groups_knockout";
+  const hasLeagueSettings = ["round_robin", "league_knockout"].includes(selectedTournament?.tournament_format);
+  const hasKnockoutAfter = ["groups_knockout", "league_knockout"].includes(selectedTournament?.tournament_format);
+
   return (
     <main className="mx-auto max-w-5xl px-6 py-12">
       <div className="mb-10">
@@ -236,6 +241,21 @@ export default function PrijavaPage() {
               ))}
             </select>
           </Field>
+
+          {selectedTournament && (
+            <div className="md:col-span-2 card-soft">
+              <p className="font-bold text-[#f3dfad]">Postavke turnira</p>
+              <div className="mt-3 flex flex-wrap gap-2 text-sm font-bold text-white/70">
+                <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1">Format: {selectedTournament.tournament_format === "league_knockout" ? "Liga prvaka" : selectedTournament.tournament_format === "groups_knockout" ? "Grupe + knockout" : selectedTournament.tournament_format === "round_robin" ? "Liga" : "Knockout"}</span>
+                {hasGroupSettings && <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1">Grupe: {selectedTournament.group_size || 4} ekipe</span>}
+                {hasLeagueSettings && <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1">Liga: {Number(selectedTournament.league_rounds || 1) === 2 ? "dvokružno" : "jednokružno"}</span>}
+                {hasKnockoutAfter && <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1">Prolazi dalje: {selectedTournament.knockout_size || 16}</span>}
+              </div>
+              {hasGroupSettings && (
+                <p className="muted mt-3 text-sm">Ovaj turnir ima grupnu fazu, zato se prikazuju postavke grupa.</p>
+              )}
+            </div>
+          )}
 
           <Field label="Naziv ekipe">
             <input

@@ -189,6 +189,7 @@ export default function TournamentPage({
   function formatType(type: string) {
     if (type === "knockout") return "Knockout";
     if (type === "groups_knockout") return "Grupe + knockout";
+    if (type === "league_knockout") return "Liga prvaka";
     if (type === "round_robin") return "Round robin";
     return type || "Nije definirano";
   }

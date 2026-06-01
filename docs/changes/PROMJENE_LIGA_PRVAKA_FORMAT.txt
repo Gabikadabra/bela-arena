@@ -1,0 +1,11 @@
+Dodano:
+- novi format turnira: league_knockout / Liga prvaka
+- liga faza može biti jednokružna ili dvokružna
+- nakon liga faze može se odabrati koliko ekipa prolazi u knockout
+- stranica Novi turnir skriva postavke grupa ako format nema grupe
+- stranica Uredi turnir podržava iste postavke
+- admin ždrijeb generira liga fazu + prazni knockout bracket
+- gumb za ažuriranje tablice i popunjavanje knockout-a radi za grupe + knockout i Liga prvaka format
+- javna prijava prikazuje samo relevantne postavke odabranog turnira
+SQL:
+- dodana migracija SUPABASE_FORMAT_LIGA_PRVAKA.sql za group_size, knockout_size i league_rounds

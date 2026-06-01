@@ -129,6 +129,77 @@ function calculateGroupRows(matches: any[], currentStandings: any[]) {
   return Array.from(stats.values());
 }
 
+function calculateLeagueRows(matches: any[], teams: any[]) {
+  const stats = new Map<string, any>();
+
+  teams.forEach((team) => {
+    stats.set(team.id, {
+      tournament_id: team.tournament_id,
+      team_id: team.id,
+      team_name: team.name,
+      played: 0,
+      wins: 0,
+      losses: 0,
+      points_for: 0,
+      points_against: 0,
+      points_diff: 0,
+      table_points: 0
+    });
+  });
+
+  matches
+    .filter((match) => match.phase === "round_robin" && match.status === "finished" && match.team_a_id && match.team_b_id)
+    .forEach((match) => {
+      const teamA = stats.get(match.team_a_id);
+      const teamB = stats.get(match.team_b_id);
+      if (!teamA || !teamB) return;
+
+      const scoreA = Number(match.score_a || 0);
+      const scoreB = Number(match.score_b || 0);
+
+      teamA.played += 1;
+      teamA.points_for += scoreA;
+      teamA.points_against += scoreB;
+      teamA.points_diff = teamA.points_for - teamA.points_against;
+
+      teamB.played += 1;
+      teamB.points_for += scoreB;
+      teamB.points_against += scoreA;
+      teamB.points_diff = teamB.points_for - teamB.points_against;
+
+      if (match.winner_id === match.team_a_id || scoreA > scoreB) {
+        teamA.wins += 1;
+        teamA.table_points += 2;
+        teamB.losses += 1;
+      } else if (match.winner_id === match.team_b_id || scoreB > scoreA) {
+        teamB.wins += 1;
+        teamB.table_points += 2;
+        teamA.losses += 1;
+      }
+    });
+
+  return sortStandings(Array.from(stats.values()));
+}
+
+function buildLeagueQualification(rows: any[], knockoutSize = 8) {
+  const qualifiers = sortStandings(rows)
+    .slice(0, knockoutSize)
+    .map((row, index) => ({
+      ...row,
+      seed: index + 1,
+      qualification_type: "league",
+      qualification_label: `${index + 1}. u ligi`,
+      group_rank: index + 1
+    }));
+
+  return {
+    sortedGroups: { Liga: sortStandings(rows) },
+    qualifiers,
+    qualifierIds: new Set(qualifiers.map((row) => row.team_id)),
+    extraIds: new Set()
+  };
+}
+
 function buildQualification(rows: any[], knockoutSize = 16) {
   const grouped = rows.reduce((acc: any, row: any) => {
     const groupName = row.group_name || "Bez grupe";
@@ -378,17 +449,13 @@ export default function ZdrijebAdminPage() {
       .select("*")
       .order("starts_at", { ascending: true });
 
-    const activeTournaments = (data || []).filter(
-      (tournament) => tournament.status !== "finished"
-    );
+    setTournaments(data || []);
 
-    setTournaments(activeTournaments);
-
-    setSelectedTournament((current) =>
-      current && activeTournaments.some((t) => t.id === current)
-        ? current
-        : activeTournaments[0]?.id || ""
-    );
+    if (data && data.length > 0) {
+      setSelectedTournament((current) =>
+        current && data.some((t) => t.id === current) ? current : data[0].id
+      );
+    }
   }
 
   async function loadTournamentData() {
@@ -617,7 +684,7 @@ export default function ZdrijebAdminPage() {
 
         setMessage("Knockout bracket je generiran.");
       } else if (tournament.tournament_format === "round_robin") {
-        const generated = generateRoundRobinMatches(selectedTournament, teams);
+        const generated = generateRoundRobinMatches(selectedTournament, teams, Number(tournament.league_rounds || 1));
         await playDrawAnimation(
           "LIVE ŽDRIJEB",
           "Ekipe se predstavljaju prije izrade Berger rasporeda",
@@ -629,6 +696,26 @@ export default function ZdrijebAdminPage() {
         if (error) throw error;
 
         setMessage("Round robin raspored je generiran.");
+      } else if (tournament.tournament_format === "league_knockout") {
+        const knockoutSize = Number(tournament.knockout_size || 8);
+        const leagueRounds = Number(tournament.league_rounds || 1);
+        const generatedLeague = generateRoundRobinMatches(selectedTournament, teams, leagueRounds);
+        const generatedKnockout = generateGroupsKnockoutSeeds(selectedTournament, knockoutSize);
+
+        await playDrawAnimation(
+          "LIVE ŽDRIJEB LIGE PRVAKA",
+          "Prvo se slaže liga faza, a knockout čeka najbolje ekipe",
+          getDrawAnimationItems("round_robin", teams, generatedLeague)
+        );
+        await clearOldDraw();
+
+        const { error: matchesError } = await supabase
+          .from("matches")
+          .insert([...generatedLeague, ...generatedKnockout]);
+
+        if (matchesError) throw matchesError;
+
+        setMessage("Liga prvaka format je generiran. Nakon lige klikni 'Ažuriraj tablice i popuni knockout'.");
       } else if (tournament.tournament_format === "groups_knockout") {
         const groupSize = tournament.group_size || 4;
         const knockoutSize = tournament.knockout_size || 16;
@@ -702,19 +789,26 @@ export default function ZdrijebAdminPage() {
   async function updateTablesAndAdvance() {
     setMessage("");
 
-    if (!tournament || tournament.tournament_format !== "groups_knockout") {
-      setMessage("Ova opcija je samo za format grupe + knockout.");
+    if (!tournament || !["groups_knockout", "league_knockout"].includes(tournament.tournament_format)) {
+      setMessage("Ova opcija je samo za format koji nakon prve faze ima knockout.");
       return;
     }
 
     try {
       setWorking(true);
 
-      const recalculatedRows = calculateGroupRows(matches, standings);
-      await updateGroupStandingsOnly(recalculatedRows);
-
       const knockoutSize = Number(tournament.knockout_size || 16);
-      const qualification = buildQualification(recalculatedRows, knockoutSize);
+      const recalculatedRows = tournament.tournament_format === "league_knockout"
+        ? calculateLeagueRows(matches, teams)
+        : calculateGroupRows(matches, standings);
+
+      if (tournament.tournament_format === "groups_knockout") {
+        await updateGroupStandingsOnly(recalculatedRows);
+      }
+
+      const qualification = tournament.tournament_format === "league_knockout"
+        ? buildLeagueQualification(recalculatedRows, knockoutSize)
+        : buildQualification(recalculatedRows, knockoutSize);
       const qualifiers = qualification.qualifiers;
 
       if (qualifiers.length < knockoutSize) {
@@ -723,8 +817,9 @@ export default function ZdrijebAdminPage() {
         );
       }
 
+      const firstPhase = tournament.tournament_format === "league_knockout" ? "round_robin" : "group";
       const unfinishedGroupMatches = matches.filter(
-        (match) => match.phase === "group" && match.status !== "finished"
+        (match) => match.phase === firstPhase && match.status !== "finished"
       );
 
       let currentKnockoutMatches = matches.filter(
@@ -830,10 +925,13 @@ export default function ZdrijebAdminPage() {
 
   const recommended = recommendFormat(teams.length);
   const standingsForView = useMemo(() => calculateGroupRows(matches, standings), [matches, standings]);
+  const leagueRowsForView = useMemo(() => calculateLeagueRows(matches, teams), [matches, teams]);
   const knockoutSize = Number(tournament?.knockout_size || 16);
   const qualification = useMemo(
-    () => buildQualification(standingsForView, knockoutSize),
-    [standingsForView, knockoutSize]
+    () => tournament?.tournament_format === "league_knockout"
+      ? buildLeagueQualification(leagueRowsForView, knockoutSize)
+      : buildQualification(standingsForView, knockoutSize),
+    [standingsForView, leagueRowsForView, knockoutSize, tournament?.tournament_format]
   );
   const seededTeams = useMemo(() => buildSeedPreview(teams, 8), [teams]);
 
@@ -897,7 +995,7 @@ export default function ZdrijebAdminPage() {
           </p>
         )}
 
-        {tournament?.tournament_format === "groups_knockout" && (
+        {["groups_knockout", "league_knockout"].includes(tournament?.tournament_format) && (
           <div className="mt-5 card-soft">
             <p className="font-bold text-[#f3dfad]">Pravila prolaska</p>
             <p className="muted mt-2">
@@ -924,10 +1022,10 @@ export default function ZdrijebAdminPage() {
             Izbriši ždrijeb
           </button>
 
-          {tournament?.tournament_format === "groups_knockout" && (
+          {["groups_knockout", "league_knockout"].includes(tournament?.tournament_format) && (
             <button
               onClick={updateTablesAndAdvance}
-              disabled={working || standings.length === 0}
+              disabled={working || (tournament?.tournament_format === "groups_knockout" ? standings.length === 0 : roundRobinMatches.length === 0)}
               className="btn-outline disabled:cursor-not-allowed disabled:opacity-60"
             >
               Ažuriraj tablice i popuni knockout
@@ -1013,7 +1111,7 @@ export default function ZdrijebAdminPage() {
         </section>
       )}
 
-      {qualification.qualifiers.length > 0 && tournament?.tournament_format === "groups_knockout" && (
+      {qualification.qualifiers.length > 0 && ["groups_knockout", "league_knockout"].includes(tournament?.tournament_format) && (
         <section className="mt-10 card">
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
             <div>

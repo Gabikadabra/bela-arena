@@ -206,6 +206,7 @@ export function generateKnockoutMatches(
 export function generateRoundRobinMatches(
   tournamentId: string,
   teams: Team[],
+  leagueRounds = 1,
 ): MatchInsert[] {
   if (teams.length < 2) {
     throw new Error("Za round robin trebaju barem 2 ekipe.");
@@ -214,25 +215,34 @@ export function generateRoundRobinMatches(
   const matches: MatchInsert[] = [];
   let matchNumber = 1;
   const bergerRounds = generateBergerRounds(teams);
+  const repeats = Math.max(1, Number(leagueRounds || 1));
 
-  bergerRounds.forEach((roundPairs, roundIndex) => {
-    roundPairs.forEach((pair, index) => {
-      matches.push({
-        tournament_id: tournamentId,
-        phase: "round_robin",
-        round: roundIndex + 1,
-        match_number: matchNumber,
-        bracket_position: index + 1,
-        team_a_id: pair.teamA.id,
-        team_b_id: pair.teamB.id,
-        team_a_name: pair.teamA.name,
-        team_b_name: pair.teamB.name,
-        status: roundIndex === 0 ? "scheduled" : "waiting",
+  for (let repeat = 0; repeat < repeats; repeat++) {
+    bergerRounds.forEach((roundPairs, roundIndex) => {
+      const roundNumber = repeat * bergerRounds.length + roundIndex + 1;
+
+      roundPairs.forEach((pair, index) => {
+        const swapSides = repeat % 2 === 1;
+        const teamA = swapSides ? pair.teamB : pair.teamA;
+        const teamB = swapSides ? pair.teamA : pair.teamB;
+
+        matches.push({
+          tournament_id: tournamentId,
+          phase: "round_robin",
+          round: roundNumber,
+          match_number: matchNumber,
+          bracket_position: index + 1,
+          team_a_id: teamA.id,
+          team_b_id: teamB.id,
+          team_a_name: teamA.name,
+          team_b_name: teamB.name,
+          status: roundNumber === 1 ? "scheduled" : "waiting",
+        });
+
+        matchNumber++;
       });
-
-      matchNumber++;
     });
-  });
+  }
 
   return matches;
 }
@@ -368,8 +378,8 @@ export function recommendFormat(teamCount: number) {
   };
 }
 
-export function calculateRoundRobinMatchCount(teamCount: number) {
-  return (teamCount * (teamCount - 1)) / 2;
+export function calculateRoundRobinMatchCount(teamCount: number, leagueRounds = 1) {
+  return ((teamCount * (teamCount - 1)) / 2) * Math.max(1, Number(leagueRounds || 1));
 }
 
 export function calculateGroupMatchCount(teamCount: number, groupSize = 4) {
