@@ -17,6 +17,8 @@ type SimpleCalculation = {
   declarationsB: number;
   belaA: number;
   belaB: number;
+  mackiA: boolean;
+  mackiB: boolean;
   finalA: number;
   finalB: number;
 };
@@ -34,7 +36,7 @@ export default function MecPage({ params }: PageProps) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"success" | "error">(
-    "success"
+    "success",
   );
 
   const loadingRef = useRef(false);
@@ -45,7 +47,9 @@ export default function MecPage({ params }: PageProps) {
     teamADeclarations: 0,
     teamBDeclarations: 0,
     teamABela: false,
-    teamBBela: false
+    teamBBela: false,
+    teamAMacki: false,
+    teamBMacki: false,
   });
 
   const [selectedDeclarationTeam, setSelectedDeclarationTeam] =
@@ -59,7 +63,9 @@ export default function MecPage({ params }: PageProps) {
     teamADeclarations: 0,
     teamBDeclarations: 0,
     teamABela: false,
-    teamBBela: false
+    teamBBela: false,
+    teamAMacki: false,
+    teamBMacki: false,
   });
 
   const [selectedEditDeclarationTeam, setSelectedEditDeclarationTeam] =
@@ -85,11 +91,11 @@ export default function MecPage({ params }: PageProps) {
           event: "*",
           schema: "public",
           table: "matches",
-          filter: `id=eq.${matchId}`
+          filter: `id=eq.${matchId}`,
         },
         () => {
           loadData(false);
-        }
+        },
       )
       .on(
         "postgres_changes",
@@ -97,11 +103,11 @@ export default function MecPage({ params }: PageProps) {
           event: "*",
           schema: "public",
           table: "match_games",
-          filter: `match_id=eq.${matchId}`
+          filter: `match_id=eq.${matchId}`,
         },
         () => {
           loadData(false);
-        }
+        },
       )
       .on(
         "postgres_changes",
@@ -109,11 +115,11 @@ export default function MecPage({ params }: PageProps) {
           event: "*",
           schema: "public",
           table: "match_sets",
-          filter: `match_id=eq.${matchId}`
+          filter: `match_id=eq.${matchId}`,
         },
         () => {
           loadData(false);
-        }
+        },
       )
       .subscribe();
 
@@ -172,7 +178,7 @@ export default function MecPage({ params }: PageProps) {
           .from("match_sets")
           .select("*")
           .eq("match_id", matchId)
-          .order("set_number", { ascending: true })
+          .order("set_number", { ascending: true }),
       ]);
 
     setTournament(tournamentData);
@@ -196,13 +202,13 @@ export default function MecPage({ params }: PageProps) {
 
   const legacyBestOf =
     Number(
-      String(tournament?.match_format || "best_of_1").replace("best_of_", "")
+      String(tournament?.match_format || "best_of_1").replace("best_of_", ""),
     ) || 1;
 
   const groupBestOf = Number(tournament?.group_best_of || 1);
 
   const knockoutBestOf = Number(
-    tournament?.knockout_best_of || legacyBestOf || 1
+    tournament?.knockout_best_of || legacyBestOf || 1,
   );
 
   const matchBestOf = match?.phase === "group" ? groupBestOf : knockoutBestOf;
@@ -215,25 +221,25 @@ export default function MecPage({ params }: PageProps) {
   const currentSetGames = useMemo(
     () =>
       games.filter((game) => Number(game.set_number) === Number(currentSet)),
-    [games, currentSet]
+    [games, currentSet],
   );
 
   const totalA = useMemo(
     () =>
       currentSetGames.reduce(
         (sum, game) => sum + Number(game.team_a_total || 0),
-        0
+        0,
       ),
-    [currentSetGames]
+    [currentSetGames],
   );
 
   const totalB = useMemo(
     () =>
       currentSetGames.reduce(
         (sum, game) => sum + Number(game.team_b_total || 0),
-        0
+        0,
       ),
-    [currentSetGames]
+    [currentSetGames],
   );
 
   function prettyBestOf(bestOf: number) {
@@ -249,6 +255,8 @@ export default function MecPage({ params }: PageProps) {
     teamBDeclarations: number;
     teamABela: boolean;
     teamBBela: boolean;
+    teamAMacki?: boolean;
+    teamBMacki?: boolean;
   }): SimpleCalculation {
     const hasA = source.teamAScore !== "";
     const hasB = source.teamBScore !== "";
@@ -269,8 +277,23 @@ export default function MecPage({ params }: PageProps) {
       rawB = 0;
     }
 
-    const declarationsA = Number(source.teamADeclarations || 0);
-    const declarationsB = Number(source.teamBDeclarations || 0);
+    const mackiA = Boolean(source.teamAMacki) && !source.teamBMacki;
+    const mackiB = Boolean(source.teamBMacki) && !source.teamAMacki;
+
+    if (mackiA) {
+      rawA = 162;
+      rawB = 0;
+    }
+
+    if (mackiB) {
+      rawA = 0;
+      rawB = 162;
+    }
+
+    const declarationsA =
+      Number(source.teamADeclarations || 0) + (mackiA ? 90 : 0);
+    const declarationsB =
+      Number(source.teamBDeclarations || 0) + (mackiB ? 90 : 0);
 
     const belaA = 0;
     const belaB = 0;
@@ -282,8 +305,10 @@ export default function MecPage({ params }: PageProps) {
       declarationsB,
       belaA,
       belaB,
+      mackiA,
+      mackiB,
       finalA: rawA + declarationsA + belaA,
-      finalB: rawB + declarationsB + belaB
+      finalB: rawB + declarationsB + belaB,
     };
   }
 
@@ -309,6 +334,45 @@ export default function MecPage({ params }: PageProps) {
   const afterSubmitA = totalA + preview.finalA;
   const afterSubmitB = totalB + preview.finalB;
 
+  function setMackiWinner(team: TeamSide) {
+    const isA = team === "A";
+
+    setForm((old) => ({
+      ...old,
+      teamAScore: isA ? "162" : "0",
+      teamBScore: isA ? "0" : "162",
+      teamAMacki: isA,
+      teamBMacki: !isA,
+    }));
+  }
+
+  function clearMacki() {
+    setForm((old) => ({
+      ...old,
+      teamAMacki: false,
+      teamBMacki: false,
+    }));
+  }
+
+  function setEditMackiWinner(team: TeamSide) {
+    const isA = team === "A";
+
+    setEditForm((old) => ({
+      ...old,
+      teamAScore: isA ? "162" : "0",
+      teamBScore: isA ? "0" : "162",
+      teamAMacki: isA,
+      teamBMacki: !isA,
+    }));
+  }
+
+  function clearEditMacki() {
+    setEditForm((old) => ({
+      ...old,
+      teamAMacki: false,
+      teamBMacki: false,
+    }));
+  }
 
   function updateLinkedScores(team: TeamSide, value: string) {
     const cleanValue = value.replace(/\D/g, "");
@@ -317,7 +381,7 @@ export default function MecPage({ params }: PageProps) {
       setForm((old) => ({
         ...old,
         teamAScore: "",
-        teamBScore: ""
+        teamBScore: "",
       }));
       return;
     }
@@ -328,7 +392,9 @@ export default function MecPage({ params }: PageProps) {
     setForm((old) => ({
       ...old,
       teamAScore: team === "A" ? String(score) : String(otherScore),
-      teamBScore: team === "B" ? String(score) : String(otherScore)
+      teamBScore: team === "B" ? String(score) : String(otherScore),
+      teamAMacki: false,
+      teamBMacki: false,
     }));
   }
 
@@ -339,7 +405,7 @@ export default function MecPage({ params }: PageProps) {
       setEditForm((old) => ({
         ...old,
         teamAScore: "",
-        teamBScore: ""
+        teamBScore: "",
       }));
       return;
     }
@@ -350,7 +416,9 @@ export default function MecPage({ params }: PageProps) {
     setEditForm((old) => ({
       ...old,
       teamAScore: team === "A" ? String(score) : String(otherScore),
-      teamBScore: team === "B" ? String(score) : String(otherScore)
+      teamBScore: team === "B" ? String(score) : String(otherScore),
+      teamAMacki: false,
+      teamBMacki: false,
     }));
   }
 
@@ -358,12 +426,12 @@ export default function MecPage({ params }: PageProps) {
     if (team === "A") {
       setForm((old) => ({
         ...old,
-        teamADeclarations: Number(old.teamADeclarations || 0) + value
+        teamADeclarations: Number(old.teamADeclarations || 0) + value,
       }));
     } else {
       setForm((old) => ({
         ...old,
-        teamBDeclarations: Number(old.teamBDeclarations || 0) + value
+        teamBDeclarations: Number(old.teamBDeclarations || 0) + value,
       }));
     }
   }
@@ -372,12 +440,12 @@ export default function MecPage({ params }: PageProps) {
     if (team === "A") {
       setForm((old) => ({
         ...old,
-        teamADeclarations: 0
+        teamADeclarations: 0,
       }));
     } else {
       setForm((old) => ({
         ...old,
-        teamBDeclarations: 0
+        teamBDeclarations: 0,
       }));
     }
   }
@@ -388,10 +456,18 @@ export default function MecPage({ params }: PageProps) {
     setEditForm({
       teamAScore: String(game.team_a_tricks ?? game.raw_team_a_tricks ?? 0),
       teamBScore: String(game.team_b_tricks ?? game.raw_team_b_tricks ?? 0),
-      teamADeclarations: Number(game.team_a_declarations || 0),
-      teamBDeclarations: Number(game.team_b_declarations || 0),
+      teamADeclarations: Math.max(
+        0,
+        Number(game.team_a_declarations || 0) - (game.team_a_macki ? 90 : 0),
+      ),
+      teamBDeclarations: Math.max(
+        0,
+        Number(game.team_b_declarations || 0) - (game.team_b_macki ? 90 : 0),
+      ),
       teamABela: false,
-      teamBBela: false
+      teamBBela: false,
+      teamAMacki: Boolean(game.team_a_macki),
+      teamBMacki: Boolean(game.team_b_macki),
     });
   }
 
@@ -404,11 +480,16 @@ export default function MecPage({ params }: PageProps) {
       teamADeclarations: 0,
       teamBDeclarations: 0,
       teamABela: false,
-      teamBBela: false
+      teamBBela: false,
+      teamAMacki: false,
+      teamBMacki: false,
     });
   }
 
-  async function advanceWinnerToNextMatch(winnerId: string, winnerName: string) {
+  async function advanceWinnerToNextMatch(
+    winnerId: string,
+    winnerName: string,
+  ) {
     if (!match) return;
 
     const currentRound = match.round || match.round_number || 1;
@@ -433,7 +514,7 @@ export default function MecPage({ params }: PageProps) {
         .update({
           team_a_id: winnerId,
           team_a_name: winnerName,
-          status: nextMatch.team_b_id ? "scheduled" : "waiting"
+          status: nextMatch.team_b_id ? "scheduled" : "waiting",
         })
         .eq("id", nextMatch.id);
     } else {
@@ -442,7 +523,7 @@ export default function MecPage({ params }: PageProps) {
         .update({
           team_b_id: winnerId,
           team_b_name: winnerName,
-          status: nextMatch.team_a_id ? "scheduled" : "waiting"
+          status: nextMatch.team_a_id ? "scheduled" : "waiting",
         })
         .eq("id", nextMatch.id);
     }
@@ -478,22 +559,22 @@ export default function MecPage({ params }: PageProps) {
     let finalStatus = "scheduled";
 
     const setNumbers = Array.from(
-      new Set(allGames.map((game) => Number(game.set_number || 1)))
+      new Set(allGames.map((game) => Number(game.set_number || 1))),
     ).sort((a, b) => a - b);
 
     for (const setNumber of setNumbers) {
       const setGames = allGames.filter(
-        (game) => Number(game.set_number || 1) === setNumber
+        (game) => Number(game.set_number || 1) === setNumber,
       );
 
       const setScoreA = setGames.reduce(
         (sum, game) => sum + Number(game.team_a_total || 0),
-        0
+        0,
       );
 
       const setScoreB = setGames.reduce(
         (sum, game) => sum + Number(game.team_b_total || 0),
-        0
+        0,
       );
 
       const setIsFinished =
@@ -519,7 +600,7 @@ export default function MecPage({ params }: PageProps) {
             team_b_score: setScoreB,
             winner_id: setWinnerId,
             status: "finished",
-            finished_at: new Date().toISOString()
+            finished_at: new Date().toISOString(),
           });
 
         if (insertSetError) throw insertSetError;
@@ -580,7 +661,7 @@ export default function MecPage({ params }: PageProps) {
       phase: match.phase,
       group_name: match.group_name,
       round: match.round,
-      round_number: match.round_number
+      round_number: match.round_number,
     });
 
     await loadData(false);
@@ -611,12 +692,17 @@ export default function MecPage({ params }: PageProps) {
     if (isLocked) {
       setMessageType("error");
       setMessage(
-        "Ovaj meč je zaključan. Prvo treba završiti prethodnu Berger rundu."
+        "Ovaj meč je zaključan. Prvo treba završiti prethodnu Berger rundu.",
       );
       return;
     }
 
-    if (preview.rawA < 0 || preview.rawA > 162 || preview.rawB < 0 || preview.rawB > 162) {
+    if (
+      preview.rawA < 0 ||
+      preview.rawA > 162 ||
+      preview.rawB < 0 ||
+      preview.rawB > 162
+    ) {
       setMessageType("error");
       setMessage("Bodovi moraju biti između 0 i 162.");
       return;
@@ -627,7 +713,7 @@ export default function MecPage({ params }: PageProps) {
       setMessage(
         form.teamAScore === "" && form.teamBScore === ""
           ? "Upiši bodove barem jedne ekipe. Ako upišeš samo jednu, druga se računa automatski."
-          : "Bodovi iz igre za obje ekipe zajedno moraju biti 162."
+          : "Bodovi iz igre za obje ekipe zajedno moraju biti 162.",
       );
       return;
     }
@@ -652,9 +738,11 @@ export default function MecPage({ params }: PageProps) {
       team_b_declarations: preview.declarationsB,
       team_a_bela: false,
       team_b_bela: false,
+      team_a_macki: preview.mackiA,
+      team_b_macki: preview.mackiB,
       team_a_total: preview.finalA,
       team_b_total: preview.finalB,
-      note: ""
+      note: "",
     });
 
     if (gameError) {
@@ -667,7 +755,7 @@ export default function MecPage({ params }: PageProps) {
     let updateMatch: any = {
       score_a: newTotalA,
       score_b: newTotalB,
-      result_status: "submitted"
+      result_status: "submitted",
     };
 
     const setFinished = newTotalA >= scoreLimit || newTotalB >= scoreLimit;
@@ -677,7 +765,7 @@ export default function MecPage({ params }: PageProps) {
         setSaving(false);
         setMessageType("error");
         setMessage(
-          "Set ne može završiti neriješeno. Dodaj još jedan unos ili ispravi rezultat."
+          "Set ne može završiti neriješeno. Dodaj još jedan unos ili ispravi rezultat.",
         );
         return;
       }
@@ -698,7 +786,7 @@ export default function MecPage({ params }: PageProps) {
         team_b_score: newTotalB,
         winner_id: setWinnerId,
         status: "finished",
-        finished_at: new Date().toISOString()
+        finished_at: new Date().toISOString(),
       });
 
       if (setError) {
@@ -722,7 +810,7 @@ export default function MecPage({ params }: PageProps) {
           sets_b: newSetsB,
           winner_id: setWinnerId,
           status: "finished",
-          result_status: "submitted"
+          result_status: "submitted",
         };
 
         await advanceWinnerToNextMatch(setWinnerId, winnerName);
@@ -734,7 +822,7 @@ export default function MecPage({ params }: PageProps) {
           current_set: currentSet + 1,
           score_a: 0,
           score_b: 0,
-          status: "scheduled"
+          status: "scheduled",
         };
       }
     }
@@ -759,7 +847,7 @@ export default function MecPage({ params }: PageProps) {
       phase: match.phase,
       group_name: match.group_name,
       round: match.round,
-      round_number: match.round_number
+      round_number: match.round_number,
     });
 
     setForm({
@@ -768,20 +856,21 @@ export default function MecPage({ params }: PageProps) {
       teamADeclarations: 0,
       teamBDeclarations: 0,
       teamABela: false,
-      teamBBela: false
+      teamBBela: false,
+      teamAMacki: false,
+      teamBMacki: false,
     });
 
     setMessageType("success");
     setMessage(
       setFinished
         ? "Set je završen i rezultat je spremljen."
-        : "Rezultat je dodan uživo."
+        : "Rezultat je dodan uživo.",
     );
 
     setSaving(false);
     await loadData(false);
   }
-
 
   async function disqualifyTeam(disqualifiedTeam: TeamSide) {
     if (!match || !tournament) {
@@ -802,10 +891,14 @@ export default function MecPage({ params }: PageProps) {
       return;
     }
 
-    const loserId = disqualifiedTeam === "A" ? match.team_a_id : match.team_b_id;
-    const winnerId = disqualifiedTeam === "A" ? match.team_b_id : match.team_a_id;
-    const loserName = disqualifiedTeam === "A" ? match.team_a_name : match.team_b_name;
-    const winnerName = disqualifiedTeam === "A" ? match.team_b_name : match.team_a_name;
+    const loserId =
+      disqualifiedTeam === "A" ? match.team_a_id : match.team_b_id;
+    const winnerId =
+      disqualifiedTeam === "A" ? match.team_b_id : match.team_a_id;
+    const loserName =
+      disqualifiedTeam === "A" ? match.team_a_name : match.team_b_name;
+    const winnerName =
+      disqualifiedTeam === "A" ? match.team_b_name : match.team_a_name;
 
     if (!loserId || !winnerId) {
       setMessageType("error");
@@ -814,7 +907,7 @@ export default function MecPage({ params }: PageProps) {
     }
 
     const confirmed = window.confirm(
-      `Upisati DNF za ${loserName || "ekipu"}? ${winnerName || "Protivnik"} automatski pobjeđuje.`
+      `Upisati DNF za ${loserName || "ekipu"}? ${winnerName || "Protivnik"} automatski pobjeđuje.`,
     );
 
     if (!confirmed) return;
@@ -845,9 +938,11 @@ export default function MecPage({ params }: PageProps) {
         team_b_declarations: 0,
         team_a_bela: false,
         team_b_bela: false,
+        team_a_macki: false,
+        team_b_macki: false,
         team_a_total: Math.max(0, finalScoreA - totalA),
         team_b_total: Math.max(0, finalScoreB - totalB),
-        note: dnfNote
+        note: dnfNote,
       });
 
       if (gameError) throw gameError;
@@ -865,7 +960,7 @@ export default function MecPage({ params }: PageProps) {
         winner_id: winnerId,
         status: "finished",
         result_status: "dnf",
-        admin_note: dnfNote
+        admin_note: dnfNote,
       };
 
       let { error: matchError } = await supabase
@@ -873,7 +968,12 @@ export default function MecPage({ params }: PageProps) {
         .update(matchUpdateWithNote)
         .eq("id", matchId);
 
-      if (matchError && String(matchError.message || "").toLowerCase().includes("admin_note")) {
+      if (
+        matchError &&
+        String(matchError.message || "")
+          .toLowerCase()
+          .includes("admin_note")
+      ) {
         const { admin_note, ...matchUpdateWithoutNote } = matchUpdateWithNote;
         const retry = await supabase
           .from("matches")
@@ -894,11 +994,13 @@ export default function MecPage({ params }: PageProps) {
         phase: match.phase,
         group_name: match.group_name,
         round: match.round,
-        round_number: match.round_number
+        round_number: match.round_number,
       });
 
       setMessageType("success");
-      setMessage(`${loserName || "Ekipa"} je označena kao DNF. ${winnerName || "Protivnik"} je pobjednik.`);
+      setMessage(
+        `${loserName || "Ekipa"} je označena kao DNF. ${winnerName || "Protivnik"} je pobjednik.`,
+      );
       await loadData(false);
     } catch (error: any) {
       setMessageType("error");
@@ -948,7 +1050,7 @@ export default function MecPage({ params }: PageProps) {
     }
 
     const confirmFinish = window.confirm(
-      `Završiti partiju s rezultatom ${totalA} : ${totalB}?`
+      `Završiti partiju s rezultatom ${totalA} : ${totalB}?`,
     );
 
     if (!confirmFinish) return;
@@ -957,11 +1059,14 @@ export default function MecPage({ params }: PageProps) {
 
     try {
       const setWinnerId = totalA > totalB ? match.team_a_id : match.team_b_id;
-      const setWinnerName = totalA > totalB ? match.team_a_name : match.team_b_name;
+      const setWinnerName =
+        totalA > totalB ? match.team_a_name : match.team_b_name;
       const currentSetsA = Number(match.sets_a || 0);
       const currentSetsB = Number(match.sets_b || 0);
-      const newSetsA = setWinnerId === match.team_a_id ? currentSetsA + 1 : currentSetsA;
-      const newSetsB = setWinnerId === match.team_b_id ? currentSetsB + 1 : currentSetsB;
+      const newSetsA =
+        setWinnerId === match.team_a_id ? currentSetsA + 1 : currentSetsA;
+      const newSetsB =
+        setWinnerId === match.team_b_id ? currentSetsB + 1 : currentSetsB;
       const matchFinished = newSetsA >= setsToWin || newSetsB >= setsToWin;
 
       const { data: existingSet, error: existingSetError } = await supabase
@@ -981,7 +1086,7 @@ export default function MecPage({ params }: PageProps) {
             team_b_score: totalB,
             winner_id: setWinnerId,
             status: "finished",
-            finished_at: new Date().toISOString()
+            finished_at: new Date().toISOString(),
           })
           .eq("id", existingSet.id);
 
@@ -996,7 +1101,7 @@ export default function MecPage({ params }: PageProps) {
             team_b_score: totalB,
             winner_id: setWinnerId,
             status: "finished",
-            finished_at: new Date().toISOString()
+            finished_at: new Date().toISOString(),
           });
 
         if (insertSetError) throw insertSetError;
@@ -1010,7 +1115,7 @@ export default function MecPage({ params }: PageProps) {
             sets_b: newSetsB,
             winner_id: setWinnerId,
             status: "finished",
-            result_status: "submitted"
+            result_status: "submitted",
           }
         : {
             score_a: 0,
@@ -1019,7 +1124,7 @@ export default function MecPage({ params }: PageProps) {
             sets_b: newSetsB,
             current_set: currentSet + 1,
             status: "scheduled",
-            result_status: "submitted"
+            result_status: "submitted",
           };
 
       const { error: matchError } = await supabase
@@ -1041,14 +1146,14 @@ export default function MecPage({ params }: PageProps) {
         phase: match.phase,
         group_name: match.group_name,
         round: match.round,
-        round_number: match.round_number
+        round_number: match.round_number,
       });
 
       setMessageType("success");
       setMessage(
         matchFinished
           ? "Partija je završena i meč ima status završen."
-          : "Partija je završena i otvorena je sljedeća partija."
+          : "Partija je završena i otvorena je sljedeća partija.",
       );
 
       await loadData(false);
@@ -1076,12 +1181,17 @@ export default function MecPage({ params }: PageProps) {
       setMessage(
         editForm.teamAScore === "" && editForm.teamBScore === ""
           ? "Upiši bodove barem jedne ekipe. Ako upišeš samo jednu, druga se računa automatski."
-          : "Bodovi iz igre za obje ekipe zajedno moraju biti 162."
+          : "Bodovi iz igre za obje ekipe zajedno moraju biti 162.",
       );
       return;
     }
 
-    if (editPreview.rawA < 0 || editPreview.rawA > 162 || editPreview.rawB < 0 || editPreview.rawB > 162) {
+    if (
+      editPreview.rawA < 0 ||
+      editPreview.rawA > 162 ||
+      editPreview.rawB < 0 ||
+      editPreview.rawB > 162
+    ) {
       setMessageType("error");
       setMessage("Bodovi moraju biti između 0 i 162.");
       return;
@@ -1104,9 +1214,11 @@ export default function MecPage({ params }: PageProps) {
           team_b_declarations: result.declarationsB,
           team_a_bela: false,
           team_b_bela: false,
+          team_a_macki: result.mackiA,
+          team_b_macki: result.mackiB,
           team_a_total: result.finalA,
           team_b_total: result.finalB,
-          note: ""
+          note: "",
         })
         .eq("id", editingGame.id);
 
@@ -1127,7 +1239,7 @@ export default function MecPage({ params }: PageProps) {
 
   async function deleteGame(game: any) {
     const confirmDelete = window.confirm(
-      "Jesi siguran da želiš obrisati ovaj unos? Rezultat meča će se ponovno izračunati."
+      "Jesi siguran da želiš obrisati ovaj unos? Rezultat meča će se ponovno izračunati.",
     );
 
     if (!confirmDelete) return;
@@ -1188,9 +1300,8 @@ export default function MecPage({ params }: PageProps) {
 
             <p className="muted mt-3 text-sm sm:text-base">
               Set {currentSet} ·{" "}
-              {match?.phase === "group" ? "Grupa" : "Knockout"} do{" "}
-              {scoreLimit} · {prettyBestOf(matchBestOf)} · treba {setsToWin}{" "}
-              set(ova)
+              {match?.phase === "group" ? "Grupa" : "Knockout"} do {scoreLimit}{" "}
+              · {prettyBestOf(matchBestOf)} · treba {setsToWin} set(ova)
             </p>
           </div>
 
@@ -1205,10 +1316,26 @@ export default function MecPage({ params }: PageProps) {
 
       <section className="sticky top-0 z-20 -mx-4 mt-5 overflow-x-auto border-y border-[rgba(212,176,106,0.12)] bg-[rgba(10,32,24,0.96)] px-4 py-3 backdrop-blur md:static md:mx-0 md:rounded-3xl md:border md:bg-[rgba(10,32,24,0.72)]">
         <div className="grid min-w-[640px] grid-cols-4 gap-2 sm:gap-3">
-          <Info title={match.team_a_name || "Ekipa A"} value={totalA} subtitle="Rezultat" />
-          <Info title={match.team_b_name || "Ekipa B"} value={totalB} subtitle="Rezultat" />
-          <Info title="Setovi" value={`${match.sets_a || 0} : ${match.sets_b || 0}`} subtitle="Omjer" />
-          <Info title="Trenutni set" value={currentSet} subtitle={`Do ${scoreLimit}`} />
+          <Info
+            title={match.team_a_name || "Ekipa A"}
+            value={totalA}
+            subtitle="Rezultat"
+          />
+          <Info
+            title={match.team_b_name || "Ekipa B"}
+            value={totalB}
+            subtitle="Rezultat"
+          />
+          <Info
+            title="Setovi"
+            value={`${match.sets_a || 0} : ${match.sets_b || 0}`}
+            subtitle="Omjer"
+          />
+          <Info
+            title="Trenutni set"
+            value={currentSet}
+            subtitle={`Do ${scoreLimit}`}
+          />
         </div>
       </section>
 
@@ -1251,7 +1378,8 @@ export default function MecPage({ params }: PageProps) {
             <div>
               <h2 className="text-2xl font-black text-red-200">Admin DNF</h2>
               <p className="muted mt-2">
-                Diskvalificiraj ekipu u ovoj partiji. Protivnik odmah dobiva pobjedu, a meč se označava kao završen.
+                Diskvalificiraj ekipu u ovoj partiji. Protivnik odmah dobiva
+                pobjedu, a meč se označava kao završen.
               </p>
             </div>
 
@@ -1283,7 +1411,8 @@ export default function MecPage({ params }: PageProps) {
           <div>
             <h2 className="section-title">Novi unos</h2>
             <p className="muted mt-2">
-              Piši u bilo koji box. Onaj u koji trenutno pišeš je glavni, a drugi se odmah automatski mijenja do 162.
+              Piši u bilo koji box. Onaj u koji trenutno pišeš je glavni, a
+              drugi se odmah automatski mijenja do 162.
             </p>
           </div>
 
@@ -1318,6 +1447,10 @@ export default function MecPage({ params }: PageProps) {
             valueB={form.teamBDeclarations}
             onAdd={(value) => addDeclaration(selectedDeclarationTeam, value)}
             onClear={() => clearDeclarations(selectedDeclarationTeam)}
+            mackiA={form.teamAMacki}
+            mackiB={form.teamBMacki}
+            onSetMacki={setMackiWinner}
+            onClearMacki={clearMacki}
           />
         </div>
 
@@ -1333,7 +1466,13 @@ export default function MecPage({ params }: PageProps) {
           <button
             type="button"
             onClick={finishCurrentPartija}
-            disabled={saving || !user || isFinished || isLocked || currentSetGames.length === 0}
+            disabled={
+              saving ||
+              !user ||
+              isFinished ||
+              isLocked ||
+              currentSetGames.length === 0
+            }
             className="rounded-2xl border border-green-400/35 bg-green-500/15 px-5 py-4 text-lg font-black text-green-200 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Završi partiju
@@ -1374,6 +1513,7 @@ export default function MecPage({ params }: PageProps) {
                   name={match.team_a_name}
                   tricks={game.team_a_tricks}
                   declarations={game.team_a_declarations}
+                  macki={game.team_a_macki}
                   total={game.team_a_total}
                 />
 
@@ -1381,6 +1521,7 @@ export default function MecPage({ params }: PageProps) {
                   name={match.team_b_name}
                   tricks={game.team_b_tricks}
                   declarations={game.team_b_declarations}
+                  macki={game.team_b_macki}
                   total={game.team_b_total}
                 />
               </div>
@@ -1424,7 +1565,8 @@ export default function MecPage({ params }: PageProps) {
                 </h2>
 
                 <p className="muted mt-2 text-sm">
-                  Piši u bilo koji box. Onaj koji trenutno uređuješ je glavni, a drugi se odmah automatski mijenja do 162.
+                  Piši u bilo koji box. Onaj koji trenutno uređuješ je glavni, a
+                  drugi se odmah automatski mijenja do 162.
                 </p>
               </div>
 
@@ -1463,12 +1605,14 @@ export default function MecPage({ params }: PageProps) {
                   if (selectedEditDeclarationTeam === "A") {
                     setEditForm({
                       ...editForm,
-                      teamADeclarations: Number(editForm.teamADeclarations || 0) + value
+                      teamADeclarations:
+                        Number(editForm.teamADeclarations || 0) + value,
                     });
                   } else {
                     setEditForm({
                       ...editForm,
-                      teamBDeclarations: Number(editForm.teamBDeclarations || 0) + value
+                      teamBDeclarations:
+                        Number(editForm.teamBDeclarations || 0) + value,
                     });
                   }
                 }}
@@ -1479,6 +1623,10 @@ export default function MecPage({ params }: PageProps) {
                     setEditForm({ ...editForm, teamBDeclarations: 0 });
                   }
                 }}
+                mackiA={editForm.teamAMacki}
+                mackiB={editForm.teamBMacki}
+                onSetMacki={setEditMackiWinner}
+                onClearMacki={clearEditMacki}
               />
             </div>
 
@@ -1510,14 +1658,17 @@ function ScoreInput({
   label,
   value,
   calculatedValue,
-  onChange
+  onChange,
 }: {
   label: string;
   value: string;
   calculatedValue?: number;
   onChange: (value: string) => void;
 }) {
-  const displayValue = value === "" && calculatedValue !== undefined ? String(calculatedValue) : value;
+  const displayValue =
+    value === "" && calculatedValue !== undefined
+      ? String(calculatedValue)
+      : value;
 
   return (
     <label className="block rounded-2xl border border-[rgba(212,176,106,0.15)] bg-[rgba(10,32,24,0.7)] p-4">
@@ -1547,7 +1698,6 @@ function ScoreInput({
   );
 }
 
-
 function DeclarationsPicker({
   teamAName,
   teamBName,
@@ -1556,7 +1706,11 @@ function DeclarationsPicker({
   valueA,
   valueB,
   onAdd,
-  onClear
+  onClear,
+  mackiA,
+  mackiB,
+  onSetMacki,
+  onClearMacki,
 }: {
   teamAName: string;
   teamBName: string;
@@ -1566,10 +1720,17 @@ function DeclarationsPicker({
   valueB: number;
   onAdd: (value: number) => void;
   onClear: () => void;
+  mackiA?: boolean;
+  mackiB?: boolean;
+  onSetMacki: (team: TeamSide) => void;
+  onClearMacki: () => void;
 }) {
   const values = [20, 50, 100, 150, 200];
   const selectedName = selectedTeam === "A" ? teamAName : teamBName;
   const selectedValue = selectedTeam === "A" ? valueA : valueB;
+  const selectedMacki =
+    selectedTeam === "A" ? Boolean(mackiA) : Boolean(mackiB);
+  const mackiTeamName = mackiA ? teamAName : mackiB ? teamBName : "";
 
   return (
     <div className="rounded-2xl border border-[rgba(212,176,106,0.15)] bg-[rgba(10,32,24,0.62)] p-4">
@@ -1601,7 +1762,9 @@ function DeclarationsPicker({
         >
           <span className="block text-xs opacity-70">Ekipa A</span>
           {teamAName}
-          <span className="mt-1 block text-sm opacity-80">Zvanja: {valueA}</span>
+          <span className="mt-1 block text-sm opacity-80">
+            Zvanja: {valueA}
+          </span>
         </button>
 
         <button
@@ -1615,13 +1778,70 @@ function DeclarationsPicker({
         >
           <span className="block text-xs opacity-70">Ekipa B</span>
           {teamBName}
-          <span className="mt-1 block text-sm opacity-80">Zvanja: {valueB}</span>
+          <span className="mt-1 block text-sm opacity-80">
+            Zvanja: {valueB}
+          </span>
         </button>
       </div>
 
       <p className="mt-3 text-sm text-white/55">
-        Dodaješ zvanja za: <b className="text-[var(--gold-light)]">{selectedName}</b>
+        Dodaješ zvanja za:{" "}
+        <b className="text-[var(--gold-light)]">{selectedName}</b>
       </p>
+
+      <div className="mt-4 rounded-2xl border border-purple-400/25 bg-purple-500/10 p-3">
+        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+          <div>
+            <p className="text-sm font-black text-purple-200">Mački</p>
+            <p className="text-xs text-white/55">
+              Ekipa koja napravi mački automatski ima 162:0 u štihovima i +90
+              zvanja.
+            </p>
+          </div>
+          {mackiTeamName && (
+            <span className="rounded-full bg-purple-400/20 px-3 py-1 text-xs font-black text-purple-100">
+              Mački: {mackiTeamName}
+            </span>
+          )}
+        </div>
+
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          <button
+            type="button"
+            onClick={() => onSetMacki("A")}
+            className={`rounded-xl border px-3 py-3 text-left font-black transition active:scale-95 ${
+              mackiA
+                ? "border-purple-200 bg-purple-400 text-[#0f2f24]"
+                : "border-purple-400/25 bg-[rgba(5,22,15,0.65)] text-purple-100"
+            }`}
+          >
+            {teamAName}
+            <span className="block text-xs opacity-75">162 : 0 +90 zvanja</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onSetMacki("B")}
+            className={`rounded-xl border px-3 py-3 text-left font-black transition active:scale-95 ${
+              mackiB
+                ? "border-purple-200 bg-purple-400 text-[#0f2f24]"
+                : "border-purple-400/25 bg-[rgba(5,22,15,0.65)] text-purple-100"
+            }`}
+          >
+            {teamBName}
+            <span className="block text-xs opacity-75">0 : 162 +90 zvanja</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onClearMacki}
+            disabled={!selectedMacki && !mackiA && !mackiB}
+            className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 font-black text-white/80 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            Makni mački
+          </button>
+        </div>
+      </div>
 
       <div className="mt-3 grid grid-cols-5 gap-2">
         {values.map((declarationValue) => (
@@ -1650,7 +1870,7 @@ function DeclarationsPicker({
 function Info({
   title,
   value,
-  subtitle
+  subtitle,
 }: {
   title: string;
   value: any;
@@ -1675,11 +1895,13 @@ function HistoryTeamBox({
   name,
   tricks,
   declarations,
-  total
+  macki,
+  total,
 }: {
   name: string;
   tricks: any;
   declarations: any;
+  macki?: boolean;
   total: any;
 }) {
   return (
@@ -1689,6 +1911,7 @@ function HistoryTeamBox({
       <div className="mt-2 space-y-1 text-sm text-white/65">
         <p>Bodovi: {tricks}</p>
         <p>Zvanja: {declarations}</p>
+        {macki && <p className="font-black text-purple-200">Mački +90</p>}
       </div>
 
       <p className="mt-3 text-xl font-black text-[var(--gold)]">
@@ -1697,4 +1920,3 @@ function HistoryTeamBox({
     </div>
   );
 }
-

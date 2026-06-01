@@ -66,7 +66,7 @@ export default function RangListaPage() {
     const { data: gameData } = await supabase
       .from("match_games")
       .select(
-        "id, match_id, set_number, team_a_declarations, team_b_declarations, created_at",
+        "id, match_id, set_number, team_a_declarations, team_b_declarations, team_a_macki, team_b_macki, created_at",
       )
       .order("created_at", { ascending: true });
 
@@ -108,6 +108,12 @@ export default function RangListaPage() {
             matchGames,
             selectedTournament,
           ),
+          macki_count: calculateMackiCount(
+            team.team_id,
+            matches,
+            matchGames,
+            selectedTournament,
+          ),
         };
       })
       .sort((a, b) => b.elo - a.elo);
@@ -124,6 +130,9 @@ export default function RangListaPage() {
   )[0];
   const topStreak = [...filteredStats].sort(
     (a, b) => Number(b.streak) - Number(a.streak),
+  )[0];
+  const topMacki = [...filteredStats].sort(
+    (a, b) => Number(b.macki_count || 0) - Number(a.macki_count || 0),
   )[0];
 
   if (loading) {
@@ -146,7 +155,7 @@ export default function RangListaPage() {
         </h1>
 
         <p className="mt-4 max-w-2xl text-zinc-300">
-          ELO, pobjede, bodovi, rekord zvanja u jednom setu, streakovi i
+          ELO, pobjede, bodovi, mački, rekord zvanja u jednom setu, streakovi i
           najbolji rezultati.
         </p>
       </div>
@@ -215,10 +224,14 @@ export default function RangListaPage() {
 
       <section className="mb-6 rounded-3xl border border-[#d4b06a]/15 bg-[#0a2018] p-6">
         <h2 className="text-2xl font-black text-[#f3dfad]">Achievementi</h2>
-        <p className="mt-2 text-zinc-400">Na profilima ekipa sada se automatski prikazuju medalje kao Prva pobjeda, Neporaženi, ELO majstor, Kraljevi zvanja, Iskusna ekipa i Forma u naletu.</p>
+        <p className="mt-2 text-zinc-400">
+          Na profilima ekipa sada se automatski prikazuju medalje kao Prva
+          pobjeda, Neporaženi, ELO majstor, Kraljevi zvanja, Iskusna ekipa i
+          Forma u naletu.
+        </p>
       </section>
 
-      <section className="mb-10 grid gap-4 md:grid-cols-4">
+      <section className="mb-10 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <Highlight
           title="Najveći ELO"
           value={topElo?.team_name || "-"}
@@ -239,10 +252,15 @@ export default function RangListaPage() {
           value={topStreak?.team_name || "-"}
           sub={`${topStreak?.streak || 0} pobjeda zaredom`}
         />
+        <Highlight
+          title="Najviše mački"
+          value={topMacki?.team_name || "-"}
+          sub={`${topMacki?.macki_count || 0} puta bez primljenog štiha`}
+        />
       </section>
 
       <section className="overflow-hidden rounded-3xl border border-[#d4b06a]/15 bg-[#184332]/85">
-        <div className="grid grid-cols-[70px_1.5fr_repeat(8,1fr)] gap-2 border-b border-[#d4b06a]/15 bg-[#d4b06a]/10 p-4 text-sm font-black text-[#d4b06a] max-xl:hidden">
+        <div className="grid grid-cols-[70px_1.5fr_repeat(9,1fr)] gap-2 border-b border-[#d4b06a]/15 bg-[#d4b06a]/10 p-4 text-sm font-black text-[#d4b06a] max-xl:hidden">
           <div>#</div>
           <div>Ekipa</div>
           <div>ELO</div>
@@ -252,6 +270,7 @@ export default function RangListaPage() {
           <div>Win%</div>
           <div>Bodovi</div>
           <div>Zvanja / set</div>
+          <div>Mački</div>
           <div>Streak</div>
         </div>
 
@@ -265,7 +284,7 @@ export default function RangListaPage() {
           {filteredStats.map((team, index) => (
             <div
               key={`${team.team_id}-${team.tournament_id || "global"}`}
-              className="grid gap-3 p-4 text-zinc-200 xl:grid-cols-[70px_1.5fr_repeat(8,1fr)] xl:items-center"
+              className="grid gap-3 p-4 text-zinc-200 xl:grid-cols-[70px_1.5fr_repeat(9,1fr)] xl:items-center"
             >
               <div className="text-2xl font-black text-[#f3dfad] sm:text-3xl">
                 #{index + 1}
@@ -296,6 +315,7 @@ export default function RangListaPage() {
                 label="Zvanja / set"
                 value={team.best_single_set_declarations}
               />
+              <Stat label="Mački" value={team.macki_count || 0} />
               <Stat label="Streak" value={team.streak} />
             </div>
           ))}
@@ -304,7 +324,6 @@ export default function RangListaPage() {
     </main>
   );
 }
-
 
 function mergeGlobalStats(stats: any[]) {
   const map = new Map();
@@ -320,6 +339,7 @@ function mergeGlobalStats(stats: any[]) {
       total_points: 0,
       total_declarations: 0,
       best_single_deal: 0,
+      macki_count: 0,
     };
 
     current.matches_played += Number(row.matches_played || 0);
@@ -331,6 +351,7 @@ function mergeGlobalStats(stats: any[]) {
       Number(current.best_single_deal || 0),
       Number(row.best_single_deal || 0),
     );
+    current.macki_count += Number(row.macki_count || 0);
 
     map.set(row.team_id, current);
   }
@@ -446,9 +467,7 @@ function calculateMatchByMatchElo(
 
     result.set(team.team_id, {
       elo: Math.round(eloMap.get(team.team_id) || 1000),
-      totalEloChange: Math.round(
-        totalEloChange.get(team.team_id) || 0,
-      ),
+      totalEloChange: Math.round(totalEloChange.get(team.team_id) || 0),
       averageOpponentElo,
       lastMatchChange: Math.round(lastMatchChange.get(team.team_id) || 0),
     });
@@ -460,7 +479,6 @@ function calculateMatchByMatchElo(
 function calculateExpectedScore(teamElo: number, opponentElo: number) {
   return 1 / (1 + Math.pow(10, (opponentElo - teamElo) / 400));
 }
-
 
 function formatLastMatchChange(value: number) {
   if (!value) return "zadnji meč ±0";
@@ -494,19 +512,47 @@ function calculateBestSingleSetDeclarations(
     if (match.team_a_id === teamId) {
       declarationsBySet.set(
         key,
-        (declarationsBySet.get(key) || 0) + Number(game.team_a_declarations || 0),
+        (declarationsBySet.get(key) || 0) +
+          Number(game.team_a_declarations || 0),
       );
     }
 
     if (match.team_b_id === teamId) {
       declarationsBySet.set(
         key,
-        (declarationsBySet.get(key) || 0) + Number(game.team_b_declarations || 0),
+        (declarationsBySet.get(key) || 0) +
+          Number(game.team_b_declarations || 0),
       );
     }
   }
 
   return Math.max(0, ...Array.from(declarationsBySet.values()));
+}
+
+function calculateMackiCount(
+  teamId: string,
+  matches: any[],
+  matchGames: any[],
+  selectedTournament: string,
+) {
+  const matchById = new Map(matches.map((match) => [match.id, match]));
+  let count = 0;
+
+  for (const game of matchGames) {
+    const match = matchById.get(game.match_id);
+    if (!match) continue;
+
+    const inTournament =
+      selectedTournament === "all" ||
+      match.tournament_id === selectedTournament;
+
+    if (!inTournament) continue;
+
+    if (match.team_a_id === teamId && game.team_a_macki) count += 1;
+    if (match.team_b_id === teamId && game.team_b_macki) count += 1;
+  }
+
+  return count;
 }
 
 function calculateStreak(

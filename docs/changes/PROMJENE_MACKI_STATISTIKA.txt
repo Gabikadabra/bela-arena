@@ -1,0 +1,9 @@
+Dodano mački u upis rezultata.
+
+- U live/manualnom unosu meča može se označiti mački za ekipu A ili B.
+- Mački automatski postavlja štihove na 162:0 ili 0:162.
+- Ekipa koja napravi mački dobiva +90 zvanja.
+- Mački se sprema na match_games kroz team_a_macki/team_b_macki.
+- Rang lista prikazuje broj mački i highlight za ekipu s najviše mački.
+- Profil ekipe prikazuje ukupan broj mački i dodaje achievement za mački.
+- Admin manualni upis rezultata dobiva brze gumbe Mački A / Mački B.

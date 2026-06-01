@@ -1,0 +1,15 @@
+PROMJENE - ADMIN DASHBOARD ORGANIZACIJA
+
+- Admin dashboard je organiziran u pregledne sekcije/tabove:
+  - Pregled
+  - Prijave
+  - Dodaj ekipu
+  - Manual rezultati
+- Dodan je gornji blok za odabir aktivnog turnira.
+- Dodane su statističke kartice za ekipe, prijave i mečeve.
+- Brze akcije su izdvojene u poseban red.
+- Prijave više nisu odmah ogromna lista na vrhu, nego su u sekciji Prijave.
+- Forma za dodavanje ekipe je izdvojena u sekciju Dodaj ekipu.
+- Manualni upis rezultata je izdvojen u sekciju Manual rezultati.
+- Mački opcije ostaju podržane u manualnom upisu.
+- SQL nije potreban.
