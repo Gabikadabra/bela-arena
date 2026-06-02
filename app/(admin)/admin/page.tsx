@@ -120,12 +120,28 @@ export default function AdminPage() {
   function updateManualScore(matchId: string, team: "A" | "B", value: string) {
     const cleanValue = value.replace(/\D/g, "");
 
+    if (cleanValue === "") {
+      setManualScores((current) => ({
+        ...current,
+        [matchId]: {
+          ...(current[matchId] || { scoreA: "0", scoreB: "0", mackiWinner: "" }),
+          scoreA: team === "A" ? "" : current[matchId]?.scoreA || "",
+          scoreB: team === "B" ? "" : current[matchId]?.scoreB || "",
+          mackiWinner: "",
+        },
+      }));
+      return;
+    }
+
+    const typedScore = Math.max(0, Math.min(162, Number(cleanValue)));
+    const oppositeScore = 162 - typedScore;
+
     setManualScores((current) => ({
       ...current,
       [matchId]: {
-        ...(current[matchId] || { scoreA: "0", scoreB: "0", mackiWinner: "" }),
-        scoreA: team === "A" ? cleanValue : current[matchId]?.scoreA || "0",
-        scoreB: team === "B" ? cleanValue : current[matchId]?.scoreB || "0",
+        ...(current[matchId] || { scoreA: "0", scoreB: "162", mackiWinner: "" }),
+        scoreA: team === "A" ? String(typedScore) : String(oppositeScore),
+        scoreB: team === "B" ? String(typedScore) : String(oppositeScore),
         mackiWinner: "",
       },
     }));
@@ -743,8 +759,8 @@ export default function AdminPage() {
                 Manualni upis rezultata
               </h2>
               <p className="mt-2 text-sm text-zinc-400">
-                Klikni meč, upiši rezultat i spremi. Admin unos je sada kao kod igrača,
-                samo bez viška koraka.
+                Klikni meč, upiši bodove jedne ekipe i druga se automatski računa kao 162 - unos.
+                Admin unos je sada kao kod igrača, samo bez viška koraka.
               </p>
             </div>
 
@@ -870,6 +886,9 @@ export default function AdminPage() {
                         value={manualScores[selectedManualMatch.id]?.scoreA ?? String(selectedManualMatch.score_a ?? 0)}
                         onChange={(e) => updateManualScore(selectedManualMatch.id, "A", e.target.value)}
                       />
+                      <span className="mt-2 block text-center text-xs text-zinc-500">
+                        Druga ekipa se računa automatski: 162 - unos
+                      </span>
                     </label>
 
                     <div className="hidden pb-8 text-4xl font-black text-[#d4b06a] sm:block">:</div>
@@ -886,6 +905,9 @@ export default function AdminPage() {
                         value={manualScores[selectedManualMatch.id]?.scoreB ?? String(selectedManualMatch.score_b ?? 0)}
                         onChange={(e) => updateManualScore(selectedManualMatch.id, "B", e.target.value)}
                       />
+                      <span className="mt-2 block text-center text-xs text-zinc-500">
+                        Druga ekipa se računa automatski: 162 - unos
+                      </span>
                     </label>
                   </div>
 
@@ -954,7 +976,7 @@ export default function AdminPage() {
                   </div>
 
                   <p className="mt-4 text-center text-xs text-zinc-500">
-                    Savjet: za običan rezultat samo upiši konačni rezultat. Za detaljan unos po dijeljenjima koristi “Otvori detaljni unos”.
+                    Savjet: upiši bodove samo jednoj ekipi, druga se sama popuni do 162. Za detaljan unos po dijeljenjima koristi “Otvori detaljni unos”.
                   </p>
                 </div>
               )}

@@ -1,0 +1,8 @@
+Promjena: admin manualni unos sada automatski računa suprotnu ekipu.
+
+- U admin tabu Manual rezultati klikne se meč i upisuje se samo jedna strana.
+- Ako admin upiše 100 za ekipu A, ekipa B se automatski postavlja na 62.
+- Ako admin upiše 70 za ekipu B, ekipa A se automatski postavlja na 92.
+- Unos je ograničen na raspon 0-162.
+- Mački opcije ostaju iste: 162:0 ili 0:162 uz +90 zvanja pobjedniku.
+- SQL nije potreban.
