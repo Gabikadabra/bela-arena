@@ -32,6 +32,7 @@ export default function AdminPage() {
   const [activeSection, setActiveSection] = useState<
     "pregled" | "prijave" | "dodaj" | "manual"
   >("pregled");
+  const [selectedManualMatchId, setSelectedManualMatchId] = useState("");
 
   function loginAdmin(e: React.FormEvent) {
     e.preventDefault();
@@ -114,6 +115,31 @@ export default function AdminPage() {
       }
       return next;
     });
+  }
+
+  function updateManualScore(matchId: string, team: "A" | "B", value: string) {
+    const cleanValue = value.replace(/\D/g, "");
+
+    setManualScores((current) => ({
+      ...current,
+      [matchId]: {
+        ...(current[matchId] || { scoreA: "0", scoreB: "0", mackiWinner: "" }),
+        scoreA: team === "A" ? cleanValue : current[matchId]?.scoreA || "0",
+        scoreB: team === "B" ? cleanValue : current[matchId]?.scoreB || "0",
+        mackiWinner: "",
+      },
+    }));
+  }
+
+  function setManualMacki(matchId: string, winner: "A" | "B") {
+    setManualScores((current) => ({
+      ...current,
+      [matchId]: {
+        scoreA: winner === "A" ? "162" : "0",
+        scoreB: winner === "B" ? "162" : "0",
+        mackiWinner: winner,
+      },
+    }));
   }
 
   async function addTeamByAdmin(e: React.FormEvent) {
@@ -356,6 +382,19 @@ export default function AdminPage() {
     };
   }, [selectedTournament]);
 
+  useEffect(() => {
+    if (activeSection !== "manual") return;
+
+    if (matches.length === 0) {
+      setSelectedManualMatchId("");
+      return;
+    }
+
+    if (!selectedManualMatchId || !matches.some((match) => match.id === selectedManualMatchId)) {
+      setSelectedManualMatchId(matches[0].id);
+    }
+  }, [activeSection, matches, selectedManualMatchId]);
+
   if (!isAdmin) {
     return (
       <main className="mx-auto max-w-xl px-6 py-20">
@@ -397,6 +436,8 @@ export default function AdminPage() {
   const finishedMatches = matches.filter((match) => match.status === "finished");
   const openMatches = matches.filter((match) => match.status !== "finished");
   const manualEnabled = Boolean(selectedTournamentData?.manual_score_entry);
+  const selectedManualMatch =
+    matches.find((match) => match.id === selectedManualMatchId) || matches[0];
 
   const adminSections = [
     { id: "pregled", label: "Pregled", count: tournaments.length },
@@ -696,10 +737,26 @@ export default function AdminPage() {
 
       {activeSection === "manual" && (
         <section className="card">
-          <h2 className="text-2xl font-black text-[#f3dfad]">Manualni upis rezultata</h2>
-          <p className="mt-2 text-sm text-zinc-400">
-            Upiši konačan rezultat meča. Za mački odaberi Mački A/B i rezultat se automatski postavlja na 162:0 + 90 zvanja.
-          </p>
+          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
+            <div>
+              <h2 className="text-2xl font-black text-[#f3dfad]">
+                Manualni upis rezultata
+              </h2>
+              <p className="mt-2 text-sm text-zinc-400">
+                Klikni meč, upiši rezultat i spremi. Admin unos je sada kao kod igrača,
+                samo bez viška koraka.
+              </p>
+            </div>
+
+            {selectedManualMatch && (
+              <a
+                href={`/mec/${selectedManualMatch.id}`}
+                className="rounded-xl border border-[#d4b06a]/25 bg-[#d4b06a]/10 px-5 py-3 text-center font-black text-[#f3dfad] transition hover:bg-[#d4b06a]/20"
+              >
+                Otvori detaljni unos
+              </a>
+            )}
+          </div>
 
           {!manualEnabled && (
             <div className="mt-6 rounded-2xl border border-[#d4b06a]/15 bg-[#12392b] p-6 text-zinc-300">
@@ -707,40 +764,200 @@ export default function AdminPage() {
             </div>
           )}
 
-          {manualEnabled && (
-            <div className="mt-6 space-y-3">
-              {matches.length === 0 && <p className="text-zinc-400">Nema generiranih mečeva za ovaj turnir.</p>}
-              {matches.map((match) => (
-                <div key={match.id} className="rounded-xl border border-[#d4b06a]/10 bg-[#12392b] p-4">
-                  <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                    <div className="min-w-0">
-                      <p className="font-bold text-[#d4b06a]">
-                        {match.team_a_name || match.team_a_seed || "Ekipa A"} vs {match.team_b_name || match.team_b_seed || "Ekipa B"}
-                      </p>
-                      <p className="text-sm text-zinc-400">
-                        Faza {match.phase || "-"} · Runda {match.round || "-"} · status: {match.status || "scheduled"}
+          {manualEnabled && matches.length === 0 && (
+            <div className="mt-6 rounded-2xl border border-[#d4b06a]/15 bg-[#12392b] p-6 text-zinc-300">
+              Nema generiranih mečeva za ovaj turnir.
+            </div>
+          )}
+
+          {manualEnabled && matches.length > 0 && (
+            <div className="mt-6 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+              <div>
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-black text-[#f3dfad]">Odaberi meč</h3>
+                  <span className="rounded-full bg-[#12392b] px-3 py-1 text-xs font-black text-zinc-300">
+                    {matches.length} mečeva
+                  </span>
+                </div>
+
+                <div className="max-h-[620px] space-y-3 overflow-y-auto pr-1">
+                  {matches.map((match) => {
+                    const isSelected = selectedManualMatch?.id === match.id;
+                    const isFinished = match.status === "finished";
+
+                    return (
+                      <button
+                        key={match.id}
+                        type="button"
+                        onClick={() => setSelectedManualMatchId(match.id)}
+                        className={`w-full rounded-2xl border p-4 text-left transition active:scale-[0.99] ${
+                          isSelected
+                            ? "border-[#d4b06a] bg-[#d4b06a]/15"
+                            : "border-[#d4b06a]/10 bg-[#12392b] hover:border-[#d4b06a]/40"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate font-black text-[#f3dfad]">
+                              {match.team_a_name || match.team_a_seed || "Ekipa A"}
+                            </p>
+                            <p className="text-center text-xs font-black text-[#d4b06a]">vs</p>
+                            <p className="truncate font-black text-[#f3dfad]">
+                              {match.team_b_name || match.team_b_seed || "Ekipa B"}
+                            </p>
+                          </div>
+
+                          <span
+                            className={`shrink-0 rounded-full px-3 py-1 text-xs font-black ${
+                              isFinished
+                                ? "bg-green-500/15 text-green-300"
+                                : "bg-[#d4b06a]/15 text-[#d4b06a]"
+                            }`}
+                          >
+                            {isFinished ? "Završeno" : "Otvoreno"}
+                          </span>
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap gap-2 text-xs text-zinc-400">
+                          <span>Faza {match.phase || "-"}</span>
+                          <span>·</span>
+                          <span>Runda {match.round || "-"}</span>
+                          <span>·</span>
+                          <span>Meč {match.match_number || "-"}</span>
+                        </div>
+
+                        {(match.score_a !== null || match.score_b !== null) && (
+                          <p className="mt-2 text-sm font-black text-[#d4b06a]">
+                            {match.score_a ?? 0} : {match.score_b ?? 0}
+                          </p>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {selectedManualMatch && (
+                <div className="rounded-3xl border border-[#d4b06a]/15 bg-[#0a2018] p-5">
+                  <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+                    <div>
+                      <p className="text-sm font-black text-[#d4b06a]">Upis za odabrani meč</p>
+                      <h3 className="mt-2 text-2xl font-black text-[#f3dfad]">
+                        {selectedManualMatch.team_a_name || selectedManualMatch.team_a_seed || "Ekipa A"}
+                        <span className="mx-2 text-[#d4b06a]">vs</span>
+                        {selectedManualMatch.team_b_name || selectedManualMatch.team_b_seed || "Ekipa B"}
+                      </h3>
+                      <p className="mt-1 text-sm text-zinc-400">
+                        Faza {selectedManualMatch.phase || "-"} · Runda {selectedManualMatch.round || "-"} · status: {selectedManualMatch.status || "scheduled"}
                       </p>
                     </div>
 
-                    <div className="grid gap-2 sm:grid-cols-[96px_20px_96px_1fr] xl:flex xl:items-center">
-                      <input className="input w-full xl:w-24" type="number" min={0} value={manualScores[match.id]?.scoreA ?? String(match.score_a ?? 0)} onChange={(e) => setManualScores({ ...manualScores, [match.id]: { ...(manualScores[match.id] || { scoreA: "0", scoreB: "0", mackiWinner: "" }), scoreA: e.target.value, mackiWinner: "" } })} />
-                      <span className="self-center text-center font-black text-[#f3dfad]">:</span>
-                      <input className="input w-full xl:w-24" type="number" min={0} value={manualScores[match.id]?.scoreB ?? String(match.score_b ?? 0)} onChange={(e) => setManualScores({ ...manualScores, [match.id]: { ...(manualScores[match.id] || { scoreA: "0", scoreB: "0", mackiWinner: "" }), scoreB: e.target.value, mackiWinner: "" } })} />
-                      <div className="flex flex-wrap gap-2 sm:col-span-4 xl:col-span-1">
-                        <button type="button" onClick={() => setManualScores({ ...manualScores, [match.id]: { scoreA: "162", scoreB: "0", mackiWinner: "A" } })} className={`rounded-xl border px-4 py-3 font-black transition ${manualScores[match.id]?.mackiWinner === "A" ? "border-purple-200 bg-purple-400 text-black" : "border-purple-400/25 bg-purple-500/10 text-purple-100"}`}>
-                          Mački A
+                    <span className="w-fit rounded-full bg-[#12392b] px-4 py-2 text-sm font-black text-zinc-300">
+                      {selectedManualMatch.status === "finished" ? "Možeš prepisati" : "Spremno za upis"}
+                    </span>
+                  </div>
+
+                  <div className="mt-6 grid gap-4 sm:grid-cols-[1fr_auto_1fr] sm:items-end">
+                    <label className="block rounded-2xl border border-[#d4b06a]/15 bg-[#12392b] p-4">
+                      <span className="block text-center text-sm font-black text-[#d4b06a]">
+                        {selectedManualMatch.team_a_name || "Ekipa A"}
+                      </span>
+                      <input
+                        className="no-spinner mt-3 w-full rounded-2xl border border-[#d4b06a]/15 bg-[#06150f] px-4 py-5 text-center text-5xl font-black text-[#f3dfad] outline-none focus:border-[#d4b06a]"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        placeholder="0"
+                        value={manualScores[selectedManualMatch.id]?.scoreA ?? String(selectedManualMatch.score_a ?? 0)}
+                        onChange={(e) => updateManualScore(selectedManualMatch.id, "A", e.target.value)}
+                      />
+                    </label>
+
+                    <div className="hidden pb-8 text-4xl font-black text-[#d4b06a] sm:block">:</div>
+
+                    <label className="block rounded-2xl border border-[#d4b06a]/15 bg-[#12392b] p-4">
+                      <span className="block text-center text-sm font-black text-[#d4b06a]">
+                        {selectedManualMatch.team_b_name || "Ekipa B"}
+                      </span>
+                      <input
+                        className="no-spinner mt-3 w-full rounded-2xl border border-[#d4b06a]/15 bg-[#06150f] px-4 py-5 text-center text-5xl font-black text-[#f3dfad] outline-none focus:border-[#d4b06a]"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        placeholder="0"
+                        value={manualScores[selectedManualMatch.id]?.scoreB ?? String(selectedManualMatch.score_b ?? 0)}
+                        onChange={(e) => updateManualScore(selectedManualMatch.id, "B", e.target.value)}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="mt-5 rounded-2xl border border-purple-400/20 bg-purple-500/10 p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="font-black text-purple-100">Mački</p>
+                        <p className="text-sm text-purple-200/80">
+                          Automatski postavlja 162 : 0 i dodaje +90 zvanja pobjedniku.
+                        </p>
+                      </div>
+
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <button
+                          type="button"
+                          onClick={() => setManualMacki(selectedManualMatch.id, "A")}
+                          className={`rounded-xl border px-4 py-3 font-black transition ${
+                            manualScores[selectedManualMatch.id]?.mackiWinner === "A"
+                              ? "border-purple-100 bg-purple-300 text-black"
+                              : "border-purple-300/25 bg-purple-500/10 text-purple-100"
+                          }`}
+                        >
+                          Mački {selectedManualMatch.team_a_name || "A"}
                         </button>
-                        <button type="button" onClick={() => setManualScores({ ...manualScores, [match.id]: { scoreA: "0", scoreB: "162", mackiWinner: "B" } })} className={`rounded-xl border px-4 py-3 font-black transition ${manualScores[match.id]?.mackiWinner === "B" ? "border-purple-200 bg-purple-400 text-black" : "border-purple-400/25 bg-purple-500/10 text-purple-100"}`}>
-                          Mački B
-                        </button>
-                        <button type="button" onClick={() => saveManualResult(match)} className="rounded-xl bg-green-500 px-4 py-3 font-black text-black transition hover:bg-green-400">
-                          Spremi
+
+                        <button
+                          type="button"
+                          onClick={() => setManualMacki(selectedManualMatch.id, "B")}
+                          className={`rounded-xl border px-4 py-3 font-black transition ${
+                            manualScores[selectedManualMatch.id]?.mackiWinner === "B"
+                              ? "border-purple-100 bg-purple-300 text-black"
+                              : "border-purple-300/25 bg-purple-500/10 text-purple-100"
+                          }`}
+                        >
+                          Mački {selectedManualMatch.team_b_name || "B"}
                         </button>
                       </div>
                     </div>
                   </div>
+
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => saveManualResult(selectedManualMatch)}
+                      className="rounded-2xl bg-green-500 px-5 py-4 text-lg font-black text-black transition hover:bg-green-400"
+                    >
+                      Spremi rezultat
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setManualScores({
+                          ...manualScores,
+                          [selectedManualMatch.id]: {
+                            scoreA: String(selectedManualMatch.score_a ?? 0),
+                            scoreB: String(selectedManualMatch.score_b ?? 0),
+                            mackiWinner: "",
+                          },
+                        });
+                      }}
+                      className="rounded-2xl border border-[#d4b06a]/25 bg-[#d4b06a]/10 px-5 py-4 text-lg font-black text-[#f3dfad] transition hover:bg-[#d4b06a]/20"
+                    >
+                      Resetiraj unos
+                    </button>
+                  </div>
+
+                  <p className="mt-4 text-center text-xs text-zinc-500">
+                    Savjet: za običan rezultat samo upiši konačni rezultat. Za detaljan unos po dijeljenjima koristi “Otvori detaljni unos”.
+                  </p>
                 </div>
-              ))}
+              )}
             </div>
           )}
         </section>

@@ -1,0 +1,10 @@
+Admin manualni unos rezultata organiziran je kao klik na meč pa unos podataka za odabrani meč.
+
+Promjene:
+- Manualni rezultati više ne prikazuju sve inpute odjednom.
+- Lijevo/gore se bira meč iz kartica.
+- Desno se otvara veliki pojednostavljeni unos za odabrani meč.
+- Ostaje običan konačni rezultat i Mački A/B opcija.
+- Mački i dalje automatski postavlja 162:0 ili 0:162 i dodaje +90 zvanja.
+- Dodan je link za detaljni unos kao kod igrača na /mec/[matchId].
+- SQL nije potreban.
