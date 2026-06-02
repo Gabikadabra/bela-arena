@@ -1,0 +1,6 @@
+Admin manualni unos rezultata
+
+- Manualni unos sada prikazuje samo mečeve koji nisu završeni i imaju obje ekipe.
+- Placeholder mečevi bez team_a_id/team_b_id se ne prikazuju u listi za unos.
+- Imena ekipa se uzimaju iz matches ako postoje, a ako ih nema, povlače se iz tablice teams preko team_a_id/team_b_id.
+- Završeni mečevi se više ne nude za manualni unos.

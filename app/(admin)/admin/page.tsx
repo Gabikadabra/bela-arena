@@ -479,16 +479,21 @@ export default function AdminPage() {
   useEffect(() => {
     if (activeSection !== "manual") return;
 
-    if (matches.length === 0) {
+    const availableManualMatches = matches.filter(
+      (match) =>
+        match.status !== "finished" && Boolean(match.team_a_id) && Boolean(match.team_b_id),
+    );
+
+    if (availableManualMatches.length === 0) {
       setSelectedManualMatchId("");
       return;
     }
 
     if (
       !selectedManualMatchId ||
-      !matches.some((match) => match.id === selectedManualMatchId)
+      !availableManualMatches.some((match) => match.id === selectedManualMatchId)
     ) {
-      setSelectedManualMatchId(matches[0].id);
+      setSelectedManualMatchId(availableManualMatches[0].id);
     }
   }, [activeSection, matches, selectedManualMatchId]);
 
@@ -533,10 +538,28 @@ export default function AdminPage() {
   const finishedMatches = matches.filter(
     (match) => match.status === "finished",
   );
-  const openMatches = matches.filter((match) => match.status !== "finished");
+
+  function getTeamName(teamId: string | null | undefined) {
+    if (!teamId) return "";
+    return teams.find((team) => team.id === teamId)?.name || "";
+  }
+
+  function getMatchTeamName(match: any, side: "A" | "B") {
+    const explicitName = side === "A" ? match.team_a_name : match.team_b_name;
+    const teamId = side === "A" ? match.team_a_id : match.team_b_id;
+    const seedName = side === "A" ? match.team_a_seed : match.team_b_seed;
+    const fallback = side === "A" ? "Ekipa A" : "Ekipa B";
+
+    return explicitName || getTeamName(teamId) || seedName || fallback;
+  }
+
+  const openMatches = matches.filter(
+    (match) =>
+      match.status !== "finished" && Boolean(match.team_a_id) && Boolean(match.team_b_id),
+  );
   const manualEnabled = Boolean(selectedTournamentData?.manual_score_entry);
   const selectedManualMatch =
-    matches.find((match) => match.id === selectedManualMatchId) || matches[0];
+    openMatches.find((match) => match.id === selectedManualMatchId) || openMatches[0];
 
   const adminSections = [
     { id: "pregled", label: "Pregled", count: tournaments.length },
@@ -1007,7 +1030,13 @@ export default function AdminPage() {
             </div>
           )}
 
-          {manualEnabled && matches.length > 0 && (
+          {manualEnabled && matches.length > 0 && openMatches.length === 0 && (
+            <div className="mt-6 rounded-2xl border border-[#d4b06a]/15 bg-[#12392b] p-6 text-zinc-300">
+              Nema mečeva u tijeku za manualni upis. Završeni mečevi i placeholder mečevi bez obje ekipe se ne prikazuju.
+            </div>
+          )}
+
+          {manualEnabled && openMatches.length > 0 && (
             <div className="mt-6 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
               <div>
                 <div className="mb-3 flex items-center justify-between gap-3">
@@ -1015,14 +1044,13 @@ export default function AdminPage() {
                     Odaberi meč
                   </h3>
                   <span className="rounded-full bg-[#12392b] px-3 py-1 text-xs font-black text-zinc-300">
-                    {matches.length} mečeva
+                    {openMatches.length} u tijeku
                   </span>
                 </div>
 
                 <div className="max-h-[620px] space-y-3 overflow-y-auto pr-1">
-                  {matches.map((match) => {
+                  {openMatches.map((match) => {
                     const isSelected = selectedManualMatch?.id === match.id;
-                    const isFinished = match.status === "finished";
 
                     return (
                       <button
@@ -1038,28 +1066,18 @@ export default function AdminPage() {
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <p className="truncate font-black text-[#f3dfad]">
-                              {match.team_a_name ||
-                                match.team_a_seed ||
-                                "Ekipa A"}
+                              {getMatchTeamName(match, "A")}
                             </p>
                             <p className="text-center text-xs font-black text-[#d4b06a]">
                               vs
                             </p>
                             <p className="truncate font-black text-[#f3dfad]">
-                              {match.team_b_name ||
-                                match.team_b_seed ||
-                                "Ekipa B"}
+                              {getMatchTeamName(match, "B")}
                             </p>
                           </div>
 
-                          <span
-                            className={`shrink-0 rounded-full px-3 py-1 text-xs font-black ${
-                              isFinished
-                                ? "bg-green-500/15 text-green-300"
-                                : "bg-[#d4b06a]/15 text-[#d4b06a]"
-                            }`}
-                          >
-                            {isFinished ? "Završeno" : "Otvoreno"}
+                          <span className="shrink-0 rounded-full bg-[#d4b06a]/15 px-3 py-1 text-xs font-black text-[#d4b06a]">
+                            U tijeku
                           </span>
                         </div>
 
@@ -1090,13 +1108,9 @@ export default function AdminPage() {
                         Upis za odabrani meč
                       </p>
                       <h3 className="mt-2 text-2xl font-black text-[#f3dfad]">
-                        {selectedManualMatch.team_a_name ||
-                          selectedManualMatch.team_a_seed ||
-                          "Ekipa A"}
+                        {getMatchTeamName(selectedManualMatch, "A")}
                         <span className="mx-2 text-[#d4b06a]">vs</span>
-                        {selectedManualMatch.team_b_name ||
-                          selectedManualMatch.team_b_seed ||
-                          "Ekipa B"}
+                        {getMatchTeamName(selectedManualMatch, "B")}
                       </h3>
                       <p className="mt-1 text-sm text-zinc-400">
                         Faza {selectedManualMatch.phase || "-"} · Runda{" "}
@@ -1106,16 +1120,14 @@ export default function AdminPage() {
                     </div>
 
                     <span className="w-fit rounded-full bg-[#12392b] px-4 py-2 text-sm font-black text-zinc-300">
-                      {selectedManualMatch.status === "finished"
-                        ? "Možeš prepisati"
-                        : "Spremno za upis"}
+                      Spremno za upis
                     </span>
                   </div>
 
                   <div className="mt-6 grid gap-4 sm:grid-cols-[1fr_auto_1fr] sm:items-end">
                     <label className="block rounded-2xl border border-[#d4b06a]/15 bg-[#12392b] p-4">
                       <span className="block text-center text-sm font-black text-[#d4b06a]">
-                        {selectedManualMatch.team_a_name || "Ekipa A"}
+                        {getMatchTeamName(selectedManualMatch, "A")}
                       </span>
                       <input
                         className="no-spinner mt-3 w-full rounded-2xl border border-[#d4b06a]/15 bg-[#06150f] px-4 py-5 text-center text-5xl font-black text-[#f3dfad] outline-none focus:border-[#d4b06a]"
@@ -1145,7 +1157,7 @@ export default function AdminPage() {
 
                     <label className="block rounded-2xl border border-[#d4b06a]/15 bg-[#12392b] p-4">
                       <span className="block text-center text-sm font-black text-[#d4b06a]">
-                        {selectedManualMatch.team_b_name || "Ekipa B"}
+                        {getMatchTeamName(selectedManualMatch, "B")}
                       </span>
                       <input
                         className="no-spinner mt-3 w-full rounded-2xl border border-[#d4b06a]/15 bg-[#06150f] px-4 py-5 text-center text-5xl font-black text-[#f3dfad] outline-none focus:border-[#d4b06a]"
@@ -1202,7 +1214,7 @@ export default function AdminPage() {
                     <div className="grid gap-3 sm:grid-cols-2">
                       <label className="block">
                         <span className="mb-2 block text-sm font-bold text-[#d4b06a]">
-                          Zvanja {selectedManualMatch.team_a_name || "A"}
+                          Zvanja {getMatchTeamName(selectedManualMatch, "A")}
                         </span>
                         <input
                           className="input"
@@ -1225,7 +1237,7 @@ export default function AdminPage() {
 
                       <label className="block">
                         <span className="mb-2 block text-sm font-bold text-[#d4b06a]">
-                          Zvanja {selectedManualMatch.team_b_name || "B"}
+                          Zvanja {getMatchTeamName(selectedManualMatch, "B")}
                         </span>
                         <input
                           className="input"
@@ -1271,7 +1283,7 @@ export default function AdminPage() {
                               : "border-purple-300/25 bg-purple-500/10 text-purple-100"
                           }`}
                         >
-                          Mački {selectedManualMatch.team_a_name || "A"}
+                          Mački {getMatchTeamName(selectedManualMatch, "A")}
                         </button>
 
                         <button
@@ -1286,7 +1298,7 @@ export default function AdminPage() {
                               : "border-purple-300/25 bg-purple-500/10 text-purple-100"
                           }`}
                         >
-                          Mački {selectedManualMatch.team_b_name || "B"}
+                          Mački {getMatchTeamName(selectedManualMatch, "B")}
                         </button>
                       </div>
                     </div>
