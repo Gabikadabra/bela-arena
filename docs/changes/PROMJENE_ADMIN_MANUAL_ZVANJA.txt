@@ -1,0 +1,8 @@
+PROMJENE: Admin manualni unos sada ima zvanja
+
+- U admin manualnom unosu za odabrani meč dodana su polja za zvanja ekipe A i ekipe B.
+- Štihovi ostaju jednostavni: upišeš jednu ekipu, druga se računa kao 162 - unos.
+- Ukupni rezultat se računa kao štihovi + zvanja.
+- Match se sprema s ukupnim rezultatom, a match_games dobiva detalje za statistiku/ranglistu.
+- Mački i dalje automatski postavlja 162:0 i +90 zvanja pobjedniku.
+- SQL nije potreban ako već imaš match_games kolone iz ranijih promjena.

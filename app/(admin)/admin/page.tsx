@@ -26,7 +26,13 @@ export default function AdminPage() {
   const [manualScores, setManualScores] = useState<
     Record<
       string,
-      { scoreA: string; scoreB: string; mackiWinner?: "A" | "B" | "" }
+      {
+        scoreA: string;
+        scoreB: string;
+        declarationsA: string;
+        declarationsB: string;
+        mackiWinner?: "A" | "B" | "";
+      }
     >
   >({});
   const [activeSection, setActiveSection] = useState<
@@ -109,6 +115,8 @@ export default function AdminPage() {
           next[match.id] = {
             scoreA: String(match.score_a ?? 0),
             scoreB: String(match.score_b ?? 0),
+            declarationsA: "0",
+            declarationsB: "0",
             mackiWinner: "",
           };
         }
@@ -124,7 +132,13 @@ export default function AdminPage() {
       setManualScores((current) => ({
         ...current,
         [matchId]: {
-          ...(current[matchId] || { scoreA: "0", scoreB: "0", mackiWinner: "" }),
+          ...(current[matchId] || {
+            scoreA: "0",
+            scoreB: "0",
+            declarationsA: "0",
+            declarationsB: "0",
+            mackiWinner: "",
+          }),
           scoreA: team === "A" ? "" : current[matchId]?.scoreA || "",
           scoreB: team === "B" ? "" : current[matchId]?.scoreB || "",
           mackiWinner: "",
@@ -139,7 +153,13 @@ export default function AdminPage() {
     setManualScores((current) => ({
       ...current,
       [matchId]: {
-        ...(current[matchId] || { scoreA: "0", scoreB: "162", mackiWinner: "" }),
+        ...(current[matchId] || {
+          scoreA: "0",
+          scoreB: "162",
+          declarationsA: "0",
+          declarationsB: "0",
+          mackiWinner: "",
+        }),
         scoreA: team === "A" ? String(typedScore) : String(oppositeScore),
         scoreB: team === "B" ? String(typedScore) : String(oppositeScore),
         mackiWinner: "",
@@ -153,7 +173,39 @@ export default function AdminPage() {
       [matchId]: {
         scoreA: winner === "A" ? "162" : "0",
         scoreB: winner === "B" ? "162" : "0",
+        declarationsA: winner === "A" ? "90" : "0",
+        declarationsB: winner === "B" ? "90" : "0",
         mackiWinner: winner,
+      },
+    }));
+  }
+
+  function updateManualDeclarations(
+    matchId: string,
+    team: "A" | "B",
+    value: string,
+  ) {
+    const cleanValue = value.replace(/\D/g, "");
+    const limitedValue =
+      cleanValue === ""
+        ? ""
+        : String(Math.max(0, Math.min(1000, Number(cleanValue))));
+
+    setManualScores((current) => ({
+      ...current,
+      [matchId]: {
+        ...(current[matchId] || {
+          scoreA: "0",
+          scoreB: "0",
+          declarationsA: "0",
+          declarationsB: "0",
+          mackiWinner: "",
+        }),
+        declarationsA:
+          team === "A" ? limitedValue : current[matchId]?.declarationsA || "0",
+        declarationsB:
+          team === "B" ? limitedValue : current[matchId]?.declarationsB || "0",
+        mackiWinner: "",
       },
     }));
   }
@@ -208,12 +260,22 @@ export default function AdminPage() {
     const values = manualScores[match.id] || {
       scoreA: "0",
       scoreB: "0",
+      declarationsA: "0",
+      declarationsB: "0",
       mackiWinner: "",
     };
     const hasMackiA = values.mackiWinner === "A";
     const hasMackiB = values.mackiWinner === "B";
     const scoreA = hasMackiA ? 162 : hasMackiB ? 0 : Number(values.scoreA);
     const scoreB = hasMackiB ? 162 : hasMackiA ? 0 : Number(values.scoreB);
+    const declarationsA = hasMackiA
+      ? 90
+      : Math.max(0, Number(values.declarationsA || 0));
+    const declarationsB = hasMackiB
+      ? 90
+      : Math.max(0, Number(values.declarationsB || 0));
+    const totalA = scoreA + declarationsA;
+    const totalB = scoreB + declarationsB;
 
     if (!match.team_a_id || !match.team_b_id) {
       alert("Meč nema obje ekipe.");
@@ -224,26 +286,35 @@ export default function AdminPage() {
       !Number.isFinite(scoreA) ||
       !Number.isFinite(scoreB) ||
       scoreA < 0 ||
-      scoreB < 0
+      scoreB < 0 ||
+      !Number.isFinite(declarationsA) ||
+      !Number.isFinite(declarationsB) ||
+      declarationsA < 0 ||
+      declarationsB < 0
     ) {
-      alert("Upiši ispravan rezultat.");
+      alert("Upiši ispravan rezultat i zvanja.");
       return;
     }
 
-    if (scoreA === scoreB) {
-      alert("Rezultat ne može biti neriješen.");
+    if (scoreA + scoreB !== 162) {
+      alert("Štihovi zajedno moraju biti 162.");
       return;
     }
 
-    const winnerId = scoreA > scoreB ? match.team_a_id : match.team_b_id;
+    if (totalA === totalB) {
+      alert("Ukupni rezultat sa zvanjima ne može biti neriješen.");
+      return;
+    }
+
+    const winnerId = totalA > totalB ? match.team_a_id : match.team_b_id;
 
     const { error } = await supabase
       .from("matches")
       .update({
-        score_a: scoreA,
-        score_b: scoreB,
-        sets_a: scoreA > scoreB ? 1 : 0,
-        sets_b: scoreB > scoreA ? 1 : 0,
+        score_a: totalA,
+        score_b: totalB,
+        sets_a: totalA > totalB ? 1 : 0,
+        sets_b: totalB > totalA ? 1 : 0,
         winner_id: winnerId,
         status: "finished",
         result_status: hasMackiA || hasMackiB ? "macki" : "manual",
@@ -256,42 +327,49 @@ export default function AdminPage() {
       return;
     }
 
-    if (hasMackiA || hasMackiB) {
-      const { error: gameError } = await supabase.from("match_games").insert({
-        match_id: match.id,
-        set_number: Number(match.current_set || 1),
-        game_number: 1,
-        caller_team: null,
-        called_team_fell: false,
-        raw_team_a_tricks: scoreA,
-        raw_team_b_tricks: scoreB,
-        team_a_tricks: scoreA,
-        team_b_tricks: scoreB,
-        team_a_declarations: hasMackiA ? 90 : 0,
-        team_b_declarations: hasMackiB ? 90 : 0,
-        team_a_bela: false,
-        team_b_bela: false,
-        team_a_macki: hasMackiA,
-        team_b_macki: hasMackiB,
-        team_a_total: scoreA + (hasMackiA ? 90 : 0),
-        team_b_total: scoreB + (hasMackiB ? 90 : 0),
-        note: "Mački - automatski manualni unos",
-      });
+    await supabase
+      .from("match_games")
+      .delete()
+      .eq("match_id", match.id)
+      .in("note", ["Admin manualni unos", "Mački - automatski manualni unos"]);
 
-      if (gameError) {
-        alert(
-          "Rezultat je spremljen, ali mački statistika nije: " +
-            gameError.message,
-        );
-      }
+    const { error: gameError } = await supabase.from("match_games").insert({
+      match_id: match.id,
+      set_number: Number(match.current_set || 1),
+      game_number: 1,
+      caller_team: null,
+      called_team_fell: false,
+      raw_team_a_tricks: scoreA,
+      raw_team_b_tricks: scoreB,
+      team_a_tricks: scoreA,
+      team_b_tricks: scoreB,
+      team_a_declarations: declarationsA,
+      team_b_declarations: declarationsB,
+      team_a_bela: false,
+      team_b_bela: false,
+      team_a_macki: hasMackiA,
+      team_b_macki: hasMackiB,
+      team_a_total: totalA,
+      team_b_total: totalB,
+      note:
+        hasMackiA || hasMackiB
+          ? "Mački - automatski manualni unos"
+          : "Admin manualni unos",
+    });
+
+    if (gameError) {
+      alert(
+        "Rezultat je spremljen, ali zvanja/statistika nisu: " +
+          gameError.message,
+      );
     }
 
     await syncTournamentAfterResult({
       ...match,
-      score_a: scoreA,
-      score_b: scoreB,
-      sets_a: scoreA > scoreB ? 1 : 0,
-      sets_b: scoreB > scoreA ? 1 : 0,
+      score_a: totalA,
+      score_b: totalB,
+      sets_a: totalA > totalB ? 1 : 0,
+      sets_b: totalB > totalA ? 1 : 0,
       winner_id: winnerId,
       status: "finished",
     });
@@ -406,7 +484,10 @@ export default function AdminPage() {
       return;
     }
 
-    if (!selectedManualMatchId || !matches.some((match) => match.id === selectedManualMatchId)) {
+    if (
+      !selectedManualMatchId ||
+      !matches.some((match) => match.id === selectedManualMatchId)
+    ) {
       setSelectedManualMatchId(matches[0].id);
     }
   }, [activeSection, matches, selectedManualMatchId]);
@@ -449,7 +530,9 @@ export default function AdminPage() {
   const pendingTeams = teams.filter((team) => team.status === "pending");
   const approvedTeams = teams.filter((team) => team.status === "approved");
   const rejectedTeams = teams.filter((team) => team.status === "rejected");
-  const finishedMatches = matches.filter((match) => match.status === "finished");
+  const finishedMatches = matches.filter(
+    (match) => match.status === "finished",
+  );
   const openMatches = matches.filter((match) => match.status !== "finished");
   const manualEnabled = Boolean(selectedTournamentData?.manual_score_entry);
   const selectedManualMatch =
@@ -459,7 +542,11 @@ export default function AdminPage() {
     { id: "pregled", label: "Pregled", count: tournaments.length },
     { id: "prijave", label: "Prijave", count: teams.length },
     { id: "dodaj", label: "Dodaj ekipu", count: null },
-    { id: "manual", label: "Manual rezultati", count: manualEnabled ? openMatches.length : null },
+    {
+      id: "manual",
+      label: "Manual rezultati",
+      count: manualEnabled ? openMatches.length : null,
+    },
   ] as const;
 
   const tournamentQuery = selectedTournament
@@ -593,7 +680,8 @@ export default function AdminPage() {
                     {selectedTournamentData.name}
                   </h2>
                   <p className="mt-1 text-zinc-400">
-                    {selectedTournamentData.location} · {selectedTournamentData.starts_at}
+                    {selectedTournamentData.location} ·{" "}
+                    {selectedTournamentData.starts_at}
                   </p>
                 </div>
 
@@ -614,45 +702,76 @@ export default function AdminPage() {
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-5">
             <p className="text-sm font-bold text-zinc-400">Ekipe</p>
-            <p className="mt-1 text-3xl font-black text-[#d4b06a]">{teams.length}</p>
-            <p className="text-sm text-zinc-500">{approvedTeams.length} potvrđeno</p>
+            <p className="mt-1 text-3xl font-black text-[#d4b06a]">
+              {teams.length}
+            </p>
+            <p className="text-sm text-zinc-500">
+              {approvedTeams.length} potvrđeno
+            </p>
           </div>
           <div className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-5">
             <p className="text-sm font-bold text-zinc-400">Na čekanju</p>
-            <p className="mt-1 text-3xl font-black text-[#d4b06a]">{pendingTeams.length}</p>
-            <p className="text-sm text-zinc-500">{rejectedTeams.length} odbijeno</p>
+            <p className="mt-1 text-3xl font-black text-[#d4b06a]">
+              {pendingTeams.length}
+            </p>
+            <p className="text-sm text-zinc-500">
+              {rejectedTeams.length} odbijeno
+            </p>
           </div>
           <div className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-5">
             <p className="text-sm font-bold text-zinc-400">Mečevi</p>
-            <p className="mt-1 text-3xl font-black text-[#d4b06a]">{matches.length}</p>
-            <p className="text-sm text-zinc-500">{finishedMatches.length} završeno</p>
+            <p className="mt-1 text-3xl font-black text-[#d4b06a]">
+              {matches.length}
+            </p>
+            <p className="text-sm text-zinc-500">
+              {finishedMatches.length} završeno
+            </p>
           </div>
           <div className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-5">
             <p className="text-sm font-bold text-zinc-400">Otvoreno</p>
-            <p className="mt-1 text-3xl font-black text-[#d4b06a]">{openMatches.length}</p>
+            <p className="mt-1 text-3xl font-black text-[#d4b06a]">
+              {openMatches.length}
+            </p>
             <p className="text-sm text-zinc-500">za upis rezultata</p>
           </div>
         </div>
       </section>
 
       <section className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <a href={editTournamentHref} className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-4 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10">
+        <a
+          href={editTournamentHref}
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-4 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
+        >
           <span className="block text-xl text-[#d4b06a]">✏️</span>
           Uredi turnir
         </a>
-        <a href={drawHref} className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-4 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10">
+        <a
+          href={drawHref}
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-4 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
+        >
           <span className="block text-xl text-[#d4b06a]">🎲</span>
           Ždrijeb
         </a>
-        <a href={publicTournamentHref} className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-4 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10">
+        <a
+          href={publicTournamentHref}
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-4 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
+        >
           <span className="block text-xl text-[#d4b06a]">🏆</span>
           Rezultati
         </a>
-        <a href={dashboardHref} target={selectedTournament ? "_blank" : undefined} rel={selectedTournament ? "noopener noreferrer" : undefined} className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-4 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10">
+        <a
+          href={dashboardHref}
+          target={selectedTournament ? "_blank" : undefined}
+          rel={selectedTournament ? "noopener noreferrer" : undefined}
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-4 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
+        >
           <span className="block text-xl text-[#d4b06a]">📺</span>
           TV dashboard
         </a>
-        <a href={achievementsHref} className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-4 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10">
+        <a
+          href={achievementsHref}
+          className="rounded-2xl border border-[#d4b06a]/15 bg-[#0a2018] p-4 font-bold transition hover:border-[#f3dfad] hover:bg-[#d4b06a]/10"
+        >
           <span className="block text-xl text-[#d4b06a]">🏅</span>
           Achievementi
         </a>
@@ -687,7 +806,8 @@ export default function AdminPage() {
           <div className="card">
             <h2 className="text-2xl font-black text-[#f3dfad]">Brzi pregled</h2>
             <p className="mt-2 text-zinc-400">
-              Ovdje vidiš stanje aktivnog turnira bez skrolanja kroz sve prijave.
+              Ovdje vidiš stanje aktivnog turnira bez skrolanja kroz sve
+              prijave.
             </p>
             <div className="mt-6 space-y-3">
               <div className="flex justify-between rounded-xl bg-[#12392b] p-4">
@@ -700,24 +820,43 @@ export default function AdminPage() {
               </div>
               <div className="flex justify-between rounded-xl bg-[#12392b] p-4">
                 <span className="text-zinc-400">Završeni mečevi</span>
-                <b className="text-[#d4b06a]">{finishedMatches.length}/{matches.length}</b>
+                <b className="text-[#d4b06a]">
+                  {finishedMatches.length}/{matches.length}
+                </b>
               </div>
             </div>
           </div>
 
           <div className="card">
-            <h2 className="text-2xl font-black text-[#f3dfad]">Najčešće akcije</h2>
+            <h2 className="text-2xl font-black text-[#f3dfad]">
+              Najčešće akcije
+            </h2>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <button type="button" onClick={() => setActiveSection("prijave")} className="rounded-xl bg-[#12392b] p-4 text-left font-bold text-[#f3dfad] transition hover:bg-[#d4b06a]/10">
+              <button
+                type="button"
+                onClick={() => setActiveSection("prijave")}
+                className="rounded-xl bg-[#12392b] p-4 text-left font-bold text-[#f3dfad] transition hover:bg-[#d4b06a]/10"
+              >
                 Potvrdi prijave
               </button>
-              <button type="button" onClick={() => setActiveSection("dodaj")} className="rounded-xl bg-[#12392b] p-4 text-left font-bold text-[#f3dfad] transition hover:bg-[#d4b06a]/10">
+              <button
+                type="button"
+                onClick={() => setActiveSection("dodaj")}
+                className="rounded-xl bg-[#12392b] p-4 text-left font-bold text-[#f3dfad] transition hover:bg-[#d4b06a]/10"
+              >
                 Dodaj ekipu
               </button>
-              <button type="button" onClick={() => setActiveSection("manual")} className="rounded-xl bg-[#12392b] p-4 text-left font-bold text-[#f3dfad] transition hover:bg-[#d4b06a]/10">
+              <button
+                type="button"
+                onClick={() => setActiveSection("manual")}
+                className="rounded-xl bg-[#12392b] p-4 text-left font-bold text-[#f3dfad] transition hover:bg-[#d4b06a]/10"
+              >
                 Upiši rezultat
               </button>
-              <a href={bracketHref} className="rounded-xl bg-[#12392b] p-4 font-bold text-[#f3dfad] transition hover:bg-[#d4b06a]/10">
+              <a
+                href={bracketHref}
+                className="rounded-xl bg-[#12392b] p-4 font-bold text-[#f3dfad] transition hover:bg-[#d4b06a]/10"
+              >
                 Otvori bracket
               </a>
             </div>
@@ -727,24 +866,104 @@ export default function AdminPage() {
 
       {activeSection === "dodaj" && (
         <section className="card">
-          <h2 className="text-2xl font-black text-[#f3dfad]">Dodaj ekipu na dan turnira</h2>
+          <h2 className="text-2xl font-black text-[#f3dfad]">
+            Dodaj ekipu na dan turnira
+          </h2>
           <p className="mt-2 text-sm text-zinc-400">
-            Ekipa koju admin doda odmah je potvrđena. Mail partnera nije obavezan.
+            Ekipa koju admin doda odmah je potvrđena. Mail partnera nije
+            obavezan.
           </p>
 
           <form onSubmit={addTeamByAdmin} className="mt-6">
             <div className="grid gap-4 md:grid-cols-2">
-              <input className="input" required placeholder="Naziv ekipe" value={adminTeamForm.name} onChange={(e) => setAdminTeamForm({ ...adminTeamForm, name: e.target.value })} />
-              <input className="input" placeholder="Grad" value={adminTeamForm.city} onChange={(e) => setAdminTeamForm({ ...adminTeamForm, city: e.target.value })} />
-              <input className="input" required placeholder="Igrač 1" value={adminTeamForm.playerOne} onChange={(e) => setAdminTeamForm({ ...adminTeamForm, playerOne: e.target.value, captainName: adminTeamForm.captainName || e.target.value })} />
-              <input className="input" required placeholder="Igrač 2" value={adminTeamForm.playerTwo} onChange={(e) => setAdminTeamForm({ ...adminTeamForm, playerTwo: e.target.value })} />
-              <input className="input" placeholder="Kapetan / kontakt osoba" value={adminTeamForm.captainName} onChange={(e) => setAdminTeamForm({ ...adminTeamForm, captainName: e.target.value })} />
-              <input className="input" placeholder="Mobitel" value={adminTeamForm.phone} onChange={(e) => setAdminTeamForm({ ...adminTeamForm, phone: e.target.value })} />
-              <input className="input" type="email" placeholder="Email kapetana (nije obavezno)" value={adminTeamForm.email} onChange={(e) => setAdminTeamForm({ ...adminTeamForm, email: e.target.value })} />
-              <input className="input" type="email" placeholder="Email partnera (nije obavezno)" value={adminTeamForm.partnerEmail} onChange={(e) => setAdminTeamForm({ ...adminTeamForm, partnerEmail: e.target.value })} />
+              <input
+                className="input"
+                required
+                placeholder="Naziv ekipe"
+                value={adminTeamForm.name}
+                onChange={(e) =>
+                  setAdminTeamForm({ ...adminTeamForm, name: e.target.value })
+                }
+              />
+              <input
+                className="input"
+                placeholder="Grad"
+                value={adminTeamForm.city}
+                onChange={(e) =>
+                  setAdminTeamForm({ ...adminTeamForm, city: e.target.value })
+                }
+              />
+              <input
+                className="input"
+                required
+                placeholder="Igrač 1"
+                value={adminTeamForm.playerOne}
+                onChange={(e) =>
+                  setAdminTeamForm({
+                    ...adminTeamForm,
+                    playerOne: e.target.value,
+                    captainName: adminTeamForm.captainName || e.target.value,
+                  })
+                }
+              />
+              <input
+                className="input"
+                required
+                placeholder="Igrač 2"
+                value={adminTeamForm.playerTwo}
+                onChange={(e) =>
+                  setAdminTeamForm({
+                    ...adminTeamForm,
+                    playerTwo: e.target.value,
+                  })
+                }
+              />
+              <input
+                className="input"
+                placeholder="Kapetan / kontakt osoba"
+                value={adminTeamForm.captainName}
+                onChange={(e) =>
+                  setAdminTeamForm({
+                    ...adminTeamForm,
+                    captainName: e.target.value,
+                  })
+                }
+              />
+              <input
+                className="input"
+                placeholder="Mobitel"
+                value={adminTeamForm.phone}
+                onChange={(e) =>
+                  setAdminTeamForm({ ...adminTeamForm, phone: e.target.value })
+                }
+              />
+              <input
+                className="input"
+                type="email"
+                placeholder="Email kapetana (nije obavezno)"
+                value={adminTeamForm.email}
+                onChange={(e) =>
+                  setAdminTeamForm({ ...adminTeamForm, email: e.target.value })
+                }
+              />
+              <input
+                className="input"
+                type="email"
+                placeholder="Email partnera (nije obavezno)"
+                value={adminTeamForm.partnerEmail}
+                onChange={(e) =>
+                  setAdminTeamForm({
+                    ...adminTeamForm,
+                    partnerEmail: e.target.value,
+                  })
+                }
+              />
             </div>
 
-            <button type="submit" className="mt-5 rounded-xl bg-[#d4b06a] px-6 py-3 font-black text-black transition hover:bg-[#f3dfad]">
+            <button
+              type="submit"
+              className="mt-5 rounded-xl bg-[#d4b06a] px-6 py-3 font-black text-black transition hover:bg-[#f3dfad]"
+            >
               Dodaj i potvrdi ekipu
             </button>
           </form>
@@ -759,8 +978,9 @@ export default function AdminPage() {
                 Manualni upis rezultata
               </h2>
               <p className="mt-2 text-sm text-zinc-400">
-                Klikni meč, upiši bodove jedne ekipe i druga se automatski računa kao 162 - unos.
-                Admin unos je sada kao kod igrača, samo bez viška koraka.
+                Klikni meč, upiši štihove jedne ekipe i druga se automatski
+                računa kao 162 - unos. Zvanja upisuješ posebno, a ukupni
+                rezultat se spremi kao štihovi + zvanja.
               </p>
             </div>
 
@@ -776,7 +996,8 @@ export default function AdminPage() {
 
           {!manualEnabled && (
             <div className="mt-6 rounded-2xl border border-[#d4b06a]/15 bg-[#12392b] p-6 text-zinc-300">
-              Manualni upis nije uključen za ovaj turnir. Uredi turnir i uključi manualni upis rezultata.
+              Manualni upis nije uključen za ovaj turnir. Uredi turnir i uključi
+              manualni upis rezultata.
             </div>
           )}
 
@@ -790,7 +1011,9 @@ export default function AdminPage() {
             <div className="mt-6 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
               <div>
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <h3 className="text-lg font-black text-[#f3dfad]">Odaberi meč</h3>
+                  <h3 className="text-lg font-black text-[#f3dfad]">
+                    Odaberi meč
+                  </h3>
                   <span className="rounded-full bg-[#12392b] px-3 py-1 text-xs font-black text-zinc-300">
                     {matches.length} mečeva
                   </span>
@@ -815,11 +1038,17 @@ export default function AdminPage() {
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <p className="truncate font-black text-[#f3dfad]">
-                              {match.team_a_name || match.team_a_seed || "Ekipa A"}
+                              {match.team_a_name ||
+                                match.team_a_seed ||
+                                "Ekipa A"}
                             </p>
-                            <p className="text-center text-xs font-black text-[#d4b06a]">vs</p>
+                            <p className="text-center text-xs font-black text-[#d4b06a]">
+                              vs
+                            </p>
                             <p className="truncate font-black text-[#f3dfad]">
-                              {match.team_b_name || match.team_b_seed || "Ekipa B"}
+                              {match.team_b_name ||
+                                match.team_b_seed ||
+                                "Ekipa B"}
                             </p>
                           </div>
 
@@ -857,19 +1086,29 @@ export default function AdminPage() {
                 <div className="rounded-3xl border border-[#d4b06a]/15 bg-[#0a2018] p-5">
                   <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
                     <div>
-                      <p className="text-sm font-black text-[#d4b06a]">Upis za odabrani meč</p>
+                      <p className="text-sm font-black text-[#d4b06a]">
+                        Upis za odabrani meč
+                      </p>
                       <h3 className="mt-2 text-2xl font-black text-[#f3dfad]">
-                        {selectedManualMatch.team_a_name || selectedManualMatch.team_a_seed || "Ekipa A"}
+                        {selectedManualMatch.team_a_name ||
+                          selectedManualMatch.team_a_seed ||
+                          "Ekipa A"}
                         <span className="mx-2 text-[#d4b06a]">vs</span>
-                        {selectedManualMatch.team_b_name || selectedManualMatch.team_b_seed || "Ekipa B"}
+                        {selectedManualMatch.team_b_name ||
+                          selectedManualMatch.team_b_seed ||
+                          "Ekipa B"}
                       </h3>
                       <p className="mt-1 text-sm text-zinc-400">
-                        Faza {selectedManualMatch.phase || "-"} · Runda {selectedManualMatch.round || "-"} · status: {selectedManualMatch.status || "scheduled"}
+                        Faza {selectedManualMatch.phase || "-"} · Runda{" "}
+                        {selectedManualMatch.round || "-"} · status:{" "}
+                        {selectedManualMatch.status || "scheduled"}
                       </p>
                     </div>
 
                     <span className="w-fit rounded-full bg-[#12392b] px-4 py-2 text-sm font-black text-zinc-300">
-                      {selectedManualMatch.status === "finished" ? "Možeš prepisati" : "Spremno za upis"}
+                      {selectedManualMatch.status === "finished"
+                        ? "Možeš prepisati"
+                        : "Spremno za upis"}
                     </span>
                   </div>
 
@@ -883,15 +1122,26 @@ export default function AdminPage() {
                         inputMode="numeric"
                         pattern="[0-9]*"
                         placeholder="0"
-                        value={manualScores[selectedManualMatch.id]?.scoreA ?? String(selectedManualMatch.score_a ?? 0)}
-                        onChange={(e) => updateManualScore(selectedManualMatch.id, "A", e.target.value)}
+                        value={
+                          manualScores[selectedManualMatch.id]?.scoreA ??
+                          String(selectedManualMatch.score_a ?? 0)
+                        }
+                        onChange={(e) =>
+                          updateManualScore(
+                            selectedManualMatch.id,
+                            "A",
+                            e.target.value,
+                          )
+                        }
                       />
                       <span className="mt-2 block text-center text-xs text-zinc-500">
                         Druga ekipa se računa automatski: 162 - unos
                       </span>
                     </label>
 
-                    <div className="hidden pb-8 text-4xl font-black text-[#d4b06a] sm:block">:</div>
+                    <div className="hidden pb-8 text-4xl font-black text-[#d4b06a] sm:block">
+                      :
+                    </div>
 
                     <label className="block rounded-2xl border border-[#d4b06a]/15 bg-[#12392b] p-4">
                       <span className="block text-center text-sm font-black text-[#d4b06a]">
@@ -902,8 +1152,17 @@ export default function AdminPage() {
                         inputMode="numeric"
                         pattern="[0-9]*"
                         placeholder="0"
-                        value={manualScores[selectedManualMatch.id]?.scoreB ?? String(selectedManualMatch.score_b ?? 0)}
-                        onChange={(e) => updateManualScore(selectedManualMatch.id, "B", e.target.value)}
+                        value={
+                          manualScores[selectedManualMatch.id]?.scoreB ??
+                          String(selectedManualMatch.score_b ?? 0)
+                        }
+                        onChange={(e) =>
+                          updateManualScore(
+                            selectedManualMatch.id,
+                            "B",
+                            e.target.value,
+                          )
+                        }
                       />
                       <span className="mt-2 block text-center text-xs text-zinc-500">
                         Druga ekipa se računa automatski: 162 - unos
@@ -911,21 +1170,103 @@ export default function AdminPage() {
                     </label>
                   </div>
 
+                  <div className="mt-5 rounded-2xl border border-[#d4b06a]/15 bg-[#12392b] p-4">
+                    <div className="mb-3 flex flex-col justify-between gap-1 sm:flex-row sm:items-end">
+                      <div>
+                        <p className="font-black text-[#f3dfad]">Zvanja</p>
+                        <p className="text-sm text-zinc-400">
+                          Upiši zvanja za svaku ekipu. Ukupno se računa kao
+                          štihovi + zvanja.
+                        </p>
+                      </div>
+                      <p className="text-sm font-black text-[#d4b06a]">
+                        Ukupno:{" "}
+                        {Number(
+                          manualScores[selectedManualMatch.id]?.scoreA || 0,
+                        ) +
+                          Number(
+                            manualScores[selectedManualMatch.id]
+                              ?.declarationsA || 0,
+                          )}{" "}
+                        :{" "}
+                        {Number(
+                          manualScores[selectedManualMatch.id]?.scoreB || 0,
+                        ) +
+                          Number(
+                            manualScores[selectedManualMatch.id]
+                              ?.declarationsB || 0,
+                          )}
+                      </p>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <label className="block">
+                        <span className="mb-2 block text-sm font-bold text-[#d4b06a]">
+                          Zvanja {selectedManualMatch.team_a_name || "A"}
+                        </span>
+                        <input
+                          className="input"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          placeholder="0"
+                          value={
+                            manualScores[selectedManualMatch.id]
+                              ?.declarationsA ?? "0"
+                          }
+                          onChange={(e) =>
+                            updateManualDeclarations(
+                              selectedManualMatch.id,
+                              "A",
+                              e.target.value,
+                            )
+                          }
+                        />
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-2 block text-sm font-bold text-[#d4b06a]">
+                          Zvanja {selectedManualMatch.team_b_name || "B"}
+                        </span>
+                        <input
+                          className="input"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          placeholder="0"
+                          value={
+                            manualScores[selectedManualMatch.id]
+                              ?.declarationsB ?? "0"
+                          }
+                          onChange={(e) =>
+                            updateManualDeclarations(
+                              selectedManualMatch.id,
+                              "B",
+                              e.target.value,
+                            )
+                          }
+                        />
+                      </label>
+                    </div>
+                  </div>
+
                   <div className="mt-5 rounded-2xl border border-purple-400/20 bg-purple-500/10 p-4">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <p className="font-black text-purple-100">Mački</p>
                         <p className="text-sm text-purple-200/80">
-                          Automatski postavlja 162 : 0 i dodaje +90 zvanja pobjedniku.
+                          Automatski postavlja 162 : 0 i dodaje +90 zvanja
+                          pobjedniku.
                         </p>
                       </div>
 
                       <div className="grid gap-2 sm:grid-cols-2">
                         <button
                           type="button"
-                          onClick={() => setManualMacki(selectedManualMatch.id, "A")}
+                          onClick={() =>
+                            setManualMacki(selectedManualMatch.id, "A")
+                          }
                           className={`rounded-xl border px-4 py-3 font-black transition ${
-                            manualScores[selectedManualMatch.id]?.mackiWinner === "A"
+                            manualScores[selectedManualMatch.id]
+                              ?.mackiWinner === "A"
                               ? "border-purple-100 bg-purple-300 text-black"
                               : "border-purple-300/25 bg-purple-500/10 text-purple-100"
                           }`}
@@ -935,9 +1276,12 @@ export default function AdminPage() {
 
                         <button
                           type="button"
-                          onClick={() => setManualMacki(selectedManualMatch.id, "B")}
+                          onClick={() =>
+                            setManualMacki(selectedManualMatch.id, "B")
+                          }
                           className={`rounded-xl border px-4 py-3 font-black transition ${
-                            manualScores[selectedManualMatch.id]?.mackiWinner === "B"
+                            manualScores[selectedManualMatch.id]
+                              ?.mackiWinner === "B"
                               ? "border-purple-100 bg-purple-300 text-black"
                               : "border-purple-300/25 bg-purple-500/10 text-purple-100"
                           }`}
@@ -965,6 +1309,8 @@ export default function AdminPage() {
                           [selectedManualMatch.id]: {
                             scoreA: String(selectedManualMatch.score_a ?? 0),
                             scoreB: String(selectedManualMatch.score_b ?? 0),
+                            declarationsA: "0",
+                            declarationsB: "0",
                             mackiWinner: "",
                           },
                         });
@@ -976,7 +1322,9 @@ export default function AdminPage() {
                   </div>
 
                   <p className="mt-4 text-center text-xs text-zinc-500">
-                    Savjet: upiši bodove samo jednoj ekipi, druga se sama popuni do 162. Za detaljan unos po dijeljenjima koristi “Otvori detaljni unos”.
+                    Savjet: upiši štihove samo jednoj ekipi, druga se sama
+                    popuni do 162. Zvanja se dodaju na ukupni rezultat i ulaze u
+                    statistiku/ranglistu.
                   </p>
                 </div>
               )}
@@ -989,12 +1337,18 @@ export default function AdminPage() {
         <section className="card">
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
             <div>
-              <h2 className="text-2xl font-black text-[#f3dfad]">Prijave ekipa</h2>
+              <h2 className="text-2xl font-black text-[#f3dfad]">
+                Prijave ekipa
+              </h2>
               <p className="mt-2 text-zinc-400">
                 Potvrdi, odbij ili pregledaj ekipe za odabrani aktivni turnir.
               </p>
             </div>
-            <button type="button" onClick={() => setActiveSection("dodaj")} className="rounded-xl bg-[#d4b06a] px-5 py-3 font-black text-black transition hover:bg-[#f3dfad]">
+            <button
+              type="button"
+              onClick={() => setActiveSection("dodaj")}
+              className="rounded-xl bg-[#d4b06a] px-5 py-3 font-black text-black transition hover:bg-[#f3dfad]"
+            >
               + Dodaj ekipu
             </button>
           </div>
@@ -1009,25 +1363,46 @@ export default function AdminPage() {
             )}
 
             {teams.map((team) => (
-              <div key={team.id} className="rounded-2xl border border-[#d4b06a]/15 bg-[#12392b] p-6">
+              <div
+                key={team.id}
+                className="rounded-2xl border border-[#d4b06a]/15 bg-[#12392b] p-6"
+              >
                 <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
                   <div className="min-w-0">
-                    <h3 className="text-xl font-bold text-[#d4b06a] sm:text-2xl">{team.name}</h3>
+                    <h3 className="text-xl font-bold text-[#d4b06a] sm:text-2xl">
+                      {team.name}
+                    </h3>
                     <p className="text-zinc-400">{team.city || "Bez grada"}</p>
-                    <p className="text-zinc-400">Kapetan: {team.captain_name || "-"}</p>
-                    <p className="text-zinc-400">Igrači: {team.player_one} / {team.player_two}</p>
-                    {team.phone && <p className="text-zinc-400">Mobitel: {team.phone}</p>}
-                    {team.email && <p className="text-zinc-400">Email: {team.email}</p>}
+                    <p className="text-zinc-400">
+                      Kapetan: {team.captain_name || "-"}
+                    </p>
+                    <p className="text-zinc-400">
+                      Igrači: {team.player_one} / {team.player_two}
+                    </p>
+                    {team.phone && (
+                      <p className="text-zinc-400">Mobitel: {team.phone}</p>
+                    )}
+                    {team.email && (
+                      <p className="text-zinc-400">Email: {team.email}</p>
+                    )}
                   </div>
 
                   <div className="flex flex-col gap-3 md:min-w-36">
-                    <span className={`rounded-full px-4 py-2 text-center font-bold ${team.status === "approved" ? "bg-green-500/20 text-green-300" : team.status === "rejected" ? "bg-red-500/20 text-red-300" : "bg-[#d4b06a]/20 text-[#d4b06a]"}`}>
+                    <span
+                      className={`rounded-full px-4 py-2 text-center font-bold ${team.status === "approved" ? "bg-green-500/20 text-green-300" : team.status === "rejected" ? "bg-red-500/20 text-red-300" : "bg-[#d4b06a]/20 text-[#d4b06a]"}`}
+                    >
                       {team.status}
                     </span>
-                    <button onClick={() => updateStatus(team.id, "approved")} className="rounded-xl bg-green-500 px-5 py-2 font-bold text-black">
+                    <button
+                      onClick={() => updateStatus(team.id, "approved")}
+                      className="rounded-xl bg-green-500 px-5 py-2 font-bold text-black"
+                    >
                       Potvrdi
                     </button>
-                    <button onClick={() => updateStatus(team.id, "rejected")} className="rounded-xl bg-red-500 px-5 py-2 font-bold text-white">
+                    <button
+                      onClick={() => updateStatus(team.id, "rejected")}
+                      className="rounded-xl bg-red-500 px-5 py-2 font-bold text-white"
+                    >
                       Odbij
                     </button>
                   </div>
