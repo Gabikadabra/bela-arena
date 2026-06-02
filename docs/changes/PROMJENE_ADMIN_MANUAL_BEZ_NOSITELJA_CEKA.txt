@@ -1,0 +1,5 @@
+Admin manualni unos:
+- U listi za unos više se ne prikazuju knockout placeholder mečevi tipa "Nositelj čeka".
+- Prikazuju se samo mečevi koji imaju dvije stvarne ekipe.
+- Završeni mečevi se ne prikazuju.
+- Imena ekipa se prvo čitaju iz tablice teams, a placeholder/seed nazivi se ignoriraju.

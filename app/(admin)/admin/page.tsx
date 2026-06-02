@@ -479,10 +479,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (activeSection !== "manual") return;
 
-    const availableManualMatches = matches.filter(
-      (match) =>
-        match.status !== "finished" && Boolean(match.team_a_id) && Boolean(match.team_b_id),
-    );
+    const availableManualMatches = matches.filter(isManualEntryMatch);
 
     if (availableManualMatches.length === 0) {
       setSelectedManualMatchId("");
@@ -544,19 +541,53 @@ export default function AdminPage() {
     return teams.find((team) => team.id === teamId)?.name || "";
   }
 
-  function getMatchTeamName(match: any, side: "A" | "B") {
-    const explicitName = side === "A" ? match.team_a_name : match.team_b_name;
-    const teamId = side === "A" ? match.team_a_id : match.team_b_id;
-    const seedName = side === "A" ? match.team_a_seed : match.team_b_seed;
-    const fallback = side === "A" ? "Ekipa A" : "Ekipa B";
+  function isPlaceholderTeamName(name: string | null | undefined) {
+    const normalized = String(name || "").trim().toLowerCase();
 
-    return explicitName || getTeamName(teamId) || seedName || fallback;
+    if (!normalized) return true;
+
+    return (
+      normalized.includes("nositelj") ||
+      normalized.includes("čeka") ||
+      normalized.includes("ceka") ||
+      normalized.includes("pobjednik") ||
+      normalized.includes("winner") ||
+      normalized.includes("seed") ||
+      normalized.includes("bye") ||
+      normalized === "ekipa a" ||
+      normalized === "ekipa b"
+    );
   }
 
-  const openMatches = matches.filter(
-    (match) =>
-      match.status !== "finished" && Boolean(match.team_a_id) && Boolean(match.team_b_id),
-  );
+  function getRealMatchTeamName(match: any, side: "A" | "B") {
+    const teamId = side === "A" ? match.team_a_id : match.team_b_id;
+    const explicitName = side === "A" ? match.team_a_name : match.team_b_name;
+    const nameFromTeams = getTeamName(teamId);
+
+    if (nameFromTeams && !isPlaceholderTeamName(nameFromTeams)) {
+      return nameFromTeams;
+    }
+
+    if (explicitName && !isPlaceholderTeamName(explicitName)) {
+      return explicitName;
+    }
+
+    return "";
+  }
+
+  function getMatchTeamName(match: any, side: "A" | "B") {
+    return getRealMatchTeamName(match, side) || (side === "A" ? "Ekipa A" : "Ekipa B");
+  }
+
+  function isManualEntryMatch(match: any) {
+    if (["finished", "completed", "done"].includes(String(match.status || "").toLowerCase())) {
+      return false;
+    }
+
+    return Boolean(getRealMatchTeamName(match, "A") && getRealMatchTeamName(match, "B"));
+  }
+
+  const openMatches = matches.filter(isManualEntryMatch);
   const manualEnabled = Boolean(selectedTournamentData?.manual_score_entry);
   const selectedManualMatch =
     openMatches.find((match) => match.id === selectedManualMatchId) || openMatches[0];
@@ -1032,7 +1063,7 @@ export default function AdminPage() {
 
           {manualEnabled && matches.length > 0 && openMatches.length === 0 && (
             <div className="mt-6 rounded-2xl border border-[#d4b06a]/15 bg-[#12392b] p-6 text-zinc-300">
-              Nema mečeva u tijeku za manualni upis. Završeni mečevi i placeholder mečevi bez obje ekipe se ne prikazuju.
+              Nema pravih mečeva u tijeku za manualni upis. Nositelji koji čekaju, bye/placeholder mečevi i završeni mečevi se ne prikazuju.
             </div>
           )}
 
