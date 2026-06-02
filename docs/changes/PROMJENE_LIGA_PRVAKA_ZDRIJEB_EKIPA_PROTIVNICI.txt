@@ -1,0 +1,7 @@
+Promjena: Liga prvaka ždrijeb animacija sada prikazuje matchup reveal.
+
+- Lijevo se prikazuje ekipa koja se trenutno izvlači.
+- Desno se odmah prikazuje protiv koga ta ekipa igra u liga fazi.
+- U povijesti izvlačenja prikazuje se svaka ekipa s listom protivnika, ne redni brojevi.
+- Ostali formati ždrijeba ostaju bez promjene.
+- SQL nije potreban.
