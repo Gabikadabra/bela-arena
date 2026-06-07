@@ -1179,14 +1179,33 @@ export default function ZdrijebAdminPage() {
   const seededTeams = useMemo(() => buildSeedPreview(teams, 8), [teams]);
 
   const groupMatches = matches.filter((m) => m.phase === "group");
-  const knockoutMatches = matches.filter((m) => m.phase === "knockout");
   const roundRobinMatches = matches.filter((m) => m.phase === "round_robin");
 
-  const groupedKnockout = knockoutMatches.reduce((acc: any, match: any) => {
-    if (!acc[match.round]) acc[match.round] = [];
-    acc[match.round].push(match);
-    return acc;
-  }, {});
+  const getBracketType = (match: any) => {
+    if (match.bracket_type) return match.bracket_type;
+    if (match.phase === "repechage") return "repechage";
+    if (match.phase === "grand_final") return "grand_final";
+    if (match.phase === "reset_final") return "reset_final";
+    if (match.phase === "knockout") return "winners";
+    return match.phase || "other";
+  };
+
+  const winnersMatches = matches.filter((m) => getBracketType(m) === "winners");
+  const repechageMatches = matches.filter((m) => getBracketType(m) === "repechage");
+  const grandFinalMatches = matches.filter((m) => getBracketType(m) === "grand_final");
+  const resetFinalMatches = matches.filter((m) => getBracketType(m) === "reset_final");
+
+  const groupBracketByRound = (items: any[]) =>
+    items.reduce((acc: any, match: any) => {
+      if (!acc[match.round]) acc[match.round] = [];
+      acc[match.round].push(match);
+      return acc;
+    }, {});
+
+  const groupedWinners = groupBracketByRound(winnersMatches);
+  const groupedRepechage = groupBracketByRound(repechageMatches);
+  const groupedGrandFinal = groupBracketByRound(grandFinalMatches);
+  const groupedResetFinal = groupBracketByRound(resetFinalMatches);
 
   return (
     <main className="page">
@@ -1477,36 +1496,66 @@ export default function ZdrijebAdminPage() {
         <MatchList title="Round robin mečevi" matches={roundRobinMatches} />
       )}
 
-      {knockoutMatches.length > 0 && (
-        <section className="mt-10">
-          <h2 className="section-title">Knockout bracket</h2>
+      <BracketSection
+        title="Glavni ždrijeb"
+        groupedMatches={groupedWinners}
+      />
 
-          <div className="mt-5 flex gap-5 overflow-x-auto pb-4">
-            {Object.entries(groupedKnockout).map(
-              ([round, roundMatches]: any) => (
-                <div key={round} className="min-w-72">
-                  <h3 className="mb-4 text-xl font-bold text-[#d4b06a]">
-                    Runda {round}
-                  </h3>
+      <BracketSection
+        title="Repesaž"
+        groupedMatches={groupedRepechage}
+      />
 
-                  <div className="space-y-4">
-                    {roundMatches
-                      .sort(
-                        (a: any, b: any) =>
-                          Number(a.bracket_position || 0) -
-                          Number(b.bracket_position || 0),
-                      )
-                      .map((match: any) => (
-                        <MatchBox key={match.id} match={match} />
-                      ))}
-                  </div>
-                </div>
-              ),
-            )}
-          </div>
-        </section>
-      )}
+      <BracketSection
+        title="Grand final"
+        groupedMatches={groupedGrandFinal}
+      />
+
+      <BracketSection
+        title="Reset final"
+        groupedMatches={groupedResetFinal}
+      />
     </main>
+  );
+}
+
+function BracketSection({
+  title,
+  groupedMatches,
+}: {
+  title: string;
+  groupedMatches: Record<string, any[]>;
+}) {
+  const entries = Object.entries(groupedMatches);
+
+  if (entries.length === 0) return null;
+
+  return (
+    <section className="mt-10">
+      <h2 className="section-title">{title}</h2>
+
+      <div className="mt-5 flex gap-5 overflow-x-auto pb-4">
+        {entries.map(([round, roundMatches]: any) => (
+          <div key={round} className="min-w-72">
+            <h3 className="mb-4 text-xl font-bold text-[#d4b06a]">
+              {title === "Repesaž" ? `Repesaž ${round}` : `Runda ${round}`}
+            </h3>
+
+            <div className="space-y-4">
+              {roundMatches
+                .sort(
+                  (a: any, b: any) =>
+                    Number(a.bracket_position || a.match_number || 0) -
+                    Number(b.bracket_position || b.match_number || 0),
+                )
+                .map((match: any) => (
+                  <MatchBox key={match.id} match={match} />
+                ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
