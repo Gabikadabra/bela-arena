@@ -1,0 +1,13 @@
+Repesaž uplata - neplaćanje / odustajanje
+
+Dodano:
+- Admin u tabu Repesaž uplate sada ima opciju "Nije platio — izbaci".
+- Ako ekipa ne plati 10 € za repesaž, ne ubacuje se u repesaž.
+- Ekipa se označi kao izbačena iz repesaža.
+- Ako je protivnik u repesaž meču već poznat, protivnik automatski prolazi dalje.
+- Ako protivnik još nije poznat, slot se označi kao forfeited i kasnije protivnik automatski prolazi kad dođe u taj meč.
+
+SQL:
+- repechage_fee_declined
+- repechage_fee_declined_at
+- repechage_forfeit_slot

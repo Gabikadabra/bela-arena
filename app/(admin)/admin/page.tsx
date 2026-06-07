@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { syncTournamentAfterResult } from "@/lib/tournamentProgress";
+import { confirmRepechagePaymentAndRoute, declineRepechagePaymentAndRoute, syncTournamentAfterResult } from "@/lib/tournamentProgress";
 
 export default function AdminPage() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -36,7 +36,7 @@ export default function AdminPage() {
     >
   >({});
   const [activeSection, setActiveSection] = useState<
-    "pregled" | "prijave" | "dodaj" | "manual"
+    "pregled" | "prijave" | "dodaj" | "manual" | "repesaz"
   >("pregled");
   const [selectedManualMatchId, setSelectedManualMatchId] = useState("");
 
@@ -398,6 +398,32 @@ export default function AdminPage() {
     await loadTournaments();
   }
 
+  async function confirmRepechagePayment(matchId: string) {
+    try {
+      await confirmRepechagePaymentAndRoute(matchId);
+      await loadMatches(selectedTournament);
+      alert("Repesaž je plaćen i ekipa je prebačena u repesaž.");
+    } catch (error: any) {
+      alert("Greška kod potvrde uplate repesaža: " + (error?.message || error));
+    }
+  }
+
+  async function declineRepechagePayment(matchId: string) {
+    const confirmed = confirm(
+      "Označiti da ekipa nije platila repesaž? Ekipa ispada iz turnira, a protivnik dobiva prolaz ako već postoji.",
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await declineRepechagePaymentAndRoute(matchId);
+      await loadMatches(selectedTournament);
+      alert("Ekipa je označena kao nije platila i izbačena je iz repesaža.");
+    } catch (error: any) {
+      alert("Greška kod odustajanja/neplaćanja repesaža: " + (error?.message || error));
+    }
+  }
+
   async function updateStatus(id: string, status: string) {
     await supabase.from("teams").update({ status }).eq("id", id);
 
@@ -588,6 +614,12 @@ export default function AdminPage() {
   }
 
   const openMatches = matches.filter(isManualEntryMatch);
+  const pendingRepechageFees = matches.filter(
+    (match) =>
+      Boolean(match.repechage_fee_required) &&
+      !match.repechage_fee_paid &&
+      Boolean(match.repechage_fee_team_id),
+  );
   const manualEnabled = Boolean(selectedTournamentData?.manual_score_entry);
   const selectedManualMatch =
     openMatches.find((match) => match.id === selectedManualMatchId) || openMatches[0];
@@ -600,6 +632,11 @@ export default function AdminPage() {
       id: "manual",
       label: "Manual rezultati",
       count: manualEnabled ? openMatches.length : null,
+    },
+    {
+      id: "repesaz",
+      label: "Repesaž uplate",
+      count: pendingRepechageFees.length,
     },
   ] as const;
 
@@ -906,6 +943,13 @@ export default function AdminPage() {
                 className="rounded-xl bg-[#12392b] p-4 text-left font-bold text-[#f3dfad] transition hover:bg-[#d4b06a]/10"
               >
                 Upiši rezultat
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveSection("repesaz")}
+                className="rounded-xl bg-[#12392b] p-4 text-left font-bold text-[#f3dfad] transition hover:bg-[#d4b06a]/10"
+              >
+                Repesaž uplate ({pendingRepechageFees.length})
               </button>
               <a
                 href={bracketHref}
@@ -1371,6 +1415,78 @@ export default function AdminPage() {
                   </p>
                 </div>
               )}
+            </div>
+          )}
+        </section>
+      )}
+
+      {activeSection === "repesaz" && (
+        <section className="card">
+          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
+            <div>
+              <h2 className="text-2xl font-black text-[#f3dfad]">
+                Repesaž uplate
+              </h2>
+              <p className="mt-2 text-zinc-400">
+                Ekipa koja izgubi u glavnom ždrijebu mora platiti 10 € da uđe u repesaž. Ako ne plati, admin je može odmah izbaciti iz repesaža, a protivnik dobiva prolaz ako već postoji.
+              </p>
+            </div>
+            <span className="rounded-full bg-[#12392b] px-4 py-2 text-sm font-black text-[#d4b06a]">
+              {pendingRepechageFees.length} čeka uplatu
+            </span>
+          </div>
+
+          {pendingRepechageFees.length === 0 && (
+            <div className="mt-6 rounded-2xl border border-[#d4b06a]/15 bg-[#12392b] p-6 text-zinc-300">
+              Trenutno nema ekipa koje čekaju uplatu za repesaž.
+            </div>
+          )}
+
+          {pendingRepechageFees.length > 0 && (
+            <div className="mt-6 space-y-4">
+              {pendingRepechageFees.map((match) => {
+                const feeTeamName = getTeamName(match.repechage_fee_team_id) || "Ekipa";
+                const winnerName = getTeamName(match.winner_id) || "Pobjednik";
+                const feeAmount = Number(match.repechage_fee_amount || selectedTournamentData?.repechage_fee_amount || 10);
+
+                return (
+                  <div key={match.id} className="rounded-2xl border border-[#d4b06a]/15 bg-[#12392b] p-5">
+                    <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+                      <div>
+                        <p className="text-sm font-black text-[#d4b06a]">
+                          Čeka uplatu za repesaž
+                        </p>
+                        <h3 className="mt-1 text-2xl font-black text-[#f3dfad]">
+                          {feeTeamName}
+                        </h3>
+                        <p className="mt-1 text-sm text-zinc-400">
+                          Izgubili protiv: {winnerName} · runda {match.round || "-"} · meč {match.match_number || "-"}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <span className="rounded-xl bg-black/25 px-5 py-3 text-center font-black text-[#d4b06a]">
+                          {feeAmount} €
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => confirmRepechagePayment(match.id)}
+                          className="rounded-xl bg-[#d4b06a] px-5 py-3 font-black text-black transition hover:bg-[#f3dfad]"
+                        >
+                          Platio — ubaci u repesaž
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => declineRepechagePayment(match.id)}
+                          className="rounded-xl border border-red-500/40 bg-red-500/10 px-5 py-3 font-black text-red-200 transition hover:bg-red-500/20"
+                        >
+                          Nije platio — izbaci
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </section>

@@ -390,12 +390,53 @@ export async function populateKnockoutIfGroupsFinished(tournamentId: string) {
 }
 
 
+
+async function getTournamentRepechageFee(tournamentId: string | null | undefined) {
+  if (!tournamentId) return 10;
+
+  const { data, error } = await supabase
+    .from("tournaments")
+    .select("tournament_format,repechage_fee_amount")
+    .eq("id", tournamentId)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  if (data?.tournament_format !== "knockout_repechage") return 0;
+  return Math.max(0, Number(data?.repechage_fee_amount ?? 10));
+}
+
+async function shouldPauseLoserForRepechageFee(match: any) {
+  if (!match?.loser_next_match_id || !match?.loser_next_match_slot) return false;
+  if (match.bracket_type !== "winners") return false;
+  if (match.repechage_fee_paid) return false;
+
+  const feeAmount = await getTournamentRepechageFee(match.tournament_id);
+  return feeAmount > 0;
+}
+
+async function markRepechageFeePending(match: any, loserId: string, feeAmount: number) {
+  const { error } = await supabase
+    .from("matches")
+    .update({
+      repechage_fee_required: true,
+      repechage_fee_amount: feeAmount,
+      repechage_fee_team_id: loserId,
+      repechage_fee_paid: false,
+      repechage_fee_paid_at: null,
+      admin_note: `Repesaž: čeka uplatu ${feeAmount} €`,
+    })
+    .eq("id", match.id);
+
+  if (error) throw error;
+}
+
 async function placeTeamInMatch(matchId: string | null, slot: string | null, teamId: string | null, teamName: string | null) {
   if (!matchId || !slot || !teamId) return false;
 
   const { data: targetMatch, error: readError } = await supabase
     .from("matches")
-    .select("id,team_a_id,team_b_id,bracket_type")
+    .select("id,team_a_id,team_b_id,team_a_name,team_b_name,next_match_id,next_match_slot,bracket_type,repechage_forfeit_slot")
     .eq("id", matchId)
     .maybeSingle();
 
@@ -408,7 +449,14 @@ async function placeTeamInMatch(matchId: string | null, slot: string | null, tea
       : { team_b_id: teamId, team_b_name: teamName || "Ekipa" };
 
   const otherTeamReady = slot === "A" ? Boolean(targetMatch.team_b_id) : Boolean(targetMatch.team_a_id);
-  updatePayload.status = otherTeamReady ? "scheduled" : "waiting";
+  const otherSlotForfeited = targetMatch.repechage_forfeit_slot === (slot === "A" ? "B" : "A");
+  updatePayload.status = otherTeamReady ? "scheduled" : otherSlotForfeited ? "finished" : "waiting";
+
+  if (otherSlotForfeited) {
+    updatePayload.winner_id = teamId;
+    updatePayload.finished_at = new Date().toISOString();
+    updatePayload.admin_note = "Automatski prolaz jer protivnik nije uplatio repesaž.";
+  }
 
   const { error: updateError } = await supabase
     .from("matches")
@@ -416,6 +464,11 @@ async function placeTeamInMatch(matchId: string | null, slot: string | null, tea
     .eq("id", matchId);
 
   if (updateError) throw updateError;
+
+  if (otherSlotForfeited && targetMatch.next_match_id && targetMatch.next_match_slot) {
+    await placeTeamInMatch(targetMatch.next_match_id, targetMatch.next_match_slot, teamId, teamName || "Ekipa");
+  }
+
   return true;
 }
 
@@ -440,9 +493,130 @@ async function routeKnockoutMatchAfterResult(match: any) {
   }
 
   await placeTeamInMatch(match.next_match_id || null, match.next_match_slot || null, winnerId, winnerName);
+
+  if (await shouldPauseLoserForRepechageFee(match)) {
+    const feeAmount = await getTournamentRepechageFee(match.tournament_id);
+    await markRepechageFeePending(match, loserId, feeAmount);
+    return true;
+  }
+
   await placeTeamInMatch(match.loser_next_match_id || null, match.loser_next_match_slot || null, loserId, loserName);
 
   return Boolean(match.next_match_id || match.loser_next_match_id);
+}
+
+export async function confirmRepechagePaymentAndRoute(matchId: string) {
+  if (!matchId) return false;
+
+  const { data: match, error } = await supabase
+    .from("matches")
+    .select("*")
+    .eq("id", matchId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!match) return false;
+  if (!match.repechage_fee_required || match.repechage_fee_paid) return false;
+  if (!match.loser_next_match_id || !match.loser_next_match_slot) return false;
+  if (!match.winner_id || !match.team_a_id || !match.team_b_id) return false;
+
+  const loserId = match.winner_id === match.team_a_id ? match.team_b_id : match.team_a_id;
+  const loserName = loserId === match.team_a_id ? match.team_a_name : match.team_b_name;
+
+  await placeTeamInMatch(
+    match.loser_next_match_id,
+    match.loser_next_match_slot,
+    loserId,
+    loserName,
+  );
+
+  const { error: updateError } = await supabase
+    .from("matches")
+    .update({
+      repechage_fee_paid: true,
+      repechage_fee_paid_at: new Date().toISOString(),
+      repechage_fee_team_id: loserId,
+      admin_note: `Repesaž plaćen ${Number(match.repechage_fee_amount || 10)} €`,
+    })
+    .eq("id", match.id);
+
+  if (updateError) throw updateError;
+  return true;
+}
+
+export async function declineRepechagePaymentAndRoute(matchId: string) {
+  if (!matchId) return false;
+
+  const { data: match, error } = await supabase
+    .from("matches")
+    .select("*")
+    .eq("id", matchId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!match) return false;
+  if (!match.repechage_fee_required || match.repechage_fee_paid) return false;
+  if (!match.loser_next_match_id || !match.loser_next_match_slot) return false;
+  if (!match.winner_id || !match.team_a_id || !match.team_b_id) return false;
+
+  const loserId = match.winner_id === match.team_a_id ? match.team_b_id : match.team_a_id;
+  const loserName = loserId === match.team_a_id ? match.team_a_name : match.team_b_name;
+
+  const { data: targetMatch, error: targetError } = await supabase
+    .from("matches")
+    .select("id,team_a_id,team_b_id,team_a_name,team_b_name,next_match_id,next_match_slot")
+    .eq("id", match.loser_next_match_id)
+    .maybeSingle();
+
+  if (targetError) throw targetError;
+
+  const forfeitedSlot = match.loser_next_match_slot === "A" ? "A" : "B";
+  const opponentId = forfeitedSlot === "A" ? targetMatch?.team_b_id : targetMatch?.team_a_id;
+  const opponentName = forfeitedSlot === "A" ? targetMatch?.team_b_name : targetMatch?.team_a_name;
+
+  const targetUpdate: any = {
+    repechage_forfeit_slot: forfeitedSlot,
+    status: opponentId ? "finished" : "waiting",
+    admin_note: `${loserName || "Ekipa"} nije uplatio/la repesaž i ispada iz turnira.`,
+  };
+
+  if (forfeitedSlot === "A") {
+    targetUpdate.team_a_id = null;
+    targetUpdate.team_a_name = "Nije uplatio repesaž";
+  } else {
+    targetUpdate.team_b_id = null;
+    targetUpdate.team_b_name = "Nije uplatio repesaž";
+  }
+
+  if (opponentId) {
+    targetUpdate.winner_id = opponentId;
+    targetUpdate.finished_at = new Date().toISOString();
+  }
+
+  const { error: targetUpdateError } = await supabase
+    .from("matches")
+    .update(targetUpdate)
+    .eq("id", match.loser_next_match_id);
+
+  if (targetUpdateError) throw targetUpdateError;
+
+  const { error: sourceUpdateError } = await supabase
+    .from("matches")
+    .update({
+      repechage_fee_declined: true,
+      repechage_fee_declined_at: new Date().toISOString(),
+      repechage_fee_team_id: loserId,
+      admin_note: `Repesaž nije plaćen — ${loserName || "ekipa"} ispada.`,
+    })
+    .eq("id", match.id);
+
+  if (sourceUpdateError) throw sourceUpdateError;
+
+  if (opponentId && targetMatch?.next_match_id && targetMatch?.next_match_slot) {
+    await placeTeamInMatch(targetMatch.next_match_id, targetMatch.next_match_slot, opponentId, opponentName || "Ekipa");
+  }
+
+  return true;
 }
 
 export async function syncTournamentAfterResult(match: any) {
