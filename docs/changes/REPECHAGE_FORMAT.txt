@@ -1,0 +1,7 @@
+Dodano: knockout_repechage format.
+- 15/16 ekipa u glavnom ždrijebu.
+- BYE automatski prolazi dalje.
+- Winner routing koristi next_match_id / next_match_slot.
+- Loser routing koristi loser_next_match_id / loser_next_match_slot.
+- bracket_type razlikuje winners, repechage, grand_final i reset_final.
+- Grand final otvara reset final samo ako pobjednik repesaža dobije prvo finale.

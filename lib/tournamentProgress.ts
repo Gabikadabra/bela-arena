@@ -389,8 +389,68 @@ export async function populateKnockoutIfGroupsFinished(tournamentId: string) {
   return true;
 }
 
+
+async function placeTeamInMatch(matchId: string | null, slot: string | null, teamId: string | null, teamName: string | null) {
+  if (!matchId || !slot || !teamId) return false;
+
+  const { data: targetMatch, error: readError } = await supabase
+    .from("matches")
+    .select("id,team_a_id,team_b_id,bracket_type")
+    .eq("id", matchId)
+    .maybeSingle();
+
+  if (readError) throw readError;
+  if (!targetMatch) return false;
+
+  const updatePayload: any =
+    slot === "A"
+      ? { team_a_id: teamId, team_a_name: teamName || "Ekipa" }
+      : { team_b_id: teamId, team_b_name: teamName || "Ekipa" };
+
+  const otherTeamReady = slot === "A" ? Boolean(targetMatch.team_b_id) : Boolean(targetMatch.team_a_id);
+  updatePayload.status = otherTeamReady ? "scheduled" : "waiting";
+
+  const { error: updateError } = await supabase
+    .from("matches")
+    .update(updatePayload)
+    .eq("id", matchId);
+
+  if (updateError) throw updateError;
+  return true;
+}
+
+async function routeKnockoutMatchAfterResult(match: any) {
+  if (!match || match.status !== "finished" || !match.winner_id) return false;
+  if (!match.team_a_id || !match.team_b_id) return false;
+
+  const winnerId = match.winner_id;
+  const loserId = winnerId === match.team_a_id ? match.team_b_id : match.team_a_id;
+  const winnerName = winnerId === match.team_a_id ? match.team_a_name : match.team_b_name;
+  const loserName = loserId === match.team_a_id ? match.team_a_name : match.team_b_name;
+
+  if (match.bracket_type === "grand_final") {
+    // Ako repesaž finalist dobije prvo finale, igra se reset final.
+    if (winnerId === match.team_b_id && match.next_match_id) {
+      await placeTeamInMatch(match.next_match_id, "A", match.team_a_id, match.team_a_name);
+      await placeTeamInMatch(match.next_match_id, "B", match.team_b_id, match.team_b_name);
+      return true;
+    }
+
+    return false;
+  }
+
+  await placeTeamInMatch(match.next_match_id || null, match.next_match_slot || null, winnerId, winnerName);
+  await placeTeamInMatch(match.loser_next_match_id || null, match.loser_next_match_slot || null, loserId, loserName);
+
+  return Boolean(match.next_match_id || match.loser_next_match_id);
+}
+
 export async function syncTournamentAfterResult(match: any) {
   if (!match?.tournament_id) return;
+
+  if (match.phase === "knockout" || ["winners", "repechage", "grand_final", "reset_final"].includes(String(match.bracket_type || ""))) {
+    await routeKnockoutMatchAfterResult(match);
+  }
 
   if (match.phase === "group") {
     await recalculateGroupStandings(match.tournament_id);

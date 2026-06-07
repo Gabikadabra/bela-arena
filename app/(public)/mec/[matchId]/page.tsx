@@ -492,6 +492,33 @@ export default function MecPage({ params }: PageProps) {
   ) {
     if (!match) return;
 
+    if (match.bracket_type === "grand_final") return;
+
+    if (match.next_match_id && match.next_match_slot) {
+      const { data: explicitNextMatch } = await supabase
+        .from("matches")
+        .select("*")
+        .eq("id", match.next_match_id)
+        .maybeSingle();
+
+      if (!explicitNextMatch) return;
+
+      const payload: any =
+        match.next_match_slot === "A"
+          ? { team_a_id: winnerId, team_a_name: winnerName }
+          : { team_b_id: winnerId, team_b_name: winnerName };
+
+      const otherReady =
+        match.next_match_slot === "A"
+          ? Boolean(explicitNextMatch.team_b_id)
+          : Boolean(explicitNextMatch.team_a_id);
+
+      payload.status = otherReady ? "scheduled" : "waiting";
+
+      await supabase.from("matches").update(payload).eq("id", explicitNextMatch.id);
+      return;
+    }
+
     const currentRound = match.round || match.round_number || 1;
     const nextRound = currentRound + 1;
     const nextMatchNumber = Math.ceil(match.match_number / 2);

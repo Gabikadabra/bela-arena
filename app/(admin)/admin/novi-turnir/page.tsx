@@ -48,6 +48,7 @@ export default function NoviTurnirPage() {
   const showKnockoutAfter = hasKnockoutAfter(form.tournamentFormat);
 
   const formatHint = useMemo(() => {
+    if (form.tournamentFormat === "knockout_repechage") return "Knockout s repesažom: ekipa ispada tek nakon drugog poraza.";
     if (form.tournamentFormat === "league_knockout") {
       return "Liga prvaka format: liga faza s ograničenim brojem mečeva po ekipi, zatim najboljih X ide u knockout.";
     }
@@ -70,7 +71,7 @@ export default function NoviTurnirPage() {
 
     const tournamentFormat = form.tournamentFormat;
     const groupSize = showGroups ? Number(form.groupSize) : null;
-    const knockoutSize = showKnockoutAfter ? Number(form.knockoutSize) : null;
+    const knockoutSize = tournamentFormat === "knockout_repechage" ? 16 : showKnockoutAfter ? Number(form.knockoutSize) : null;
     const leagueRounds = showLeague ? Number(form.leagueRounds) : 1;
     const leagueMatchCount = tournamentFormat === "league_knockout" ? Number(form.leagueMatchCount) : null;
 
@@ -92,7 +93,7 @@ export default function NoviTurnirPage() {
       knockout_size: knockoutSize,
       league_rounds: leagueRounds,
       league_match_count: leagueMatchCount,
-      has_repechage: form.hasRepechage,
+      has_repechage: tournamentFormat === "knockout_repechage" || form.hasRepechage,
       manual_score_entry: form.manualScoreEntry,
       rules: form.rules
     });
@@ -145,6 +146,7 @@ export default function NoviTurnirPage() {
             <select value={form.tournamentFormat} onChange={(e) => setForm({ ...form, tournamentFormat: e.target.value })} className="input">
               <option value="knockout">Samo knockout</option>
               <option value="groups_knockout">Grupe pa knockout</option>
+              <option value="knockout_repechage">Knockout s repesažom</option>
               <option value="round_robin">Liga / svatko sa svakim</option>
               <option value="league_knockout">Liga prvaka / liga pa knockout</option>
             </select>

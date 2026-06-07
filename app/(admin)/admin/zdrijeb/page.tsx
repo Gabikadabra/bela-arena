@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import {
   generateKnockoutMatches,
+  generateKnockoutRepechageMatches,
   generateRoundRobinMatches,
   generateLimitedLeagueMatches,
   generateGroups,
@@ -383,7 +384,7 @@ function getDrawAnimationItems(
       );
   }
 
-  if (format === "knockout") {
+  if (format === "knockout" || format === "knockout_repechage") {
     return generated
       .filter((match: any) => Number(match.round) === 1)
       .flatMap((match: any) => [
@@ -824,6 +825,62 @@ export default function ZdrijebAdminPage() {
         }
 
         setMessage("Knockout bracket je generiran.");
+      } else if (tournament.tournament_format === "knockout_repechage") {
+        const generated = generateKnockoutRepechageMatches(selectedTournament, teams);
+        await playDrawAnimation(
+          "LIVE ŽDRIJEB S REPESAŽOM",
+          "Izvlači se glavni ždrijeb. Gubitnici prvog poraza dobivaju drugu šansu u repesažu.",
+          getDrawAnimationItems("knockout_repechage", teams, generated),
+        );
+        await clearOldDraw();
+
+        const { data: insertedMatches, error } = await supabase
+          .from("matches")
+          .insert(generated)
+          .select("*");
+
+        if (error) throw error;
+
+        const byeMatches = (insertedMatches || []).filter(
+          (m: any) =>
+            m.bracket_type === "winners" &&
+            Number(m.round || 1) === 1 &&
+            m.status === "bye" &&
+            m.winner_id,
+        );
+
+        for (const byeMatch of byeMatches) {
+          const winnerId = byeMatch.winner_id;
+          const winnerName =
+            winnerId === byeMatch.team_a_id ? byeMatch.team_a_name : byeMatch.team_b_name;
+
+          if (!byeMatch.next_match_id || !byeMatch.next_match_slot) continue;
+
+          const { data: nextMatch } = await supabase
+            .from("matches")
+            .select("*")
+            .eq("id", byeMatch.next_match_id)
+            .maybeSingle();
+
+          if (!nextMatch) continue;
+
+          const updatePayload: any =
+            byeMatch.next_match_slot === "A"
+              ? { team_a_id: winnerId, team_a_name: winnerName }
+              : { team_b_id: winnerId, team_b_name: winnerName };
+
+          const otherReady =
+            byeMatch.next_match_slot === "A"
+              ? Boolean(nextMatch.team_b_id)
+              : Boolean(nextMatch.team_a_id);
+
+          updatePayload.status = otherReady ? "scheduled" : "waiting";
+
+          await supabase.from("matches").update(updatePayload).eq("id", nextMatch.id);
+          await supabase.from("matches").update({ status: "finished" }).eq("id", byeMatch.id);
+        }
+
+        setMessage("Knockout s repesažom je generiran. Ekipa ispada tek nakon drugog poraza.");
       } else if (tournament.tournament_format === "round_robin") {
         const generated = generateRoundRobinMatches(
           selectedTournament,
@@ -1141,7 +1198,7 @@ export default function ZdrijebAdminPage() {
         <h1 className="page-title mt-4">Bracket engine</h1>
 
         <p className="muted mt-4 max-w-2xl">
-          Generira knockout, round robin ili grupe + knockout. Grupni i round
+          Generira knockout, repesaž, round robin ili grupe + knockout. Grupni i round
           robin mečevi slažu se Berger sustavom po rundama. Sljedeća runda se
           otključava tek kad prethodna završi.
         </p>

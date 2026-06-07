@@ -63,6 +63,7 @@ export default function UrediTurnirPage() {
   const showKnockoutAfter = KNOCKOUT_AFTER_FORMATS.has(form.tournamentFormat);
 
   const formatHint = useMemo(() => {
+    if (form.tournamentFormat === "knockout_repechage") return "Knockout s repesažom: ekipa ispada tek nakon drugog poraza.";
     if (form.tournamentFormat === "league_knockout") return "Liga prvaka format: liga faza s ograničenim brojem mečeva po ekipi, zatim najboljih X ide u knockout.";
     if (form.tournamentFormat === "groups_knockout") return "Grupe pa knockout: samo ovdje se prikazuju postavke grupa.";
     if (form.tournamentFormat === "round_robin") return "Liga format: svatko sa svakim bez završnog knockout-a.";
@@ -145,10 +146,10 @@ export default function UrediTurnirPage() {
       match_format: `best_of_${Number(form.knockoutBestOf)}`,
       tournament_format: form.tournamentFormat,
       group_size: showGroups ? Number(form.groupSize) : null,
-      knockout_size: showKnockoutAfter ? Number(form.knockoutSize) : null,
+      knockout_size: form.tournamentFormat === "knockout_repechage" ? 16 : showKnockoutAfter ? Number(form.knockoutSize) : null,
       league_rounds: showLeague ? Number(form.leagueRounds) : 1,
       league_match_count: form.tournamentFormat === "league_knockout" ? Number(form.leagueMatchCount) : null,
-      has_repechage: form.hasRepechage,
+      has_repechage: form.tournamentFormat === "knockout_repechage" || form.hasRepechage,
       manual_score_entry: form.manualScoreEntry,
       rules: form.rules
     }).eq("id", tournamentId);
@@ -184,7 +185,8 @@ export default function UrediTurnirPage() {
           <Field label="Maksimalan broj ekipa"><input type="number" value={form.maxTeams} onChange={(e) => setForm({ ...form, maxTeams: Number(e.target.value) })} className="input" min={2} required /></Field>
           <Field label="Kotizacija (€)"><input type="number" value={form.entryFee} onChange={(e) => setForm({ ...form, entryFee: Number(e.target.value) })} className="input" min={0} /></Field>
 
-          <Field label="Sustav turnira"><select value={form.tournamentFormat} onChange={(e) => setForm({ ...form, tournamentFormat: e.target.value })} className="input"><option value="knockout">Samo knockout</option><option value="groups_knockout">Grupe pa knockout</option><option value="round_robin">Liga / svatko sa svakim</option><option value="league_knockout">Liga prvaka / liga pa knockout</option></select></Field>
+          <Field label="Sustav turnira"><select value={form.tournamentFormat} onChange={(e) => setForm({ ...form, tournamentFormat: e.target.value })} className="input"><option value="knockout">Samo knockout</option><option value="groups_knockout">Grupe pa knockout</option>
+              <option value="knockout_repechage">Knockout s repesažom</option><option value="round_robin">Liga / svatko sa svakim</option><option value="league_knockout">Liga prvaka / liga pa knockout</option></select></Field>
 
           <div className="md:col-span-2 card-soft"><p className="font-bold text-[#f3dfad]">Postavke formata</p><p className="muted mt-2 text-sm">{formatHint}</p></div>
 

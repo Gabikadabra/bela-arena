@@ -9,6 +9,7 @@ export type Team = {
 };
 
 export type MatchInsert = {
+  id?: string;
   tournament_id: string;
   phase: "knockout" | "group" | "round_robin";
   round: number;
@@ -22,6 +23,12 @@ export type MatchInsert = {
   team_a_seed?: string | null;
   team_b_seed?: string | null;
   winner_id?: string | null;
+  next_match_id?: string | null;
+  next_match_slot?: string | null;
+  loser_next_match_id?: string | null;
+  loser_next_match_slot?: string | null;
+  bracket_type?: string | null;
+  bracket_label?: string | null;
   status: "scheduled" | "bye" | "waiting" | "finished";
 };
 
@@ -395,6 +402,214 @@ export function generateGroupsKnockoutSeeds(
       globalMatchNumber++;
     }
   }
+
+  return matches;
+}
+
+
+function newMatchId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `match-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function connectWinner(matches: MatchInsert[], fromId: string, toId: string | undefined, slot: "A" | "B") {
+  const match = matches.find((row) => row.id === fromId);
+  if (!match || !toId) return;
+  match.next_match_id = toId;
+  match.next_match_slot = slot;
+}
+
+function connectLoser(matches: MatchInsert[], fromId: string, toId: string | undefined, slot: "A" | "B") {
+  const match = matches.find((row) => row.id === fromId);
+  if (!match || !toId) return;
+  match.loser_next_match_id = toId;
+  match.loser_next_match_slot = slot;
+}
+
+function makeWaitingRepechageMatch(
+  tournamentId: string,
+  matchNumber: number,
+  round: number,
+  position: number,
+  bracketType: string,
+  bracketLabel: string,
+  teamASeed: string,
+  teamBSeed: string,
+): MatchInsert {
+  return {
+    id: newMatchId(),
+    tournament_id: tournamentId,
+    phase: "knockout",
+    round,
+    match_number: matchNumber,
+    bracket_position: position,
+    team_a_id: null,
+    team_b_id: null,
+    team_a_name: "Nositelj čeka",
+    team_b_name: "Nositelj čeka",
+    team_a_seed: teamASeed,
+    team_b_seed: teamBSeed,
+    bracket_type: bracketType,
+    bracket_label: bracketLabel,
+    status: "waiting",
+  };
+}
+
+export function generateKnockoutRepechageMatches(
+  tournamentId: string,
+  teams: Team[],
+): MatchInsert[] {
+  if (teams.length < 3) {
+    throw new Error("Za repesaž trebaju barem 3 ekipe.");
+  }
+
+  if (teams.length > 16) {
+    throw new Error("Ovaj repesaž generator trenutno podržava do 16 ekipa.");
+  }
+
+  const shuffled = shuffle(teams);
+  const bracketSize = 16;
+  const slots: (Team | null)[] = Array(bracketSize).fill(null);
+
+  shuffled.forEach((team, index) => {
+    slots[index] = team;
+  });
+
+  const matches: MatchInsert[] = [];
+  let matchNumber = 1;
+
+  const winnersRounds: MatchInsert[][] = [];
+  const repechageRounds: MatchInsert[][] = [];
+
+  // Winners R1
+  winnersRounds[0] = [];
+  for (let i = 0; i < bracketSize; i += 2) {
+    const teamA = slots[i];
+    const teamB = slots[i + 1];
+    const match: MatchInsert = {
+      id: newMatchId(),
+      tournament_id: tournamentId,
+      phase: "knockout",
+      round: 1,
+      match_number: matchNumber++,
+      bracket_position: i / 2 + 1,
+      team_a_id: teamA?.id || null,
+      team_b_id: teamB?.id || null,
+      team_a_name: teamA?.name || "BYE",
+      team_b_name: teamB?.name || "BYE",
+      winner_id: teamA && !teamB ? teamA.id : teamB && !teamA ? teamB.id : null,
+      bracket_type: "winners",
+      bracket_label: "Glavni ždrijeb · Runda 1",
+      status: teamA && teamB ? "scheduled" : "bye",
+    };
+    winnersRounds[0].push(match);
+    matches.push(match);
+  }
+
+  // Winners R2-R4
+  for (let round = 2; round <= 4; round++) {
+    winnersRounds[round - 1] = [];
+    const count = bracketSize / Math.pow(2, round);
+    for (let position = 1; position <= count; position++) {
+      const match = makeWaitingRepechageMatch(
+        tournamentId,
+        matchNumber++,
+        round,
+        position,
+        "winners",
+        `Glavni ždrijeb · Runda ${round}`,
+        `W${round - 1}-${position * 2 - 1}`,
+        `W${round - 1}-${position * 2}`,
+      );
+      winnersRounds[round - 1].push(match);
+      matches.push(match);
+    }
+  }
+
+  // Repechage rounds: 4,4,2,2,1,1 matches
+  const repechageCounts = [4, 4, 2, 2, 1, 1];
+  repechageCounts.forEach((count, index) => {
+    const round = index + 1;
+    repechageRounds[index] = [];
+    for (let position = 1; position <= count; position++) {
+      const match = makeWaitingRepechageMatch(
+        tournamentId,
+        matchNumber++,
+        round,
+        position,
+        "repechage",
+        `Repesaž · Runda ${round}`,
+        "Repesaž čeka",
+        "Repesaž čeka",
+      );
+      repechageRounds[index].push(match);
+      matches.push(match);
+    }
+  });
+
+  const grandFinal = makeWaitingRepechageMatch(
+    tournamentId,
+    matchNumber++,
+    1,
+    1,
+    "grand_final",
+    "Grand final",
+    "Pobjednik glavnog ždrijeba",
+    "Pobjednik repesaža",
+  );
+  matches.push(grandFinal);
+
+  const resetFinal = makeWaitingRepechageMatch(
+    tournamentId,
+    matchNumber++,
+    2,
+    1,
+    "reset_final",
+    "Reset final ako repesaž dobije prvo finale",
+    "Glavni finalist",
+    "Repesaž finalist",
+  );
+  matches.push(resetFinal);
+
+  // Winner routes in winners bracket.
+  winnersRounds[0].forEach((match, index) => {
+    connectWinner(matches, match.id!, winnersRounds[1][Math.floor(index / 2)]?.id, index % 2 === 0 ? "A" : "B");
+    connectLoser(matches, match.id!, repechageRounds[0][Math.floor(index / 2)]?.id, index % 2 === 0 ? "A" : "B");
+  });
+
+  winnersRounds[1].forEach((match, index) => {
+    connectWinner(matches, match.id!, winnersRounds[2][Math.floor(index / 2)]?.id, index % 2 === 0 ? "A" : "B");
+    connectLoser(matches, match.id!, repechageRounds[1][index]?.id, "B");
+  });
+
+  winnersRounds[2].forEach((match, index) => {
+    connectWinner(matches, match.id!, winnersRounds[3][Math.floor(index / 2)]?.id, index % 2 === 0 ? "A" : "B");
+    connectLoser(matches, match.id!, repechageRounds[3][index]?.id, "B");
+  });
+
+  connectWinner(matches, winnersRounds[3][0].id!, grandFinal.id, "A");
+  connectLoser(matches, winnersRounds[3][0].id!, repechageRounds[5][0].id, "B");
+
+  // Repechage routes.
+  repechageRounds[0].forEach((match, index) => {
+    connectWinner(matches, match.id!, repechageRounds[1][index]?.id, "A");
+  });
+  repechageRounds[1].forEach((match, index) => {
+    connectWinner(matches, match.id!, repechageRounds[2][Math.floor(index / 2)]?.id, index % 2 === 0 ? "A" : "B");
+  });
+  repechageRounds[2].forEach((match, index) => {
+    connectWinner(matches, match.id!, repechageRounds[3][index]?.id, "A");
+  });
+  repechageRounds[3].forEach((match, index) => {
+    connectWinner(matches, match.id!, repechageRounds[4][0]?.id, index % 2 === 0 ? "A" : "B");
+  });
+  connectWinner(matches, repechageRounds[4][0].id!, repechageRounds[5][0].id, "A");
+  connectWinner(matches, repechageRounds[5][0].id!, grandFinal.id, "B");
+
+  connectWinner(matches, grandFinal.id!, resetFinal.id, "A");
 
   return matches;
 }
